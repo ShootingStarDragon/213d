@@ -17,6 +17,7 @@ throw an exception during the kv language processing.
 from kivy.app import App
 from kivy.lang import Builder
 from kivy.uix.boxlayout import BoxLayout
+from kivy.clock import Clock
 import time
 Builder.load_string('''
 <CameraClick>:
@@ -55,6 +56,18 @@ class TestCamera(App):
 
     def build(self):
         return CameraClick()
+    
+    def on_start(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        Clock.schedule_once(self.ROOTWTF, 0)
+    def ROOTWTF(self, *args, **kwargs):
+        print("WHY CANT I DO APP GET CURRENT APP WTF1", App)
+        print("WHY CANT I DO APP GET CURRENT APP WTF2", App.get_running_app())
+        # https://stackoverflow.com/questions/54616982/arising-errors-in-kivy-when-root-widget-comes-from-an-instance-from-kv-file
+        '''
+        Or you can return the root widget from the kv file, if you captured the returned root widget from loading the kv file (or string). For example, theRoot = Builder.load_file('somefile.kv') and return theRoot.
+        '''
+        print("WHY CANT I DO APP GET CURRENT APP WTF3", App.get_running_app().root)
 
 if __name__ == '__main__':
     TestCamera().run()
