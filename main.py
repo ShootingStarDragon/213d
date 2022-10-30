@@ -1,3 +1,10 @@
+#function has to be outside the if __name__ == '__main__' guard so subprocesses have access to it
+def testasync(*args):
+    try:
+        print("wtf man", args, flush=True)
+    except Exception as e:
+        print("exception as e testasync", e, flush=True )
+
 if __name__ == '__main__':
     import kivy
     kivy.require('2.1.0') # replace with your current kivy version !
@@ -14,6 +21,14 @@ if __name__ == '__main__':
     from models.models import texture_format
     from datetime import datetime
 
+    import multiprocessing as FCVA_mp
+    FCVA_mp.freeze_support()
+    #need pool to be in global namespace sadly https://stackoverflow.com/a/32323448
+    #  FCVApool = FCVA_mp.Pool(FCVA_mp.cpu_count())
+    FCVApool = FCVA_mp.Pool(4)
+    shared_mem_manager = FCVA_mp.Manager()
+    shared_analysis_dict = shared_mem_manager.dict()
+    
     #just in case somebody is using textures before making the app:
     '''
     If you need to create textures before the application has started, import
@@ -25,7 +40,9 @@ if __name__ == '__main__':
 
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
-            #remember that the KV string IS THE ACTUAL FILE AND MUST BE INDENTED PROPERLY TO THE LEFT AS IF IT WERE THE ACTUAL FILE!
+            self.device_index = 0
+            self.frame_int = 0
+            #remember that the KV string IS THE ACTUAL FILE AND MUST BE INDENTED PROPERLY TO THE LEFT!
             self.KV_string = '''
 <FCVA_screen_manager>:
     id: FCVA_screen_managerID
@@ -43,18 +60,16 @@ if __name__ == '__main__':
         Label:
             text: "hello world!"
 
-FCVA_screen_manager:
+FCVA_screen_manager: #remember to return a root widget
                 '''
+
         def build(self):
             #only build in the main process:
             if __name__ == '__main__':
                 self.title = "Fast CV App v0.1.0 by Pengindoramu"
                 build_app_from_kv = Builder.load_string(self.KV_string)
                 Window.bind(on_request_close=self.on_request_close)
-                # Clock.schedule_once(self.init_cv, 0)
                 return build_app_from_kv
-                # https://stackoverflow.com/questions/57129106/error-in-update-shadow-self-shadow-app-get-running-app-theme-cls-quad-sha
-                # return FCVA_screen_manager()
             else:
                 print("Are you sure you're running from __main__? Spawning a subprocess from a subprocess is not ok.")
         
@@ -64,16 +79,69 @@ FCVA_screen_manager:
             Clock.schedule_once(self.init_cv, 0)
 
         def init_cv(self, *args):
-            self.stream = cv2.VideoCapture(0)
+            self.stream = cv2.VideoCapture(self.device_index)
+            self.fps = self.stream.get(cv2.CAP_PROP_FPS)
             print("ret, frame!", datetime.now().strftime("%H:%M:%S"))
-            Clock.schedule_interval(self.cv_func, 1/60)
+            print("fps of stream?", self.fps)
+            # Clock.schedule_interval(self.cv_func, 1/60)
+            Clock.schedule_interval(self.blit_from_shared_memory, 1/(self.fps))
+            '''
+            question:
+                WHEN DO YOU ANALYZE FRAMES?
+                I already have a schedule interval that blits to texture
+                obv ans:
+                    in the blit schedule interval you already call for the multiprocessing of the stream
+                    cons:
+                        this will make it a bit slower (noticably slower?)
+                        also how will you ever sync with media? <-- this is a problem I have currently anyways...
+            '''
 
+        def blit_from_shared_memory(self, *args):
+            self.wtf = FCVApool.apply_async(testasync, args=()) #this will work
+            print("async go through?", self.wtf)
+
+
+        def blit_from_shared_memoryWTF(self, *args):
+            self.FCVApool.apply_async(self.cv_func_async , args=(self.stream, self.shared_analysis_dict, self.device_index, self.frame_int), callback=self.cv_callback) 
+            self.frame_int += 1
+            print("#check if there's something in shared memory:", len(self.shared_analysis_dict))
+            if len(self.shared_analysis_dict) > 0:
+                #get the max key
+                max_key = max(self.shared_analysis_dict.keys())
+                print("maxkey?", max_key)
+                frame = self.shared_analysis_dict[max_key]
+                #blit to texture
+                texture1 = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt='bgr') 
+                texture1.blit_buffer(buf, colorfmt='bgr', bufferfmt='ubyte')
+                App.get_running_app().root.get_screen('start_screen_name').ids["image_textureID"].texture = texture1
+                #after blitting delete if dict has more than 10 frames:
+                if len(self.shared_analysis_dict) > 5:
+                    min_key = min(self.shared_analysis_dict.keys())
+                    self.shared_analysis_dict.pop[min_key]
+
+        def cv_callback(self):
+            pass
+        
+        def cv_func_async(self, stream, shared_dict, device_index, frame_int):
+            ret, frame = stream.read(0)
+            print("so is this running?", ret, flush=True)
+            if ret:
+                #here just put the frame to the shared dictionary
+                shared_dict[frame_int] = frame.tobytes()
+                # buf1 = cv2.flip(frame, 0)
+                # buf1 = cv2.flip(buf1, 1)
+                # buf = buf1.tobytes()
+                # texture1 = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt='bgr') 
+                # texture1.blit_buffer(buf, colorfmt='bgr', bufferfmt='ubyte')
+                # App.get_running_app().root.get_screen('start_screen_name').ids["image_textureID"].texture = texture1
+            else:
+                print(f"no cv2 capture at index {device_index}", flush=True)
+        
         def on_request_close(self, *args):
             self.stream.release()
             pass
 
         def cv_func(self, *args):
-            # pass
             ret, frame = self.stream.read(0)
             if ret:
                 buf1 = cv2.flip(frame, 0)
@@ -83,7 +151,7 @@ FCVA_screen_manager:
                 texture1.blit_buffer(buf, colorfmt='bgr', bufferfmt='ubyte')
                 App.get_running_app().root.get_screen('start_screen_name').ids["image_textureID"].texture = texture1
             else:
-                print("no capture at 0")
+                print("no cv2 capture at index 0")
             
 
     class FCVA_screen_manager(ScreenManager):
@@ -92,6 +160,7 @@ FCVA_screen_manager:
     class StartScreen(Screen):
         pass
 
+    # https://realpython.com/primer-on-python-decorators/
     # # https://stackoverflow.com/questions/5929107/decorators-with-parameters
     # def CV_function(texture_ref = "None", format: Optional[texture_format] = "RGB"):
     #     # if texture_ref == "None":
@@ -127,4 +196,3 @@ FCVA_screen_manager:
 
     #usage, just decorate their CV_function like so: @CV_function
     FastCVApp().run()
-    # testfunc()
