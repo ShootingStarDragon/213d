@@ -2,7 +2,14 @@
 import cv2
 import numpy as np
 
-# def cv_async(stream, shared_dict, device_index, frame_int):
+def cv_haar_cascade_async(stream, shared_dict, device_index, frame_int, face_cascade_var):
+    '''
+    reference: https://stackoverflow.com/questions/70805922/why-does-the-haarcascades-does-not-work-on-opencv
+    '''
+    try:
+        
+    except Exception as e:
+        print("exception as e cv_async", e, flush=True )
 
 def cv_sepia_async(*args):
     '''
@@ -159,7 +166,8 @@ FCVA_screen_manager: #remember to return a root widget
 
         def blit_from_shared_memory(self, *args):
             ret, frame = self.stream.read(0)
-            self.what = FCVApool.apply_async(cv_sepia_async, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
+            self.what = FCVApool.apply_async(cv_async, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
+            #THIS WORKS: self.what = FCVApool.apply_async(cv_sepia_async, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
             #THIS WORKS: self.what = FCVApool.apply_async(cv_async, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
             #problem is I don't think you can pickle the stream for multiprocessing (it's a tuple, idk if you can send tuples in a tuple), so send the frame instead
             # https://stackoverflow.com/questions/17872056/how-to-check-if-an-object-is-pickleable
