@@ -2,12 +2,27 @@
 import cv2
 import numpy as np
 
-def cv_haar_cascade_async(stream, shared_dict, device_index, frame_int, face_cascade_var):
+face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades+'haarcascade_frontalface_default.xml')
+
+def cv_haar_cascade_async(*args):
     '''
     reference: https://stackoverflow.com/questions/70805922/why-does-the-haarcascades-does-not-work-on-opencv
     '''
     try:
-        
+        ret_var = args[0]
+        frame_var =  args[1]
+        shared_dict_var = args[2]
+        frame_int = args[3]
+
+        gray = cv2.cvtColor(frame_var,cv2.COLOR_BGR2GRAY)
+        faces = face_cascade.detectMultiScale(gray,scaleFactor=1.1,minNeighbors=5,minSize=(30, 30))
+
+        for (x, y, w, h) in faces:
+            cv2.rectangle(frame_var, (x, y), (x+w, y+h), (0, 255, 0), 2)
+        buf1 = cv2.flip(frame_var, 0)
+        buf1 = cv2.flip(buf1, 1)
+        shared_dict_var[frame_int] = buf1
+
     except Exception as e:
         print("exception as e cv_async", e, flush=True )
 
@@ -166,7 +181,7 @@ FCVA_screen_manager: #remember to return a root widget
 
         def blit_from_shared_memory(self, *args):
             ret, frame = self.stream.read(0)
-            self.what = FCVApool.apply_async(cv_async, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
+            self.what = FCVApool.apply_async(cv_haar_cascade_async, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
             #THIS WORKS: self.what = FCVApool.apply_async(cv_sepia_async, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
             #THIS WORKS: self.what = FCVApool.apply_async(cv_async, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
             #problem is I don't think you can pickle the stream for multiprocessing (it's a tuple, idk if you can send tuples in a tuple), so send the frame instead
