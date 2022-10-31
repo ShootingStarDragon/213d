@@ -1,12 +1,44 @@
-import cv2
 #function has to be outside the if __name__ == '__main__' guard so subprocesses have access to it
+import cv2
+import numpy as np
+
 # def cv_async(stream, shared_dict, device_index, frame_int):
-def cv_async(*args):
-    ret_var = args[0]
-    frame_var =  args[1]
-    shared_dict_var = args[2]
-    frame_int = args[3]
+
+def cv_sepia_async(*args):
+    '''
+    reference: https://medium.com/dataseries/designing-image-filters-using-opencv-like-abode-photoshop-express-part-2-4479f99fb35
+    '''
     try:
+        ret_var = args[0]
+        frame_var =  args[1]
+        shared_dict_var = args[2]
+        frame_int = args[3]
+        if ret_var:
+            img = np.array(frame_var, dtype=np.float64) # converting to float to prevent loss
+            img = cv2.transform(img, np.matrix([[0.272, 0.534, 0.131],
+                                                [0.349, 0.686, 0.168],
+                                                [0.393, 0.769, 0.189]])) # multipying image with special sepia matrix
+            img[np.where(img > 255)] = 255 # normalizing values greater than 255 to 255
+            img = np.array(img, dtype=np.uint8) # converting back to int
+            buf1 = cv2.flip(img, 0)
+            buf1 = cv2.flip(buf1, 1)
+            shared_dict_var[frame_int] = buf1
+    except Exception as e:
+        print("exception as e cv_async", e, flush=True )
+
+    
+    
+    
+
+def cv_backsub_async(*args):
+    backSub = cv.createBackgroundSubtractorMOG2()
+
+def cv_async(*args):
+    try:
+        ret_var = args[0]
+        frame_var =  args[1]
+        shared_dict_var = args[2]
+        frame_int = args[3]
         # print("this work?", ret_var, type(frame_var), flush = True)
         if ret_var:
             # print("this work?2", ret_var, type(frame_var), flush = True)
@@ -127,7 +159,8 @@ FCVA_screen_manager: #remember to return a root widget
 
         def blit_from_shared_memory(self, *args):
             ret, frame = self.stream.read(0)
-            self.what = FCVApool.apply_async(cv_async, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
+            self.what = FCVApool.apply_async(cv_sepia_async, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
+            #THIS WORKS: self.what = FCVApool.apply_async(cv_async, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
             #problem is I don't think you can pickle the stream for multiprocessing (it's a tuple, idk if you can send tuples in a tuple), so send the frame instead
             # https://stackoverflow.com/questions/17872056/how-to-check-if-an-object-is-pickleable
             # import dill
