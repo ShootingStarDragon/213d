@@ -12,6 +12,8 @@ Kivy = "^2.1.0"
 opencv-python = "^4.6.0.66"
 pydantic = "^1.10.2"
 
+[tool.poetry.dev-dependencies]
+dill = "^0.3.6"
 
 [build-system]
 requires = ["poetry-core"]
