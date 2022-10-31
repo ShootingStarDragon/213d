@@ -1,9 +1,38 @@
+import cv2
 #function has to be outside the if __name__ == '__main__' guard so subprocesses have access to it
-def testasync(*args):
+# def cv_async(stream, shared_dict, device_index, frame_int):
+def cv_async(*args):
+    ret_var = args[0]
+    frame_var =  args[1]
+    shared_dict_var = args[2]
+    frame_int = args[3]
     try:
-        print("wtf man", args, flush=True)
+        # print("this work?", ret_var, type(frame_var), flush = True)
+        if ret_var:
+            # print("this work?2", ret_var, type(frame_var), flush = True)
+            buf1 = cv2.flip(frame_var, 0)
+            buf1 = cv2.flip(buf1, 1)
+            shared_dict_var[frame_int] = buf1
     except Exception as e:
-        print("exception as e testasync", e, flush=True )
+        print("exception as e cv_async", e, flush=True )
+def cv_asyncded(*args):
+    try:
+        ret, frame = stream.read(0)
+        print("so is this running?", ret, flush=True)
+        if ret:
+            #here just put the frame to the shared dictionary
+            shared_dict[frame_int] = frame.tobytes()
+            # buf1 = cv2.flip(frame, 0)
+            # buf1 = cv2.flip(buf1, 1)
+            # buf = buf1.tobytes()
+            # texture1 = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt='bgr') 
+            # texture1.blit_buffer(buf, colorfmt='bgr', bufferfmt='ubyte')
+            # App.get_running_app().root.get_screen('start_screen_name').ids["image_textureID"].texture = texture1
+        else:
+            print(f"no cv2 capture at index {device_index}", flush=True) 
+    except Exception as e:
+        print("exception as e cv_async", e, flush=True )
+        
 
 if __name__ == '__main__':
     import kivy
@@ -15,7 +44,6 @@ if __name__ == '__main__':
     from kivy.graphics.texture import Texture
     from kivy.clock import Clock
 
-    import cv2
 
     from typing import Optional
     from models.models import texture_format
@@ -80,6 +108,7 @@ FCVA_screen_manager: #remember to return a root widget
 
         def init_cv(self, *args):
             self.stream = cv2.VideoCapture(self.device_index)
+            print("what is stream type?", type(self.stream))
             self.fps = self.stream.get(cv2.CAP_PROP_FPS)
             print("ret, frame!", datetime.now().strftime("%H:%M:%S"))
             print("fps of stream?", self.fps)
@@ -97,45 +126,29 @@ FCVA_screen_manager: #remember to return a root widget
             '''
 
         def blit_from_shared_memory(self, *args):
-            self.wtf = FCVApool.apply_async(testasync, args=()) #this will work
-            print("async go through?", self.wtf)
-
-
-        def blit_from_shared_memoryWTF(self, *args):
-            self.FCVApool.apply_async(self.cv_func_async , args=(self.stream, self.shared_analysis_dict, self.device_index, self.frame_int), callback=self.cv_callback) 
+            ret, frame = self.stream.read(0)
+            self.what = FCVApool.apply_async(cv_async, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
+            #problem is I don't think you can pickle the stream for multiprocessing (it's a tuple, idk if you can send tuples in a tuple), so send the frame instead
+            # https://stackoverflow.com/questions/17872056/how-to-check-if-an-object-is-pickleable
+            # import dill
+            # print("dill pickles!", dill.pickles(self.stream)) #says false, so I can't send the stream, but I can still send the individual frame
             self.frame_int += 1
-            print("#check if there's something in shared memory:", len(self.shared_analysis_dict))
-            if len(self.shared_analysis_dict) > 0:
+            # print("is this at least mp?", self.what)
+            # print("#check if there's something in shared memory:", len(shared_analysis_dict))
+            if len(shared_analysis_dict) > 0:
                 #get the max key
-                max_key = max(self.shared_analysis_dict.keys())
-                print("maxkey?", max_key)
-                frame = self.shared_analysis_dict[max_key]
+                max_key = max(shared_analysis_dict.keys())
+                # print("maxkey?", max_key)
+                frame = shared_analysis_dict[max_key]
+                buf = frame.tobytes()
                 #blit to texture
                 texture1 = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt='bgr') 
                 texture1.blit_buffer(buf, colorfmt='bgr', bufferfmt='ubyte')
                 App.get_running_app().root.get_screen('start_screen_name').ids["image_textureID"].texture = texture1
                 #after blitting delete if dict has more than 10 frames:
-                if len(self.shared_analysis_dict) > 5:
-                    min_key = min(self.shared_analysis_dict.keys())
-                    self.shared_analysis_dict.pop[min_key]
-
-        def cv_callback(self):
-            pass
-        
-        def cv_func_async(self, stream, shared_dict, device_index, frame_int):
-            ret, frame = stream.read(0)
-            print("so is this running?", ret, flush=True)
-            if ret:
-                #here just put the frame to the shared dictionary
-                shared_dict[frame_int] = frame.tobytes()
-                # buf1 = cv2.flip(frame, 0)
-                # buf1 = cv2.flip(buf1, 1)
-                # buf = buf1.tobytes()
-                # texture1 = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt='bgr') 
-                # texture1.blit_buffer(buf, colorfmt='bgr', bufferfmt='ubyte')
-                # App.get_running_app().root.get_screen('start_screen_name').ids["image_textureID"].texture = texture1
-            else:
-                print(f"no cv2 capture at index {device_index}", flush=True)
+                if len(shared_analysis_dict) > 5:
+                    min_key = min(shared_analysis_dict.keys())
+                    del shared_analysis_dict[min_key]
         
         def on_request_close(self, *args):
             self.stream.release()
