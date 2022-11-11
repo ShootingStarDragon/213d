@@ -2,6 +2,7 @@
 import cv2
 import numpy as np
 import time
+import sys
 
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades+'haarcascade_frontalface_default.xml')
 
@@ -29,8 +30,9 @@ def cv_haar_cascade_async(*args):
         buf1 = cv2.flip(buf1, 1)
         shared_dict_var[frame_int_var] = buf1
         time_end = time.time()
-        print("timedelta!", time_og, time_end - time_og, 1/60, frame_int_var, flush= True)
-
+        # print("timedelta!", time_og, time_end - time_og, 1/60, frame_int_var, flush= True)
+        # https://stackoverflow.com/questions/58614788/how-do-i-get-the-multiprocessing-running/58615142#58615142
+        sys.stdout.flush()
     except Exception as e:
         print("exception as e cv_async", e, flush=True )
 
@@ -191,9 +193,9 @@ FCVA_screen_manager: #remember to return a root widget
             self.readtime = time.time()
             ret, frame = self.stream.read(0)
             self.readtime2 = time.time() - self.readtime
-            print("read timer", self.readtime2)
+            # print("read timer", self.readtime2)
             self.what = FCVApool.apply_async(cv_haar_cascade_async, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
-            print("async pool timer", time.time() - self.readtime2)
+            # print("async pool timer", time.time() - self.readtime2)
             self.readtime3 =time.time()
             #THIS WORKS: self.what = FCVApool.apply_async(cv_sepia_async, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
             #THIS WORKS: self.what = FCVApool.apply_async(cv_async, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
@@ -218,7 +220,7 @@ FCVA_screen_manager: #remember to return a root widget
                 if len(shared_analysis_dict) > 5:
                     min_key = min(shared_analysis_dict.keys())
                     del shared_analysis_dict[min_key]
-            print("blit timer", time.time() - self.readtime3)
+            # print("blit timer", time.time() - self.readtime3)
         
         def on_request_close(self, *args):
             self.stream.release()
