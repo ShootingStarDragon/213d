@@ -1,4 +1,4 @@
-#function has to be outside the if __name__ == '__main__' guard so subprocesses have access to it
+#things for subprocess to work has to be outside the if __name__ == '__main__' guard so subprocesses have access to it
 import cv2
 import numpy as np
 import time
@@ -11,30 +11,29 @@ def cv_haar_cascade_async(*args):
     reference: https://stackoverflow.com/questions/70805922/why-does-the-haarcascades-does-not-work-on-opencv
     '''
     try:
-        time_og = time.time()
         ret_var = args[0]
         frame_var =  args[1]
         shared_dict_var = args[2]
         frame_int_var = args[3]
 
-        #they resized it to be less laggy:
-        w_size = (700,500)
-        frame_var = cv2.resize(frame_var,w_size)
+        if ret_var:
+            #they resized it to be less laggy:
+            w_size = (700,500)
+            frame_var = cv2.resize(frame_var,w_size)
 
-        gray = cv2.cvtColor(frame_var,cv2.COLOR_BGR2GRAY)
-        faces = face_cascade.detectMultiScale(gray,scaleFactor=1.1,minNeighbors=5,minSize=(30, 30))
+            gray = cv2.cvtColor(frame_var,cv2.COLOR_BGR2GRAY)
+            faces = face_cascade.detectMultiScale(gray,scaleFactor=1.1,minNeighbors=5,minSize=(30, 30))
 
-        for (x, y, w, h) in faces:
-            cv2.rectangle(frame_var, (x, y), (x+w, y+h), (0, 255, 0), 2)
-        buf1 = cv2.flip(frame_var, 0)
-        buf1 = cv2.flip(buf1, 1)
-        shared_dict_var[frame_int_var] = buf1
-        time_end = time.time()
-        # print("timedelta!", time_og, time_end - time_og, 1/60, frame_int_var, flush= True)
-        # https://stackoverflow.com/questions/58614788/how-do-i-get-the-multiprocessing-running/58615142#58615142
+            for (x, y, w, h) in faces:
+                cv2.rectangle(frame_var, (x, y), (x+w, y+h), (0, 255, 0), 2)
+            buf1 = cv2.flip(frame_var, 0)
+            buf1 = cv2.flip(buf1, 1)
+            shared_dict_var[frame_int_var] = buf1
+            # print("timedelta!", time_og, time_end - time_og, 1/60, frame_int_var, flush= True)
+            # https://stackoverflow.com/questions/58614788/how-do-i-get-the-multiprocessing-running/58615142#58615142
         sys.stdout.flush()
     except Exception as e:
-        print("exception as e cv_async", e, flush=True )
+        print("exception as e cv_async", e, flush=True ) #same as sys.stdout.flush()
 
 def cv_sepia_async(*args):
     '''
@@ -58,12 +57,28 @@ def cv_sepia_async(*args):
     except Exception as e:
         print("exception as e cv_async", e, flush=True )
 
-    
-    
-    
+backSub = cv2.createBackgroundSubtractorMOG2()
 
-def cv_backsub_async(*args):
-    backSub = cv.createBackgroundSubtractorMOG2()
+def cv_backSub_async(*args):
+    '''
+    reference: https://docs.opencv.org/3.4/d1/dc5/tutorial_background_subtraction.html
+    '''
+    try:
+        ret_var = args[0]
+        frame_var =  args[1]
+        shared_dict_var = args[2]
+        frame_int_var = args[3]
+        if ret_var:
+            fgMask = backSub.apply(frame_var)
+            fgMask = cv2.cvtColor(fgMask,cv2.COLOR_GRAY2RGB)
+            buf1 = cv2.flip(fgMask, 0)
+            buf1 = cv2.flip(buf1, 1)
+            shared_dict_var[frame_int_var] = buf1
+            # print("timedelta!", time_og, time_end - time_og, 1/60, frame_int_var, flush= True)
+            # https://stackoverflow.com/questions/58614788/how-do-i-get-the-multiprocessing-running/58615142#58615142
+        sys.stdout.flush()
+    except Exception as e:
+        print("exception as e cv_async", e, flush=True ) #same as sys.stdout.flush()
 
 def cv_async(*args):
     try:
@@ -79,6 +94,7 @@ def cv_async(*args):
             shared_dict_var[frame_int] = buf1
     except Exception as e:
         print("exception as e cv_async", e, flush=True )
+
 def cv_asyncded(*args):
     try:
         ret, frame = stream.read(0)
@@ -97,7 +113,6 @@ def cv_asyncded(*args):
     except Exception as e:
         print("exception as e cv_async", e, flush=True )
         
-
 if __name__ == '__main__':
     import kivy
     kivy.require('2.1.0') # replace with your current kivy version !
@@ -107,7 +122,6 @@ if __name__ == '__main__':
     from kivy.uix.screenmanager import ScreenManager, Screen
     from kivy.graphics.texture import Texture
     from kivy.clock import Clock
-
 
     from typing import Optional
     from models.models import texture_format
@@ -190,13 +204,9 @@ FCVA_screen_manager: #remember to return a root widget
             '''
 
         def blit_from_shared_memory(self, *args):
-            self.readtime = time.time()
             ret, frame = self.stream.read(0)
-            self.readtime2 = time.time() - self.readtime
-            # print("read timer", self.readtime2)
-            self.what = FCVApool.apply_async(cv_haar_cascade_async, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
-            # print("async pool timer", time.time() - self.readtime2)
-            self.readtime3 =time.time()
+            self.what = FCVApool.apply_async(cv_backSub_async, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
+            #THIS WORKS: self.what = FCVApool.apply_async(cv_haar_cascade_async, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
             #THIS WORKS: self.what = FCVApool.apply_async(cv_sepia_async, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
             #THIS WORKS: self.what = FCVApool.apply_async(cv_async, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
             #problem is I don't think you can pickle the stream for multiprocessing (it's a tuple, idk if you can send tuples in a tuple), so send the frame instead
@@ -220,7 +230,6 @@ FCVA_screen_manager: #remember to return a root widget
                 if len(shared_analysis_dict) > 5:
                     min_key = min(shared_analysis_dict.keys())
                     del shared_analysis_dict[min_key]
-            # print("blit timer", time.time() - self.readtime3)
         
         def on_request_close(self, *args):
             self.stream.release()
