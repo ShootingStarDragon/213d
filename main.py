@@ -31,7 +31,7 @@ def cv_haar_cascade_async(*args):
             shared_dict_var[frame_int_var] = buf1
             # print("timedelta!", time_og, time_end - time_og, 1/60, frame_int_var, flush= True)
             # https://stackoverflow.com/questions/58614788/how-do-i-get-the-multiprocessing-running/58615142#58615142
-        sys.stdout.flush()
+        sys.stdout.flush() #you need this line to get python to have no buffer else things get laggy, like for the haarcascades example
     except Exception as e:
         print("exception as e cv_async", e, flush=True ) #same as sys.stdout.flush()
 
@@ -74,9 +74,44 @@ def cv_backSub_async(*args):
             buf1 = cv2.flip(fgMask, 0)
             buf1 = cv2.flip(buf1, 1)
             shared_dict_var[frame_int_var] = buf1
-            # print("timedelta!", time_og, time_end - time_og, 1/60, frame_int_var, flush= True)
-            # https://stackoverflow.com/questions/58614788/how-do-i-get-the-multiprocessing-running/58615142#58615142
-        sys.stdout.flush()
+        sys.stdout.flush() #you need this line to get python to have no buffer else things get laggy, like for the haarcascades example
+    except Exception as e:
+        print("exception as e cv_async", e, flush=True ) #same as sys.stdout.flush()
+
+def cv_canny_async(*args):
+    '''
+    reference: https://docs.opencv.org/4.x/da/d5c/tutorial_canny_detector.html
+    '''
+    try:
+        ret_var = args[0]
+        frame_var =  args[1]
+        shared_dict_var = args[2]
+        frame_int_var = args[3]
+        if ret_var:
+            ratio = 3
+            kernel_size = 3
+            low_threshold = 50
+            img_blur = cv2.blur(cv2.cvtColor(frame_var,cv2.COLOR_RGB2GRAY), (3,3))
+            detected_edges = cv2.Canny(img_blur, low_threshold, low_threshold*ratio, kernel_size)
+            mask = detected_edges != 0
+            dst = frame_var * (mask[:,:,None].astype(frame_var.dtype))
+            # dst = cv2.cvtColor(dst,cv2.COLOR_GRAY2RGB)
+            buf1 = cv2.flip(dst, 0)
+            buf1 = cv2.flip(buf1, 1)
+            shared_dict_var[frame_int_var] = buf1
+
+# ratio = 3
+# kernel_size = 3
+# def CannyThreshold(val):
+#     low_threshold = val
+#     img_blur = cv.blur(src_gray, (3,3))
+#     detected_edges = cv.Canny(img_blur, low_threshold, low_threshold*ratio, kernel_size)
+#     mask = detected_edges != 0
+#     dst = src * (mask[:,:,None].astype(src.dtype))
+#     cv.imshow(window_name, dst)
+
+
+        sys.stdout.flush() #you need this line to get python to have no buffer else things get laggy, like for the haarcascades example
     except Exception as e:
         print("exception as e cv_async", e, flush=True ) #same as sys.stdout.flush()
 
@@ -205,7 +240,8 @@ FCVA_screen_manager: #remember to return a root widget
 
         def blit_from_shared_memory(self, *args):
             ret, frame = self.stream.read(0)
-            self.what = FCVApool.apply_async(cv_backSub_async, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
+            self.what = FCVApool.apply_async(cv_canny_async, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
+            #THIS WORKS: self.what = FCVApool.apply_async(cv_backSub_async, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
             #THIS WORKS: self.what = FCVApool.apply_async(cv_haar_cascade_async, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
             #THIS WORKS: self.what = FCVApool.apply_async(cv_sepia_async, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
             #THIS WORKS: self.what = FCVApool.apply_async(cv_async, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
