@@ -12,9 +12,10 @@ Kivy = "^2.1.0"
 opencv-python = "^4.6.0.66"
 pydantic = "^1.10.2"
 numpy = "^1.23.4"
+dill = "^0.3.6"
 
 [tool.poetry.dev-dependencies]
-dill = "^0.3.6"
+black = "^22.10.0"
 
 [build-system]
 requires = ["poetry-core"]
