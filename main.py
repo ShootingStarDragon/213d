@@ -258,8 +258,10 @@ FCVA_screen_manager: #remember to return a root widget
                 # print("maxkey?", max_key)
                 frame = shared_analysis_dict[max_key]
                 buf = frame.tobytes()
+                #texture documentation: https://github.com/kivy/kivy/blob/master/kivy/graphics/texture.pyx
                 #blit to texture
                 texture1 = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt='bgr') 
+                #blit buffer example: https://stackoverflow.com/questions/61122285/kivy-camera-application-with-opencv-in-android-shows-black-screen
                 texture1.blit_buffer(buf, colorfmt='bgr', bufferfmt='ubyte')
                 App.get_running_app().root.get_screen('start_screen_name').ids["image_textureID"].texture = texture1
                 #after blitting delete if dict has more than 10 frames:
@@ -289,6 +291,43 @@ FCVA_screen_manager: #remember to return a root widget
 
     class StartScreen(Screen):
         pass
+
+    #decorator reference:
+    # https://realpython.com/primer-on-python-decorators/
+    # https://stackoverflow.com/questions/5929107/decorators-with-parameters
+    # def my_decorator(func):
+    #     def wrapper():
+    #         print("Something is happening before the function is called.")
+    #         func()
+    #         print("Something is happening after the function is called.")
+    #     return wrapper
+    
+    # def CV_function(argument):
+    #     def decorator(function):
+    #         def wrapper(*args, **kwargs):
+    #             funny_stuff()
+    #             something_with_argument(argument)
+    #             result = function(*args, **kwargs)
+    #             more_funny_stuff()
+    #             return result
+    #         return wrapper
+    #     return decorator
+
+    def CV_function(argument):
+        def decorator(function):
+            def wrapper(*args, **kwargs):
+                something_with_argument(argument)
+                result = function(*args, **kwargs)
+                # return result
+                
+                
+                if 'FCVApool' not in globals():
+                    # myVar exists.
+                    print("cannot find FCVApool")
+                else:
+                    FCVApool.apply_async(function, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
+            return wrapper
+        return decorator
 
     # https://realpython.com/primer-on-python-decorators/
     # # https://stackoverflow.com/questions/5929107/decorators-with-parameters
