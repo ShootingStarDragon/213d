@@ -147,7 +147,147 @@ def cv_asyncded(*args):
             print(f"no cv2 capture at index {device_index}", flush=True) 
     except Exception as e:
         print("exception as e cv_async", e, flush=True )
-        
+
+def cv_func(*args):
+    '''
+    reference: https://stackoverflow.com/questions/72151030/when-is-a-class-decorator-called
+        when are decorators run really? -> right after the class is built!
+    reference (A): https://stackoverflow.com/a/36231802/16355112
+    caveats: 
+        At the time when _change_x is invoked, the class is still under construction, so there can't be any instances of the class. Because of this, your self argument is misleading. When it gets called, self is actually the function print_x.
+        TL:DR; INSTANTIATE THE CLASS before doing anything
+    reference: https://realpython.com/primer-on-python-decorators/#functions
+        good primer on decorators
+    reference: https://stackoverflow.com/questions/5929107/decorators-with-parameters
+        decorator with arguments 
+    '''
+    '''
+    THIS IS NOT CORReCT:
+    apply_async args are: args=(ret, frame, shared_analysis_dict, self.frame_int)
+    I'm only asking the user to take ret, frame
+    also this function needs to be guarded by a try except block so multiprocessing errors show
+    and the sys flush call so the subprocess runs in unbuffered mode
+    '''
+    # #if class is instantiated, then self is instance of class as per reference (A)
+    # #time to replace with the function of the instantiated class!
+    # self.cv_func = args[0] 
+    # #return the changed class
+    # return self
+
+    print("args??", args)
+    supplied_cv_func = args[0]
+
+    def multiproc_cv_func(*mp_args):
+        print("mp args?",mp_args, flush = True)
+        try: 
+            # if len(mp_args) > 4:
+                # print("you are supplying more than the proper args of ret, frame, shared_analysis_dict, self.frame_int", args, flush = True)
+            retVAR = mp_args[0]
+            frameVAR = mp_args[1]
+            shared_analysis_dictVAR = mp_args[2]
+            frame_intVAR = mp_args[3]
+            
+            modified_frame = supplied_cv_func(retVAR, frameVAR)
+            buf1 = cv2.flip(modified_frame, 0)
+            buf1 = cv2.flip(buf1, 1)
+            shared_analysis_dictVAR[frame_intVAR] = buf1
+            sys.stdout.flush() #you need this line to get python to have no buffer else things get laggy, like for the haarcascades example #reference: # https://stackoverflow.com/questions/58614788/how-do-i-get-the-multiprocessing-running/58615142#58615142
+        except Exception as e:
+            import traceback
+            print(traceback.format_exc())
+            print("in multiproc_cv_func", e, flush=True )
+    return multiproc_cv_func
+
+def cv_funcCODED(*args):
+    print("args??", args)
+
+    def multiproc_cv_func(*mp_args):
+        print("mp args?",mp_args, flush = True)
+        try: 
+            # if len(mp_args) > 4:
+                # print("you are supplying more than the proper args of ret, frame, shared_analysis_dict, self.frame_int", args, flush = True)
+            retVAR = mp_args[0]
+            frameVAR = mp_args[1]
+            shared_analysis_dictVAR = mp_args[2]
+            frame_intVAR = mp_args[3]
+            
+            # modified_frame = cv_func_test(retVAR, frameVAR)
+            buf1 = cv2.flip(frameVAR, 0)
+            buf1 = cv2.flip(buf1, 1)
+            shared_analysis_dictVAR[frame_intVAR] = buf1
+            sys.stdout.flush() #you need this line to get python to have no buffer else things get laggy, like for the haarcascades example #reference: # https://stackoverflow.com/questions/58614788/how-do-i-get-the-multiprocessing-running/58615142#58615142
+        except Exception as e:
+            print("in multiproc_cv_func", e, flush=True )
+    return multiproc_cv_func
+
+
+def cv_func_test(retVAR, frameVAR):
+    '''
+    take a FRAME:
+    return a frame:
+    the source should be handled outside of this since it's opencv read is pickleable so is a HUGE PAIN
+    '''
+    if retVAR:
+        return frameVAR
+
+def cv_func_test2(*args): #this works
+    '''
+    take a FRAME:
+    return a frame:
+    the source should be handled outside of this since it's opencv read is pickleable so is a HUGE PAIN
+    '''
+    try: 
+        retVAR = args[0] 
+        frameVAR = args[1]
+        shared_analysis_dictVAR = args[2]
+        frame_intVAR = args[3]
+        if retVAR:
+            # modified_frame = cv_func_test(retVAR, frameVAR)
+            buf1 = cv2.flip(frameVAR, 0)
+            buf1 = cv2.flip(buf1, 1)
+            shared_analysis_dictVAR[frame_intVAR] = buf1
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        print("exception as e cv_async", e, flush=True ) #same as sys.stdout.flush()
+
+def decorator_test(*argsS):
+    def cv_func_test2(*args): #this works
+        '''
+        take a FRAME:
+        return a frame:
+        the source should be handled outside of this since it's opencv read is pickleable so is a HUGE PAIN
+        '''
+        try: 
+            retVAR = args[0] 
+            frameVAR = args[1]
+            shared_analysis_dictVAR = args[2]
+            frame_intVAR = args[3]
+            if retVAR:
+                # modified_frame = cv_func_test(retVAR, frameVAR)
+                buf1 = cv2.flip(frameVAR, 0)
+                buf1 = cv2.flip(buf1, 1)
+                shared_analysis_dictVAR[frame_intVAR] = buf1
+        except Exception as e:
+            import traceback
+            print(traceback.format_exc())
+            print("exception as e cv_async", e, flush=True ) #same as sys.stdout.flush()
+    return cv_func_test2
+
+
+cv_func_test_VAR2 = cv_funcCODED(cv_func_test)
+cv_func_test_VAR = cv_func(cv_func_test)
+# TESTAGAIN = decorator_test()
+#reference: https://stackoverflow.com/questions/9336646/python-decorator-with-multiprocessing-fails
+def TESTAGAIN(*args, **kwargs):
+    try:
+        return decorator_test(cv_func_test)(*args, **kwargs)
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        print("died", flush = True)
+
+
 if __name__ == '__main__':
     import kivy
     kivy.require('2.1.0') # replace with your current kivy version !
@@ -219,6 +359,79 @@ FCVA_screen_manager: #remember to return a root widget
             print("schedule interval 0", datetime.now().strftime("%H:%M:%S"))
             Clock.schedule_once(self.init_cv, 0)
 
+        def cv_func(self, *args):
+            '''
+            reference: https://stackoverflow.com/questions/72151030/when-is-a-class-decorator-called
+                when are decorators run really? -> right after the class is built!
+            reference (A): https://stackoverflow.com/a/36231802/16355112
+            caveats: 
+                At the time when _change_x is invoked, the class is still under construction, so there can't be any instances of the class. Because of this, your self argument is misleading. When it gets called, self is actually the function print_x.
+                TL:DR; INSTANTIATE THE CLASS before doing anything
+            reference: https://realpython.com/primer-on-python-decorators/#functions
+                good primer on decorators
+            reference: https://stackoverflow.com/questions/5929107/decorators-with-parameters
+                decorator with arguments 
+            '''
+            '''
+            THIS IS NOT CORReCT:
+            apply_async args are: args=(ret, frame, shared_analysis_dict, self.frame_int)
+            I'm only asking the user to take ret, frame
+            also this function needs to be guarded by a try except block so multiprocessing errors show
+            and the sys flush call so the subprocess runs in unbuffered mode
+            '''
+            # #if class is instantiated, then self is instance of class as per reference (A)
+            # #time to replace with the function of the instantiated class!
+            # self.cv_func = args[0] 
+            # #return the changed class
+            # return self
+
+            supplied_cv_func = args[0]
+
+            def multiproc_cv_func(*mp_args):
+                print("it worked!", flush = True)
+                try: 
+                    # if len(mp_args) > 4:
+                    #     print("you are supplying more than the proper args of ret, frame, shared_analysis_dict, self.frame_int", args, flush = True)
+                    retVAR = mp_args[0]
+                    frameVAR = mp_args[1]
+                    shared_analysis_dictVAR = mp_args[2]
+                    frame_intVAR = mp_args[3]
+                    
+                    modified_frame = supplied_cv_func(retVAR, frameVAR)
+                    buf1 = cv2.flip(modified_frame, 0)
+                    buf1 = cv2.flip(buf1, 1)
+                    shared_analysis_dictVAR[frame_intVAR] = buf1
+                    sys.stdout.flush() #you need this line to get python to have no buffer else things get laggy, like for the haarcascades example #reference: # https://stackoverflow.com/questions/58614788/how-do-i-get-the-multiprocessing-running/58615142#58615142
+                except Exception as e:
+                    print("in multiproc_cv_func", e, flush=True )
+            self.cv_func = multiproc_cv_func
+            return self
+
+            # try:
+            #     ret_var = args[0]
+            #     frame_var =  args[1]
+            #     shared_dict_var = args[2]
+            #     frame_int_var = args[3]
+
+            #     if ret_var:
+            #         #they resized it to be less laggy:
+            #         w_size = (700,500)
+            #         frame_var = cv2.resize(frame_var,w_size)
+
+            #         gray = cv2.cvtColor(frame_var,cv2.COLOR_BGR2GRAY)
+            #         faces = face_cascade.detectMultiScale(gray,scaleFactor=1.1,minNeighbors=5,minSize=(30, 30))
+
+            #         for (x, y, w, h) in faces:
+            #             cv2.rectangle(frame_var, (x, y), (x+w, y+h), (0, 255, 0), 2)
+            #         buf1 = cv2.flip(frame_var, 0)
+            #         buf1 = cv2.flip(buf1, 1)
+            #         shared_dict_var[frame_int_var] = buf1
+            #         # print("timedelta!", time_og, time_end - time_og, 1/60, frame_int_var, flush= True)
+            #         # https://stackoverflow.com/questions/58614788/how-do-i-get-the-multiprocessing-running/58615142#58615142
+            #     sys.stdout.flush() #you need this line to get python to have no buffer else things get laggy, like for the haarcascades example
+            # except Exception as e:
+            #     print("exception as e cv_async", e, flush=True )
+
         def init_cv(self, *args):
             self.stream = cv2.VideoCapture(self.device_index)
             print("what is stream type?", type(self.stream))
@@ -240,7 +453,14 @@ FCVA_screen_manager: #remember to return a root widget
 
         def blit_from_shared_memory(self, *args):
             ret, frame = self.stream.read(0)
-            self.what = FCVApool.apply_async(cv_canny_async, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
+            # print("#now testing the decorator") #so this is running
+            #FAILS: self.what = FCVApool.apply_async(cv_func_test_VAR, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
+            self.what = FCVApool.apply_async(TESTAGAIN, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
+            #soemthing happened here: self.what = FCVApool.apply_async(cv_funcCODED, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
+            # doesn't work because subprocess has no access to instantiated class
+            # self.what = FCVApool.apply_async(self.cv_func, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
+            # self.cv_func(ret, frame, shared_analysis_dict, self.frame_int)
+            # THIS WORKS: self.what = FCVApool.apply_async(cv_canny_async, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
             #THIS WORKS: self.what = FCVApool.apply_async(cv_backSub_async, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
             #THIS WORKS: self.what = FCVApool.apply_async(cv_haar_cascade_async, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
             #THIS WORKS: self.what = FCVApool.apply_async(cv_sepia_async, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
@@ -273,7 +493,7 @@ FCVA_screen_manager: #remember to return a root widget
             self.stream.release()
             pass
 
-        def cv_func(self, *args):
+        def cv_func_old(self, *args):
             ret, frame = self.stream.read(0)
             if ret:
                 buf1 = cv2.flip(frame, 0)
@@ -363,5 +583,22 @@ FCVA_screen_manager: #remember to return a root widget
     # def testfunc():
     #     pass
 
+
+
     #usage, just decorate their CV_function like so: @CV_function
-    FastCVApp().run()
+    app = FastCVApp()
+
+    # #here we define the cv function and decorate it with the instantiated app class
+    # @app.cv_func
+    # def cv_func_test(retVAR, frameVAR):
+    #     '''
+    #     take a FRAME:
+    #     return a frame:
+    #     the source should be handled outside of this since it's opencv read is pickleable so is a HUGE PAIN
+    #     '''
+    #     if retVAR:
+    #         return frameVAR
+    # app.cv_func = cv_func_test
+    app.run()
+
+
