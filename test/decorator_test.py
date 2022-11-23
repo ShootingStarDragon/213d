@@ -76,7 +76,6 @@ class classTEST():
         #with no class instantiated self is just a reference to the function supplied by decorator: ??? <function testGuy at 0x000001FAB360B520> ()
         # with class instantiated self is now the class and function supplied by decorator is the 1st arg in *args: ??? <__main__.classTEST object at 0x0000024ED1856350> <class '__main__.classTEST'> (<function testGuy at 0x0000024ED182B520>,)
 
-
         # print("FAIL!")
         # return self.cv_func()
         #what do I need? to get the function then set self.cv_func = that function
