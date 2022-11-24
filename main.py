@@ -99,18 +99,6 @@ def cv_canny_async(*args):
             buf1 = cv2.flip(dst, 0)
             buf1 = cv2.flip(buf1, 1)
             shared_dict_var[frame_int_var] = buf1
-
-# ratio = 3
-# kernel_size = 3
-# def CannyThreshold(val):
-#     low_threshold = val
-#     img_blur = cv.blur(src_gray, (3,3))
-#     detected_edges = cv.Canny(img_blur, low_threshold, low_threshold*ratio, kernel_size)
-#     mask = detected_edges != 0
-#     dst = src * (mask[:,:,None].astype(src.dtype))
-#     cv.imshow(window_name, dst)
-
-
         sys.stdout.flush() #you need this line to get python to have no buffer else things get laggy, like for the haarcascades example
     except Exception as e:
         print("exception as e cv_async", e, flush=True ) #same as sys.stdout.flush()
@@ -225,8 +213,18 @@ OK. So if I want these things to pickle, and if I want to use a callable class a
 I believe that is correct. Alternatively, you could avoid pickling it at all by creating a trivial non-decorated top-level function that just forwards to the decorated function.
 '''
 def TESTAGAIN(*args, **kwargs):
+    #usage: in blit_from_shared_memory
+    # self.what = FCVApool.apply_async(TESTAGAIN, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
     try:
         return decorator_test(cv_func_test)(*args, **kwargs)
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        print("died", flush = True)
+
+def parallelize_cv_func(*args, **kwargs):
+    try:
+        return decorator_test(args[0])(*args[1:], **kwargs)
     except Exception as e:
         import traceback
         print(traceback.format_exc())
@@ -255,7 +253,7 @@ def decorator_test(*argsS):
             print("exception as e cv_async", e, flush=True ) #same as sys.stdout.flush()
     return cv_func_test2
 
-@decorator_test
+# @decorator_test
 def cv_func_test(retVAR, frameVAR):
     '''
     take a FRAME:
@@ -463,9 +461,17 @@ FCVA_screen_manager: #remember to return a root widget
             # print("#now testing the decorator") #so this is running
             #FAILS: self.what = FCVApool.apply_async(cv_func_test_VAR, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
             #still fails probably because decorator I make does not make the return a top level func self.what = FCVApool.apply_async(cv_func_test, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
+            
+            # now for test_using_decorator
+            self.what = FCVApool.apply_async(parallelize_cv_func, args=(cv_func_test, ret, frame, shared_analysis_dict, self.frame_int)) 
+            
+            #verified TESTAGAIN works
+            # self.what = FCVApool.apply_async(TESTAGAIN, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
+            
             #worked on testagain as per: https://stackoverflow.com/questions/9336646/python-decorator-with-multiprocessing-fails
             # worked on testagain self.what = FCVApool.apply_async(TESTAGAIN, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
-            self.what = FCVApool.apply_async(TESTAGAIN, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
+            # self.what = FCVApool.apply_async(TESTAGAIN, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
+            
             #soemthing happened here: self.what = FCVApool.apply_async(cv_funcCODED, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
             # doesn't work because subprocess has no access to instantiated class
             # self.what = FCVApool.apply_async(self.cv_func, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
@@ -514,7 +520,6 @@ FCVA_screen_manager: #remember to return a root widget
                 App.get_running_app().root.get_screen('start_screen_name').ids["image_textureID"].texture = texture1
             else:
                 print("no cv2 capture at index 0")
-            
 
     class FCVA_screen_manager(ScreenManager):
         pass
@@ -522,7 +527,7 @@ FCVA_screen_manager: #remember to return a root widget
     class StartScreen(Screen):
         pass
 
-    #decorator reference:
+    # decorator reference:
     # https://realpython.com/primer-on-python-decorators/
     # https://stackoverflow.com/questions/5929107/decorators-with-parameters
     # def my_decorator(func):
