@@ -157,6 +157,60 @@ def cv_func_test(retVAR, frameVAR):
     if retVAR:
         return frameVAR
 
+import mediapipe as mp
+mp_drawing = mp.solutions.drawing_utils
+mp_holistic = mp.solutions.holistic
+mp_holistic.POSE_CONNECTIONS
+mp_drawing.DrawingSpec(color=(0,0,255), thickness=2, circle_radius=2)
+mp_drawing.draw_landmarks
+holistic = mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5)
+
+def cv_func_mp(retVAR, frameVAR):
+    if retVAR:
+        #PROBLEM:
+        '''
+        OPENCV IS BGR
+        MEDIAPIPE IS RGB
+        I BLIT BUFFER AS BGR BECAUSE THAT'S WHAT OPENCV GIVES ME (SO SHOULD BE AN OPTION TBH)
+        '''
+        # do mediapipe:
+        # Recolor Feed (on the actual frame data because mediapipe is RGB IIRC)
+        image = cv2.cvtColor(frameVAR, cv2.COLOR_BGR2RGB)
+        with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
+            # Make Detections (on the actual frame data)
+            results = holistic.process(image)
+            
+            # face_landmarks, pose_landmarks, left_hand_landmarks, right_hand_landmarks
+            
+            # Recolor image back to BGR for rendering
+            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+            #draw specifically on the zeroes array
+            '''
+            #remove hand and face detections to make it even faster
+            # 1. Draw face landmarks 
+            mp_drawing.draw_landmarks(frame, results.face_landmarks, mp_holistic.FACE_CONNECTIONS, 
+                                    mp_drawing.DrawingSpec(color=(80,110,10), thickness=1, circle_radius=1),
+                                    mp_drawing.DrawingSpec(color=(80,256,121), thickness=1, circle_radius=1)
+                                    )
+            
+            # 2. Right hand
+            mp_drawing.draw_landmarks(frame, results.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS, 
+                                    mp_drawing.DrawingSpec(color=(80,22,10), thickness=2, circle_radius=4),
+                                    mp_drawing.DrawingSpec(color=(80,44,121), thickness=2, circle_radius=2)
+                                    )
+
+            # 3. Left Hand
+            mp_drawing.draw_landmarks(frame, results.left_hand_landmarks, mp_holistic.HAND_CONNECTIONS, 
+                                    mp_drawing.DrawingSpec(color=(121,22,76), thickness=2, circle_radius=4),
+                                    mp_drawing.DrawingSpec(color=(121,44,250), thickness=2, circle_radius=2)
+                                    )'''
+            # 4. Pose Detections
+            mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_holistic.POSE_CONNECTIONS, 
+                                    mp_drawing.DrawingSpec(color=(245,117,66), thickness=2, circle_radius=4),
+                                    mp_drawing.DrawingSpec(color=(245,66,230), thickness=2, circle_radius=2)
+                                    )
+        return image
+
 if __name__ == '__main__':
     import kivy
     kivy.require('2.1.0') # replace with your current kivy version !
@@ -244,9 +298,11 @@ FCVA_screen_manager: #remember to return a root widget
             import dill
             # print("dill pickles!", dill.pickles(self.stream)) #says false, so I can't send the stream, but I can still send the individual frame
             dilling = dill.pickles(cv_basic_backsub)
-            print(dilling)
+            # print(dilling)
             if dilling:
-                self.what = FCVApool.apply_async(parallelize_cv_func, args=(cv_basic_backsub, ret, frame, shared_analysis_dict, self.frame_int)) 
+                #this works
+                # self.what = FCVApool.apply_async(parallelize_cv_func, args=(cv_basic_backsub, ret, frame, shared_analysis_dict, self.frame_int)) 
+                self.what = FCVApool.apply_async(parallelize_cv_func, args=(cv_func_mp, ret, frame, shared_analysis_dict, self.frame_int)) 
             else:
                 print(f"dill says function is unpickleable")
             self.frame_int += 1
