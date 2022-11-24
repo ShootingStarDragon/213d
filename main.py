@@ -219,8 +219,43 @@ def cv_funcCODED(*args):
         except Exception as e:
             print("in multiproc_cv_func", e, flush=True )
     return multiproc_cv_func
+'''
+#reference: https://stackoverflow.com/questions/9336646/python-decorator-with-multiprocessing-fails
+OK. So if I want these things to pickle, and if I want to use a callable class as my decorator, then I won't be able to use the @ decoration approach. I'll have to use it as if I were instantiating the class. Is that correct?
+I believe that is correct. Alternatively, you could avoid pickling it at all by creating a trivial non-decorated top-level function that just forwards to the decorated function.
+'''
+def TESTAGAIN(*args, **kwargs):
+    try:
+        return decorator_test(cv_func_test)(*args, **kwargs)
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        print("died", flush = True)
 
+def decorator_test(*argsS):
+    def cv_func_test2(*args): #this works
+        '''
+        take a FRAME:
+        return a frame:
+        the source should be handled outside of this since it's opencv read is pickleable so is a HUGE PAIN
+        '''
+        try: 
+            retVAR = args[0] 
+            frameVAR = args[1]
+            shared_analysis_dictVAR = args[2]
+            frame_intVAR = args[3]
+            if retVAR:
+                # modified_frame = cv_func_test(retVAR, frameVAR)
+                buf1 = cv2.flip(frameVAR, 0)
+                buf1 = cv2.flip(buf1, 1)
+                shared_analysis_dictVAR[frame_intVAR] = buf1
+        except Exception as e:
+            import traceback
+            print(traceback.format_exc())
+            print("exception as e cv_async", e, flush=True ) #same as sys.stdout.flush()
+    return cv_func_test2
 
+@decorator_test
 def cv_func_test(retVAR, frameVAR):
     '''
     take a FRAME:
@@ -251,41 +286,13 @@ def cv_func_test2(*args): #this works
         print(traceback.format_exc())
         print("exception as e cv_async", e, flush=True ) #same as sys.stdout.flush()
 
-def decorator_test(*argsS):
-    def cv_func_test2(*args): #this works
-        '''
-        take a FRAME:
-        return a frame:
-        the source should be handled outside of this since it's opencv read is pickleable so is a HUGE PAIN
-        '''
-        try: 
-            retVAR = args[0] 
-            frameVAR = args[1]
-            shared_analysis_dictVAR = args[2]
-            frame_intVAR = args[3]
-            if retVAR:
-                # modified_frame = cv_func_test(retVAR, frameVAR)
-                buf1 = cv2.flip(frameVAR, 0)
-                buf1 = cv2.flip(buf1, 1)
-                shared_analysis_dictVAR[frame_intVAR] = buf1
-        except Exception as e:
-            import traceback
-            print(traceback.format_exc())
-            print("exception as e cv_async", e, flush=True ) #same as sys.stdout.flush()
-    return cv_func_test2
+
 
 
 cv_func_test_VAR2 = cv_funcCODED(cv_func_test)
 cv_func_test_VAR = cv_func(cv_func_test)
 # TESTAGAIN = decorator_test()
-#reference: https://stackoverflow.com/questions/9336646/python-decorator-with-multiprocessing-fails
-def TESTAGAIN(*args, **kwargs):
-    try:
-        return decorator_test(cv_func_test)(*args, **kwargs)
-    except Exception as e:
-        import traceback
-        print(traceback.format_exc())
-        print("died", flush = True)
+
 
 
 if __name__ == '__main__':
@@ -455,6 +462,9 @@ FCVA_screen_manager: #remember to return a root widget
             ret, frame = self.stream.read(0)
             # print("#now testing the decorator") #so this is running
             #FAILS: self.what = FCVApool.apply_async(cv_func_test_VAR, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
+            #still fails probably because decorator I make does not make the return a top level func self.what = FCVApool.apply_async(cv_func_test, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
+            #worked on testagain as per: https://stackoverflow.com/questions/9336646/python-decorator-with-multiprocessing-fails
+            # worked on testagain self.what = FCVApool.apply_async(TESTAGAIN, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
             self.what = FCVApool.apply_async(TESTAGAIN, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
             #soemthing happened here: self.what = FCVApool.apply_async(cv_funcCODED, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
             # doesn't work because subprocess has no access to instantiated class
