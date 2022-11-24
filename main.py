@@ -123,7 +123,7 @@ def parallelize_cv_decorator(*argsS):
         '''
         take a FRAME:
         return a frame:
-        the source should be handled outside of this since it's opencv read is pickleable so is a HUGE PAIN
+        the source should be handled outside of this since opencv read is NOT pickleable so is a HUGE PAIN
         '''
         try: 
             retVAR = args[0] 
@@ -143,11 +143,10 @@ def parallelize_cv_decorator(*argsS):
 
 def cv_basic_backsub(retVAR, frameVAR):
     '''
-    take a frame and return the backsub frame:
+    take a frame and return the backsub frame (remember to convert to RGB, else you will silently error when blit buffering!)
     '''
     if retVAR:
         return cv2.cvtColor(backSub.apply(frameVAR),cv2.COLOR_GRAY2RGB)
-
 
 def cv_func_test(retVAR, frameVAR):
     '''
@@ -212,7 +211,7 @@ if __name__ == '__main__':
             text: "hello world!"
 
 FCVA_screen_manager: #remember to return a root widget
-                '''
+'''
 
         def build(self):
             #only build in the main process:
@@ -240,12 +239,16 @@ FCVA_screen_manager: #remember to return a root widget
 
         def blit_from_shared_memory(self, *args):
             ret, frame = self.stream.read(0)
-            # now for test_using_decorator
-            self.what = FCVApool.apply_async(parallelize_cv_func, args=(cv_basic_backsub, ret, frame, shared_analysis_dict, self.frame_int)) 
             #problem is I don't think you can pickle the stream for multiprocessing (it's a tuple, idk if you can send tuples in a tuple), so send the frame instead
             # https://stackoverflow.com/questions/17872056/how-to-check-if-an-object-is-pickleable
-            # import dill
+            import dill
             # print("dill pickles!", dill.pickles(self.stream)) #says false, so I can't send the stream, but I can still send the individual frame
+            dilling = dill.pickles(cv_basic_backsub)
+            print(dilling)
+            if dilling:
+                self.what = FCVApool.apply_async(parallelize_cv_func, args=(cv_basic_backsub, ret, frame, shared_analysis_dict, self.frame_int)) 
+            else:
+                print(f"dill says function is unpickleable")
             self.frame_int += 1
             # print("#check if there's something in shared memory:", len(shared_analysis_dict))
             if len(shared_analysis_dict) > 0:
