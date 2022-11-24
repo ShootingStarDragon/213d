@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 import time
 import sys
+import os
 
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades+'haarcascade_frontalface_default.xml')
 
@@ -135,6 +136,7 @@ def parallelize_cv_decorator(*argsS):
                 buf1 = cv2.flip(modified_frame, 0)
                 buf1 = cv2.flip(buf1, 1)
                 shared_analysis_dictVAR[frame_intVAR] = buf1
+            sys.stdout.flush() #you need this line to get python to have no buffer else things get laggy, like for the haarcascades example
         except Exception as e:
             import traceback
             print(traceback.format_exc())
@@ -175,11 +177,19 @@ def cv_func_mp(retVAR, frameVAR):
         '''
         # do mediapipe:
         # Recolor Feed (on the actual frame data because mediapipe is RGB IIRC)
+        time_og = time.time()
+        
         image = cv2.cvtColor(frameVAR, cv2.COLOR_BGR2RGB)
         with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
+            time_2 = time.time()
+            print("timedeltaA!", os.getpid(), time_2 - time_og, 1/60,  flush= True)
+            
             # Make Detections (on the actual frame data)
             results = holistic.process(image)
             
+            time_3 = time.time()
+            print("timedeltaB!", os.getpid(), time_3 - time_2, 1/60,  flush= True)
+
             # face_landmarks, pose_landmarks, left_hand_landmarks, right_hand_landmarks
             
             # Recolor image back to BGR for rendering
@@ -204,11 +214,19 @@ def cv_func_mp(retVAR, frameVAR):
                                     mp_drawing.DrawingSpec(color=(121,22,76), thickness=2, circle_radius=4),
                                     mp_drawing.DrawingSpec(color=(121,44,250), thickness=2, circle_radius=2)
                                     )'''
+            
+            time_4 = time.time()
+            print("timedeltaC!", os.getpid(), time_4 - time_3, 1/60,  flush= True)
+
             # 4. Pose Detections
             mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_holistic.POSE_CONNECTIONS, 
                                     mp_drawing.DrawingSpec(color=(245,117,66), thickness=2, circle_radius=4),
                                     mp_drawing.DrawingSpec(color=(245,66,230), thickness=2, circle_radius=2)
                                     )
+            time_5 = time.time()
+            print("timedeltaD!", os.getpid(), time_5 - time_4, 1/60,  flush= True)
+        time_end = time.time()
+        print("timedelta!", os.getpid(), time_end - time_og, 1/60,  flush= True)
         return image
 
 if __name__ == '__main__':
