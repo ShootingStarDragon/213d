@@ -162,10 +162,12 @@ def cv_func_test(retVAR, frameVAR):
 import mediapipe as mp
 mp_drawing = mp.solutions.drawing_utils
 mp_holistic = mp.solutions.holistic
-mp_holistic.POSE_CONNECTIONS
-mp_drawing.DrawingSpec(color=(0,0,255), thickness=2, circle_radius=2)
-mp_drawing.draw_landmarks
-holistic = mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5)
+# mp_holistic.POSE_CONNECTIONS
+# mp_drawing.DrawingSpec(color=(0,0,255), thickness=2, circle_radius=2)
+# mp_drawing.draw_landmarks
+# holistic = mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5)
+#try this: https://www.youtube.com/watch?v=We1uB79Ci-w
+#https://github.com/nicknochnack/Body-Language-Decoder/blob/main/Body%20Language%20Decoder%20Tutorial.ipynb
 
 def cv_func_mp(retVAR, frameVAR):
     if retVAR:
@@ -179,8 +181,10 @@ def cv_func_mp(retVAR, frameVAR):
         # Recolor Feed (on the actual frame data because mediapipe is RGB IIRC)
         time_og = time.time()
         
-        image = cv2.cvtColor(frameVAR, cv2.COLOR_BGR2RGB)
         with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic: #, model_complexity=0
+            image = cv2.cvtColor(frameVAR, cv2.COLOR_BGR2RGB)
+            image.flags.writeable = False
+            
             time_2 = time.time()
             print("timedeltaA!", os.getpid(), time_2 - time_og, 1/60,  flush= True)
             
@@ -192,6 +196,7 @@ def cv_func_mp(retVAR, frameVAR):
 
             # face_landmarks, pose_landmarks, left_hand_landmarks, right_hand_landmarks
             
+            image.flags.writeable = True
             # Recolor image back to BGR for rendering
             image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
             #draw specifically on the zeroes array
