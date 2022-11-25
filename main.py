@@ -180,7 +180,7 @@ def cv_func_mp(retVAR, frameVAR):
         time_og = time.time()
         
         image = cv2.cvtColor(frameVAR, cv2.COLOR_BGR2RGB)
-        with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
+        with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic: #, model_complexity=0
             time_2 = time.time()
             print("timedeltaA!", os.getpid(), time_2 - time_og, 1/60,  flush= True)
             
