@@ -1,6 +1,6 @@
 # https://www.youtube.com/watch?v=We1uB79Ci-w
 # https://github.com/nicknochnack/Body-Language-Decoder/blob/main/Body%20Language%20Decoder%20Tutorial.ipynb
-# why is this so slow? 0.6570022106170654 0.016666666666666666
+# why is this so slow? 0.3040013313293457 0.016666666666666666
 
 #import list:
 import mediapipe as mp # Import mediapipe
