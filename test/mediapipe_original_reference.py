@@ -10,7 +10,8 @@ import time
 cap = cv2.VideoCapture(0)
 
 # import dill
-# dilling = dill.pickles(mp_holistic)
+# # dilling = dill.pickles(mp_holistic)
+# # dilling = dill.pickles(mp_drawing)
 # print("dilling",dilling)
 
 # Initiate holistic model
