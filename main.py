@@ -181,12 +181,13 @@ def cv_func_mp(retVAR, frameVAR):
         # Recolor Feed (on the actual frame data because mediapipe is RGB IIRC)
         time_og = time.time()
         
-        with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic: #, model_complexity=0
+        with mp_holistic.Holistic(static_image_mode=True, min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic: #, model_complexity=0
+            
             image = cv2.cvtColor(frameVAR, cv2.COLOR_BGR2RGB)
             image.flags.writeable = False
             
             time_2 = time.time()
-            print("timedeltaA!", os.getpid(), time_2 - time_og, 1/60,  flush= True)
+            # print("timedeltaA!", os.getpid(), time_2 - time_og, 1/60,  flush= True)
             
             # Make Detections (on the actual frame data)
             results = holistic.process(image)
@@ -221,7 +222,7 @@ def cv_func_mp(retVAR, frameVAR):
                                     )'''
             
             time_4 = time.time()
-            print("timedeltaC!", os.getpid(), time_4 - time_3, 1/60,  flush= True)
+            # print("timedeltaC!", os.getpid(), time_4 - time_3, 1/60,  flush= True)
 
             # 4. Pose Detections
             mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_holistic.POSE_CONNECTIONS, 
@@ -229,9 +230,12 @@ def cv_func_mp(retVAR, frameVAR):
                                     mp_drawing.DrawingSpec(color=(245,66,230), thickness=2, circle_radius=2)
                                     )
             time_5 = time.time()
-            print("timedeltaD!", os.getpid(), time_5 - time_4, 1/60,  flush= True)
+            # print("timedeltaD!", os.getpid(), time_5 - time_4, 1/60,  flush= True)
+        
+        
         time_end = time.time()
-        print("timedelta!", os.getpid(), time_end - time_og, 1/60,  flush= True)
+        # print("timedelta!", os.getpid(), time_end - time_og, 1/60,  flush= True)
+        sys.stdout.flush()
         return image
 
 if __name__ == '__main__':
@@ -252,7 +256,8 @@ if __name__ == '__main__':
     FCVA_mp.freeze_support()
     #need pool to be in global namespace sadly, reference: https://stackoverflow.com/a/32323448
     #  FCVApool = FCVA_mp.Pool(FCVA_mp.cpu_count())
-    FCVApool = FCVA_mp.Pool(4)
+    # FCVApool = FCVA_mp.Pool(4)
+    FCVApool = FCVA_mp.Pool(1)
     shared_mem_manager = FCVA_mp.Manager()
     shared_analysis_dict = shared_mem_manager.dict()
     
