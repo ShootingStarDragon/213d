@@ -256,8 +256,8 @@ if __name__ == '__main__':
     FCVA_mp.freeze_support()
     #need pool to be in global namespace sadly, reference: https://stackoverflow.com/a/32323448
     #  FCVApool = FCVA_mp.Pool(FCVA_mp.cpu_count())
-    # FCVApool = FCVA_mp.Pool(4)
-    FCVApool = FCVA_mp.Pool(1)
+    FCVApool = FCVA_mp.Pool(4)
+    # FCVApool = FCVA_mp.Pool(1)
     shared_mem_manager = FCVA_mp.Manager()
     shared_analysis_dict = shared_mem_manager.dict()
     
@@ -331,6 +331,7 @@ FCVA_screen_manager: #remember to return a root widget
                 #this works
                 # self.what = FCVApool.apply_async(parallelize_cv_func, args=(cv_basic_backsub, ret, frame, shared_analysis_dict, self.frame_int)) 
                 self.what = FCVApool.apply_async(parallelize_cv_func, args=(cv_func_mp, ret, frame, shared_analysis_dict, self.frame_int)) 
+                # self.what = FCVApool.apply_async(cv_haar_cascade_async, args=(ret, frame, shared_analysis_dict, self.frame_int)) 
             else:
                 print(f"dill says function is unpickleable")
             self.frame_int += 1
