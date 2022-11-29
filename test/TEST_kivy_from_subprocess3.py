@@ -130,14 +130,21 @@ if __name__ == '__main__':
     with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
         #THIS IS SLOW, SO RUNNING HOLISTIC WITHIN ANOTHER LOOP iS WHAT'S KILLING IT
         #checking here is 12 fps: shared_metadata_dict["run_state"]
+        timea =  time.time()
         while shared_metadata_dict["run_state"] and cap.isOpened():
-        #nope lmao it's slow because I'm running bluestacks... (was ~10 fps)
-        #nope, still ~10fps
-        #old version went up to 19 fps regularly when I took down my hoodie..????
-        #yeah it went to 20 when I took down hoodie and gave a side~ish profile of my face
-        #yeah it's not bluestacks, it's just a bit harder head-on 
-        # while cap.isOpened():
+            timeb =  time.time()
+            print("morbin time", timeb-timea) #reading from shared dit and cap is opened is not a problem: 0.0010020732879638672
+            #nope lmao it's slow because I'm running bluestacks... (was ~10 fps)
+            #nope, still ~10fps
+            #old version went up to 19 fps regularly when I took down my hoodie..????
+            #yeah it went to 20 when I took down hoodie and gave a side~ish profile of my face
+            #yeah it's not bluestacks, it's just a bit harder head-on 
+            # while cap.isOpened():
+                
+            timef1 =  time.time()
             ret, frame = cap.read()
+            timef2 =  time.time()
+            print("how long to read frame?", timef2 - timef1)# first frame takes a while and subsequent frames are fast: 0.9233419895172119 -> 0.006009101867675781
             
             # Recolor Feed
             image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
