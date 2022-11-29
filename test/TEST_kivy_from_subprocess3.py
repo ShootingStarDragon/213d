@@ -124,6 +124,7 @@ if __name__ == '__main__':
 
     cap = cv2.VideoCapture(0)
 
+    #THIS IS SLOW, SO RUNNING HOLISTIC WITHIN ANOTHER LOOP iS WHAT'S KILLING IT
     while shared_metadata_dict["run_state"] and cap.isOpened():
 
         # Initiate holistic model
