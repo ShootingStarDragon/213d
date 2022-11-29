@@ -1,4 +1,3 @@
-# https://stackoverflow.com/questions/31458331/running-multiple-kivy-apps-at-same-time-that-communicate-with-each-other
 from kivy.app import App
 from kivy.uix.label import Label
 from kivy.lang import Builder
@@ -35,7 +34,6 @@ FCVA_screen_manager: #remember to return a root widget
     def build(self):
         self.title = "Fast CV App v0.1.0 by Pengindoramu"
         build_app_from_kv = Builder.load_string(self.KV_string)
-        # Window.bind(on_request_close=self.on_request_close)
         return build_app_from_kv
     
     def on_start(self):
@@ -43,15 +41,19 @@ FCVA_screen_manager: #remember to return a root widget
         print("schedule interval 0", datetime.now().strftime("%H:%M:%S"))
         Clock.schedule_interval(self.blit_from_shared_memory, 1/30)
 
-    # def build(self):
-    #     return Label(text='Main App Window')
     def run(self):
         '''Launches the app in standalone mode.
+        reference: 
+        how to run kivy as a subprocess (so the main code can run neural networks like mediapipe without any delay)
+        https://stackoverflow.com/questions/31458331/running-multiple-kivy-apps-at-same-time-that-communicate-with-each-other
         '''
         self._run_prepare()
         from kivy.base import runTouchApp
         runTouchApp()
+        #here we set shared_metadata_dictVAR["run_state"] to be false so main process knows to exit
+        self.shared_metadata_dictVAR["run_state"] = False
         # self.stop()
+    
     def blit_from_shared_memory(self, *args):
         # ret, frame = self.stream.read(0)
         #problem is I don't think you can pickle the stream for multiprocessing (it's a tuple, idk if you can send tuples in a tuple), so send the frame instead
@@ -82,10 +84,6 @@ FCVA_screen_manager: #remember to return a root widget
                 min_key = min(shared_analysis_dict.keys())
                 del shared_analysis_dict[min_key]
 
-class OtherApp(App):
-    def build(self):
-        return Label(text='Other App Window')
-
 class FCVA_screen_manager(ScreenManager):
     pass
 
@@ -96,6 +94,7 @@ class StartScreen(Screen):
 def open_parent(*args):
     # print("what args?", args, flush = True)
     MainApp.shared_analysis_dictVAR = args[0]
+    MainApp.shared_metadata_dictVAR = args[1]
     MainApp().run()
 
 if __name__ == '__main__':
@@ -104,7 +103,10 @@ if __name__ == '__main__':
     # FCVApool = FCVA_mp.Pool(1)
     shared_mem_manager = FCVA_mp.Manager()
     shared_analysis_dict = shared_mem_manager.dict()
-    a = FCVA_mp.Process(target=open_parent, args=(shared_analysis_dict,))
+    shared_metadata_dict = shared_mem_manager.dict()
+    #set metadata run_state to true so main process will run
+    shared_metadata_dict["run_state"] = True
+    a = FCVA_mp.Process(target=open_parent, args=(shared_analysis_dict,shared_metadata_dict))
     # b = multiprocessing.Process(target=open_child)
     a.start()
 
@@ -122,10 +124,11 @@ if __name__ == '__main__':
 
     cap = cv2.VideoCapture(0)
 
-    # Initiate holistic model
-    with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
-        
-        while cap.isOpened():
+    while shared_metadata_dict["run_state"] and cap.isOpened():
+
+        # Initiate holistic model
+        with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
+            
             ret, frame = cap.read()
             
             # Recolor Feed
@@ -160,19 +163,14 @@ if __name__ == '__main__':
                                     )
                             
             shared_analysis_dict[1] = cv2.flip(image,0)
-            # print("why is this so fast? fps:", 1/(time_2 - time_1), len(shared_analysis_dict),  flush= True)
+            print("why is this so fast? fps:", 1/(time_2 - time_1), len(shared_analysis_dict),  flush= True)
             # cv2.imshow('Raw Webcam Feed', image)
 
-            if cv2.waitKey(10) & 0xFF == ord('q'):
-                break
+            # if cv2.waitKey(10) & 0xFF == ord('q'):
+            #     break
 
-    cap.release()
-    cv2.destroyAllWindows()
-
-
-    #problem was I get here and then it kills kivy
-    import time
-    time.sleep(1000)
+    # cap.release()
+    # cv2.destroyAllWindows()
 
 
     
