@@ -124,12 +124,19 @@ if __name__ == '__main__':
 
     cap = cv2.VideoCapture(0)
 
-    #THIS IS SLOW, SO RUNNING HOLISTIC WITHIN ANOTHER LOOP iS WHAT'S KILLING IT
-    while shared_metadata_dict["run_state"] and cap.isOpened():
+    
 
-        # Initiate holistic model
-        with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
-            
+    # Initiate holistic model
+    with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
+        #THIS IS SLOW, SO RUNNING HOLISTIC WITHIN ANOTHER LOOP iS WHAT'S KILLING IT
+        #checking here is 12 fps: shared_metadata_dict["run_state"]
+        while shared_metadata_dict["run_state"] and cap.isOpened():
+        #nope lmao it's slow because I'm running bluestacks... (was ~10 fps)
+        #nope, still ~10fps
+        #old version went up to 19 fps regularly when I took down my hoodie..????
+        #yeah it went to 20 when I took down hoodie and gave a side~ish profile of my face
+        #yeah it's not bluestacks, it's just a bit harder head-on 
+        # while cap.isOpened():
             ret, frame = cap.read()
             
             # Recolor Feed
