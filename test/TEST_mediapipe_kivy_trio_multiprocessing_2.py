@@ -5,6 +5,43 @@ mp_drawing = mp.solutions.drawing_utils # Drawing helpers
 mp_holistic = mp.solutions.holistic # Mediapipe Solutions
 import time
 import sys
+import numpy as np
+
+frame_int = 0
+
+def print_test(*args, **kwargs):
+    print("running args?", args, flush = True)
+
+def parallelize_mediapipe(*args, **kwargs):
+    '''
+    try to do the entire camera>mediapipe loop in the subprocess instead:
+    '''
+    try:
+        print("running args?", args, flush = True)
+        shared_analysis_dict = args[0]
+        global global_stream
+        global frame_int
+        frame_int += 1
+        if not 'global_stream' in globals():
+            global_stream = cv2.VideoCapture(0)
+        # frame = np.full((300,400, 3), [255, 255, 255], dtype=np.uint8)
+        # shared_analysis_dict[1] = frame
+        while global_stream.isOpened():
+            ret, frame = global_stream.read()
+            #try 1: use the code I already have: ()
+            parallelize_cv_func(cv_func_mp, ret, frame, shared_analysis_dict, frame_int)
+            #try 2: just raw write it here:
+            #try 3: remember that this does not properly close the stream...
+            # sys.stdout.flush() #you need this line to get python to have no buffer else things get laggy, like for the haarcascades example
+            print("TRIO VERSION", len(shared_analysis_dict), flush=True)
+            sys.stdout.flush() #you need this line to get python to have no buffer else things get laggy, like for the haarcascades example
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        print("died", flush = True)
+
+    
+
 
 def parallelize_cv_func(*args, **kwargs):
     '''
@@ -57,7 +94,7 @@ def cv_func_mp(retVAR, frameVAR):
         # Make Detections
         results = holistic.process(image)
         time_2 = time.time()
-        print("why is this so slow?", time_2 - time_1, 1/60,  flush= True)
+        print("why is this so slow? fps:", 1/(time_2 - time_1), 1/60,  flush= True)
         
         # Recolor image back to BGR for rendering
         image.flags.writeable = True   
@@ -81,9 +118,6 @@ def cv_func_mp(retVAR, frameVAR):
                                     mp_drawing.DrawingSpec(color=(245,66,230), thickness=2, circle_radius=2)
                                     )
     return image
-
-
-
 
 if __name__ == '__main__':
     '''Example shows the recommended way of how to run Kivy with a trio
@@ -242,29 +276,39 @@ FCVA_screen_manager: #remember to return a root widget
                 print("Are you sure you're running from __main__? Spawning a subprocess from a subprocess is not ok.")
         
         async def init_cv(self, *args):
-            self.stream = cv2.VideoCapture(self.device_index)
-            print("what is stream type?", type(self.stream))
-            self.fps = self.stream.get(cv2.CAP_PROP_FPS)
-            print("ret, frame!", datetime.now().strftime("%H:%M:%S"))
-            print("fps of stream?", self.fps)
+            # self.stream = cv2.VideoCapture(self.device_index)
+            # print("what is stream type?", type(self.stream))
+            # self.fps = self.stream.get(cv2.CAP_PROP_FPS)
+            # print("ret, frame!", datetime.now().strftime("%H:%M:%S"))
+            # print("fps of stream?", self.fps)
             # Clock.schedule_interval(self.cv_func, 1/60)
             # Clock.schedule_interval(self.blit_from_shared_memory, 1/(self.fps))
-            # Clock.schedule_interval(self.blit_from_shared_memory, 1/15)
-            Clock.schedule_once(self.crayshee, 0)
+            self.what = FCVApool.apply_async(parallelize_mediapipe, args=(shared_analysis_dict,)) 
+            # '''
+            # https://stackoverflow.com/questions/51171145/spawn-processes-and-communicate-between-processes-in-a-trio-based-python-applica
+            # Unfortunately, as of today (July 2018), Trio doesn't yet have support for spawning and communicating with subprocesses, or any kind of high-wrappers for MPI or other high-level inter-process coordination protocols.
+
+            # This is definitely something we want to get to eventually, and if you want to talk in more detail about what would need to be implemented, then you can hop in our chat, or this issue has an overview of what's needed for core subprocess support. But if your goal is to have something working within a few months for your internship, honestly you might want to consider more mature HPC tools like dask.
+            # '''
+            # self.what = FCVApool.apply_async(print_test, args=(shared_analysis_dict,)) 
+            # print("WHAT RAN!")
+            Clock.schedule_interval(self.blit_from_shared_memory, 1/30)
+            # Clock.schedule_once(self.crayshee, 0)
         
         def blit_from_shared_memory(self, *args):
-            ret, frame = self.stream.read(0)
-            #problem is I don't think you can pickle the stream for multiprocessing (it's a tuple, idk if you can send tuples in a tuple), so send the frame instead
-            # https://stackoverflow.com/questions/17872056/how-to-check-if-an-object-is-pickleable
-            import dill
-            # print("dill pickles!", dill.pickles(self.stream)) #says false, so I can't send the stream, but I can still send the individual frame
-            dilling = dill.pickles(parallelize_cv_func)
-            # print(dilling)
-            if dilling:
-                self.what = FCVApool.apply_async(parallelize_cv_func, args=(cv_func_mp, ret, frame, shared_analysis_dict, self.frame_int)) 
-            else:
-                print(f"dill says function is unpickleable")
+            # ret, frame = self.stream.read(0)
+            # #problem is I don't think you can pickle the stream for multiprocessing (it's a tuple, idk if you can send tuples in a tuple), so send the frame instead
+            # # https://stackoverflow.com/questions/17872056/how-to-check-if-an-object-is-pickleable
+            # import dill
+            # # print("dill pickles!", dill.pickles(self.stream)) #says false, so I can't send the stream, but I can still send the individual frame
+            # dilling = dill.pickles(parallelize_cv_func)
+            # # print(dilling)
+            # if dilling:
+            #     self.what = FCVApool.apply_async(parallelize_cv_func, args=(cv_func_mp, ret, frame, shared_analysis_dict, self.frame_int)) 
+            # else:
+            #     print(f"dill says function is unpickleable")
             self.frame_int += 1
+            # print(len(shared_analysis_dict))
             if len(shared_analysis_dict) > 0:
                 max_key = max(shared_analysis_dict.keys())
                 frame = shared_analysis_dict[max_key]
@@ -300,6 +344,7 @@ FCVA_screen_manager: #remember to return a root widget
 
                 nursery.start_soon(run_wrapper)
                 nursery.start_soon(self.init_cv)
+                self.what = FCVApool.apply_async(print_test, args=(shared_analysis_dict)) 
 
     class FCVA_screen_manager(ScreenManager):
         pass
