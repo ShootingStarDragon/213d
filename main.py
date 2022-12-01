@@ -98,13 +98,21 @@ def open_kivy(*args):
     MainApp.shared_metadata_dictVAR = args[1]
     MainApp().run()
 
+# https://stackoverflow.com/questions/69722401/mediapipe-process-first-self-argument
+# alternatively you could do: results = mp.solutions.hands.Hands().process(imgRGB)
 def open_mediapipe(*args):
+    # try:
     shared_analysis_dict = args[0]
     shared_metadata_dict = args[1]
     cap = cv2.VideoCapture(0)
 
     if shared_metadata_dict["run_state"]:
         # Initiate holistic model
+        # https://peps.python.org/pep-0343/
+        # In this PEP, context managers provide __enter__() and __exit__() methods that are invoked on entry to and exit from the body of the with statement.
+        # https://stackoverflow.com/questions/1984325/explaining-pythons-enter-and-exit
+        # https://stackoverflow.com/questions/51706836/manually-open-context-manager -> try this __exit__(None, None, None)
+
         with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
             #THIS IS SLOW, SO RUNNING HOLISTIC WITHIN ANOTHER LOOP iS WHAT'S KILLING IT
             #checking here is 12 fps: shared_metadata_dict["run_state"]
@@ -120,10 +128,10 @@ def open_mediapipe(*args):
                 #yeah it's not bluestacks, it's just a bit harder head-on 
                 # while cap.isOpened():
                     
-                timef1 =  time.time()
+                # timef1 =  time.time()
                 ret, frame = cap.read()
-                timef2 =  time.time()
-                print("how long to read frame?", timef2 - timef1)# first frame takes a while and subsequent frames are fast: 0.9233419895172119 -> 0.006009101867675781
+                # timef2 =  time.time()
+                # print("how long to read frame?", timef2 - timef1)# first frame takes a while and subsequent frames are fast: 0.9233419895172119 -> 0.006009101867675781
                 
                 # Recolor Feed
                 image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -163,15 +171,19 @@ def open_mediapipe(*args):
                 # if cv2.waitKey(10) & 0xFF == ord('q'):
                 #     break
 
-    # cap.release()
-    # cv2.destroyAllWindows()
-    # time.sleep(10000)
+        # cap.release()
+        # cv2.destroyAllWindows()
+        # time.sleep(10000)
+    # except Exception as e:
+    #     print("open_mediapipe died!", e)
 
 class FCVA():
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.frame_int = 0
+        #put the imports here so that all users have to do is import FCVA and instantiate it in the top level
+    
     def run(self):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.frame_int = 0
         if __name__ == '__main__':
             '''
             this will set up multiprocessing and the kivy app as a subprocess:
@@ -183,10 +195,13 @@ class FCVA():
             shared_metadata_dict = shared_mem_manager.dict()
             #set metadata run_state to true so main process will run
             shared_metadata_dict["run_state"] = True
-            kivy_subprocess = FCVA_mp.Process(target=open_kivy, args=(shared_analysis_dict,shared_metadata_dict))
-            kivy_subprocess.start()
+            
             mediapipe_subprocess = FCVA_mp.Process(target=open_mediapipe, args=(shared_analysis_dict,shared_metadata_dict)) 
             mediapipe_subprocess.start()
+            
+            kivy_subprocess = FCVA_mp.Process(target=open_kivy, args=(shared_analysis_dict,shared_metadata_dict))
+            kivy_subprocess.start()
+            
             while shared_metadata_dict["run_state"]:
                 try:
                     # ret, frame = self.source.read()
