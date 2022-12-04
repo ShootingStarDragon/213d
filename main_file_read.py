@@ -98,16 +98,39 @@ def open_kivy(*args):
     MainApp.shared_metadata_dictVAR = args[1]
     MainApp().run()
 
+def open_read(*args):
+    try:
+        shared_analysis_dict = args[0]
+        shared_metadata_dict = args[1]
+        frame_rate = args[2]
+        cap = cv2.VideoCapture(args[3])
+
+        prev = time.time()
+        while True:
+            if "mp_ready" in shared_metadata_dict.keys(): #if the key exists, assume value is true, else I have to add yet another if statement...
+
+                time_elapsed = time.time() - prev
+
+                if time_elapsed > 1./frame_rate:
+                    ret, frame = cap.read()
+                    prev = time.time()
+
+                    # Do something with your image here.
+                    shared_metadata_dict["latest_cap_frame"] = frame
+                    # print("keys????", time_elapsed, 1./frame_rate, flush=True)
+    except Exception as e:
+        print("read function died!", e, flush=True)
+
 # https://stackoverflow.com/questions/69722401/mediapipe-process-first-self-argument
 # alternatively you could do: results = mp.solutions.hands.Hands().process(imgRGB)
 def open_mediapipe(*args):
-    # try:
-    shared_analysis_dict = args[0]
-    shared_metadata_dict = args[1]
-    cap = cv2.VideoCapture(0)
-    # cap = cv2.VideoCapture("Good-Night Kiss (Dance Cover) - 전효성(JUNHYOSEONG) [UhkaBOcIB2A].webm")
+    try:
+        shared_analysis_dict = args[0]
+        shared_metadata_dict = args[1]
+        # cap = cv2.VideoCapture(0)
+        # cap = cv2.VideoCapture("Good-Night Kiss (Dance Cover) - 전효성(JUNHYOSEONG) [UhkaBOcIB2A].webm")
 
-    if shared_metadata_dict["run_state"]:
+        
         # Initiate holistic model
         # https://peps.python.org/pep-0343/
         # In this PEP, context managers provide __enter__() and __exit__() methods that are invoked on entry to and exit from the body of the with statement.
@@ -118,65 +141,74 @@ def open_mediapipe(*args):
             #THIS IS SLOW, SO RUNNING HOLISTIC WITHIN ANOTHER LOOP iS WHAT'S KILLING IT
             #checking here is 12 fps: shared_metadata_dict["run_state"]
             # timea =  time.time()
-            while shared_metadata_dict["run_state"] and cap.isOpened():
-            # while cap.isOpened():
-                # timeb =  time.time()
-                # print("morbin time", timeb-timea) #reading from shared dit and cap is opened is not a problem: 0.0010020732879638672
-                #nope lmao it's slow because I'm running bluestacks... (was ~10 fps)
-                #nope, still ~10fps
-                #old version went up to 19 fps regularly when I took down my hoodie..????
-                #yeah it went to 20 when I took down hoodie and gave a side~ish profile of my face
-                #yeah it's not bluestacks, it's just a bit harder head-on 
-                # while cap.isOpened():
+            # while shared_metadata_dict["run_state"] and cap.isOpened():
+            # print("keys?1??", shared_metadata_dict.keys(), flush = True)
+
+            shared_metadata_dict["mp_ready"] = True
+
+            while True:
+                if "run_state" in shared_metadata_dict.keys() and "latest_cap_frame" in shared_metadata_dict.keys(): #assume true
+                    if shared_metadata_dict["run_state"] == False:
+                        break
+                    # while cap.isOpened():
+                    # timeb =  time.time()
+                    # print("morbin time", timeb-timea) #reading from shared dit and cap is opened is not a problem: 0.0010020732879638672
+                    #nope lmao it's slow because I'm running bluestacks... (was ~10 fps)
+                    #nope, still ~10fps
+                    #old version went up to 19 fps regularly when I took down my hoodie..????
+                    #yeah it went to 20 when I took down hoodie and gave a side~ish profile of my face
+                    #yeah it's not bluestacks, it's just a bit harder head-on 
+                    # while cap.isOpened():
+                        
+                    # timef1 =  time.time()
+                    # ret, frame = cap.read()
+                    frame = shared_metadata_dict["latest_cap_frame"]
+                    # timef2 =  time.time()
+                    # print("how long to read frame?", timef2 - timef1)# first frame takes a while and subsequent frames are fast: 0.9233419895172119 -> 0.006009101867675781
                     
-                # timef1 =  time.time()
-                ret, frame = cap.read()
-                # timef2 =  time.time()
-                # print("how long to read frame?", timef2 - timef1)# first frame takes a while and subsequent frames are fast: 0.9233419895172119 -> 0.006009101867675781
-                
-                # Recolor Feed
-                image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                image.flags.writeable = False        
-                
-                time_1 = time.time()
-                # Make Detections
-                results = holistic.process(image)
-                time_2 = time.time()
+                    # Recolor Feed
+                    image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    image.flags.writeable = False        
+                    
+                    time_1 = time.time()
+                    # Make Detections
+                    results = holistic.process(image)
+                    time_2 = time.time()
 
-                # Recolor image back to BGR for rendering
-                image.flags.writeable = True   
-                image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-                
-                # 2. Right hand
-                mp_drawing.draw_landmarks(image, results.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS, 
-                                        mp_drawing.DrawingSpec(color=(80,22,10), thickness=2, circle_radius=4),
-                                        mp_drawing.DrawingSpec(color=(80,44,121), thickness=2, circle_radius=2)
-                                        )
+                    # Recolor image back to BGR for rendering
+                    image.flags.writeable = True   
+                    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+                    
+                    # 2. Right hand
+                    mp_drawing.draw_landmarks(image, results.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS, 
+                                            mp_drawing.DrawingSpec(color=(80,22,10), thickness=2, circle_radius=4),
+                                            mp_drawing.DrawingSpec(color=(80,44,121), thickness=2, circle_radius=2)
+                                            )
 
-                # 3. Left Hand
-                mp_drawing.draw_landmarks(image, results.left_hand_landmarks, mp_holistic.HAND_CONNECTIONS, 
-                                        mp_drawing.DrawingSpec(color=(121,22,76), thickness=2, circle_radius=4),
-                                        mp_drawing.DrawingSpec(color=(121,44,250), thickness=2, circle_radius=2)
-                                        )
+                    # 3. Left Hand
+                    mp_drawing.draw_landmarks(image, results.left_hand_landmarks, mp_holistic.HAND_CONNECTIONS, 
+                                            mp_drawing.DrawingSpec(color=(121,22,76), thickness=2, circle_radius=4),
+                                            mp_drawing.DrawingSpec(color=(121,44,250), thickness=2, circle_radius=2)
+                                            )
 
-                # 4. Pose Detections
-                mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_holistic.POSE_CONNECTIONS, 
-                                        mp_drawing.DrawingSpec(color=(245,117,66), thickness=2, circle_radius=4),
-                                        mp_drawing.DrawingSpec(color=(245,66,230), thickness=2, circle_radius=2)
-                                        )
-                                
-                shared_analysis_dict[1] = cv2.flip(image,0)
-                print("why is this so fast? fps:", 1/(time_2 - time_1), len(shared_analysis_dict),  flush= True)
-                # cv2.imshow('Raw Webcam Feed', image)
+                    # 4. Pose Detections
+                    mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_holistic.POSE_CONNECTIONS, 
+                                            mp_drawing.DrawingSpec(color=(245,117,66), thickness=2, circle_radius=4),
+                                            mp_drawing.DrawingSpec(color=(245,66,230), thickness=2, circle_radius=2)
+                                            )
+                                    
+                    shared_analysis_dict[1] = cv2.flip(image,0)
+                    print("why is this so fast? fps:", 1/(time_2 - time_1), len(shared_analysis_dict),  flush= True)
+                    # cv2.imshow('Raw Webcam Feed', image)
 
-                # if cv2.waitKey(10) & 0xFF == ord('q'):
-                #     break
+                    # if cv2.waitKey(10) & 0xFF == ord('q'):
+                    #     break
 
         # cap.release()
         # cv2.destroyAllWindows()
         # time.sleep(10000)
-    # except Exception as e:
-    #     print("open_mediapipe died!", e)
+    except Exception as e:
+        print("open_mediapipe died!", e)
 
 class FCVA():
     def __init__(self, *args, **kwargs):
@@ -197,12 +229,28 @@ class FCVA():
             #set metadata run_state to true so main process will run
             shared_metadata_dict["run_state"] = True
             
+            #read just to get the fps
+            source = "Good-Night Kiss (Dance Cover) - 전효성(JUNHYOSEONG) [UhkaBOcIB2A].webm"
+            video = cv2.VideoCapture(source)
+            fps = video.get(cv2.CAP_PROP_FPS)
+            
+            # fake_frame = video.read()
+            # shared_metadata_dict["latest_cap_frame"] = fake_frame
+
+            print("why is fps 0?", fps)
+            video.release()
+            read_subprocess = FCVA_mp.Process(target=open_read, args=(shared_analysis_dict,shared_metadata_dict, fps, source))
+            read_subprocess.start()
+
+            import time
+            time.sleep(1)
             mediapipe_subprocess = FCVA_mp.Process(target=open_mediapipe, args=(shared_analysis_dict,shared_metadata_dict)) 
             mediapipe_subprocess.start()
             
             kivy_subprocess = FCVA_mp.Process(target=open_kivy, args=(shared_analysis_dict,shared_metadata_dict))
             kivy_subprocess.start()
-            
+
+
             while shared_metadata_dict["run_state"]:
                 try:
                     # ret, frame = self.source.read()

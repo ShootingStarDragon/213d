@@ -1,89 +1,9 @@
 #main and subprocesses have access to this
 import cv2
 
-if __name__ != '__main__':
-    #think of this as the subprocess environment
-    from kivy.app import App
-    from kivy.lang import Builder
-    from kivy.uix.screenmanager import ScreenManager, Screen
-    from kivy.graphics.texture import Texture
-    from kivy.clock import Clock
-    import mediapipe as mp
 
-    mp_drawing = mp.solutions.drawing_utils # Drawing helpers
-    mp_holistic = mp.solutions.holistic # Mediapipe Solutions
-    import time
 
-    class MainApp(App):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            #remember that the KV string IS THE ACTUAL FILE AND MUST BE INDENTED PROPERLY TO THE LEFT!
-            self.KV_string = '''
-<FCVA_screen_manager>:
-    id: FCVA_screen_managerID
-    StartScreen:
-        id: start_screen_id
-        name: 'start_screen_name'
-        manager: 'FCVA_screen_managerID'
 
-<StartScreen>:
-    id: start_screen_id
-    BoxLayout:
-        orientation: 'vertical'
-        Image:
-            id: image_textureID
-        Label:
-            text: "hello world!"
-
-FCVA_screen_manager: #remember to return a root widget
-'''
-        def build(self):
-            self.title = "Fast CV App v0.1.0 by Pengindoramu"
-            build_app_from_kv = Builder.load_string(self.KV_string)
-            return build_app_from_kv
-        
-        def on_start(self):
-            #start blitting, get the fps as an option [todo]
-            Clock.schedule_interval(self.blit_from_shared_memory, 1/30)
-
-        def run(self):
-            '''Launches the app in standalone mode.
-            reference: 
-            how to run kivy as a subprocess (so the main code can run neural networks like mediapipe without any delay)
-            https://stackoverflow.com/questions/31458331/running-multiple-kivy-apps-at-same-time-that-communicate-with-each-other
-            '''
-            self._run_prepare()
-            from kivy.base import runTouchApp
-            runTouchApp()
-            #here we set shared_metadata_dictVAR["run_state"] to be false so main process knows to exit
-            self.shared_metadata_dictVAR["run_state"] = False
-            # self.stop()
-        
-        def blit_from_shared_memory(self, *args):
-            shared_analysis_dict = self.shared_analysis_dictVAR
-            if len(shared_analysis_dict) > 0:
-                max_key = max(shared_analysis_dict.keys())
-                frame = shared_analysis_dict[max_key]
-                buf = frame.tobytes()
-                
-                texture1 = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt='bgr') 
-                texture1.blit_buffer(buf, colorfmt='bgr', bufferfmt='ubyte')
-                App.get_running_app().root.get_screen('start_screen_name').ids["image_textureID"].texture = texture1
-                #after blitting delete some key/value pairs if dict has more than 10 frames:
-                if len(shared_analysis_dict) > 5:
-                    min_key = min(shared_analysis_dict.keys())
-                    del shared_analysis_dict[min_key]
-
-    class FCVA_screen_manager(ScreenManager):
-        pass
-
-    class StartScreen(Screen):
-        pass
-
-def open_kivy(*args):
-    MainApp.shared_analysis_dictVAR = args[0]
-    MainApp.shared_metadata_dictVAR = args[1]
-    MainApp().run()
 
 def open_mediapipe(*args):
     # try:
@@ -139,7 +59,86 @@ class FCVA():
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.frame_int = 0
-    
+        if __name__ != '__main__':
+            #think of this as the subprocess environment
+            from kivy.app import App
+            from kivy.lang import Builder
+            from kivy.uix.screenmanager import ScreenManager, Screen
+            from kivy.graphics.texture import Texture
+            from kivy.clock import Clock
+            import mediapipe as mp
+
+            mp_drawing = mp.solutions.drawing_utils # Drawing helpers
+            mp_holistic = mp.solutions.holistic # Mediapipe Solutions
+            import time
+
+            class MainApp(App):
+                def __init__(self, *args, **kwargs):
+                    super().__init__(*args, **kwargs)
+                    #remember that the KV string IS THE ACTUAL FILE AND MUST BE INDENTED PROPERLY TO THE LEFT!
+                    self.KV_string = '''
+<FCVA_screen_manager>:
+    id: FCVA_screen_managerID
+    StartScreen:
+        id: start_screen_id
+        name: 'start_screen_name'
+        manager: 'FCVA_screen_managerID'
+
+<StartScreen>:
+    id: start_screen_id
+    BoxLayout:
+        orientation: 'vertical'
+        Image:
+            id: image_textureID
+        Label:
+            text: "hello world!"
+
+FCVA_screen_manager: #remember to return a root widget
+    '''
+                def build(self):
+                    self.title = "Fast CV App v0.1.0 by Pengindoramu"
+                    build_app_from_kv = Builder.load_string(self.KV_string)
+                    return build_app_from_kv
+                
+                def on_start(self):
+                    #start blitting, get the fps as an option [todo]
+                    Clock.schedule_interval(self.blit_from_shared_memory, 1/30)
+
+                def run(self):
+                    '''Launches the app in standalone mode.
+                    reference: 
+                    how to run kivy as a subprocess (so the main code can run neural networks like mediapipe without any delay)
+                    https://stackoverflow.com/questions/31458331/running-multiple-kivy-apps-at-same-time-that-communicate-with-each-other
+                    '''
+                    self._run_prepare()
+                    from kivy.base import runTouchApp
+                    runTouchApp()
+                    #here we set shared_metadata_dictVAR["run_state"] to be false so main process knows to exit
+                    self.shared_metadata_dictVAR["run_state"] = False
+                    # self.stop()
+                
+                def blit_from_shared_memory(self, *args):
+                    shared_analysis_dict = self.shared_analysis_dictVAR
+                    if len(shared_analysis_dict) > 0:
+                        max_key = max(shared_analysis_dict.keys())
+                        frame = shared_analysis_dict[max_key]
+                        buf = frame.tobytes()
+                        
+                        texture1 = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt='bgr') 
+                        texture1.blit_buffer(buf, colorfmt='bgr', bufferfmt='ubyte')
+                        App.get_running_app().root.get_screen('start_screen_name').ids["image_textureID"].texture = texture1
+                        #after blitting delete some key/value pairs if dict has more than 10 frames:
+                        if len(shared_analysis_dict) > 5:
+                            min_key = min(shared_analysis_dict.keys())
+                            del shared_analysis_dict[min_key]
+
+            class FCVA_screen_manager(ScreenManager):
+                pass
+
+            class StartScreen(Screen):
+                pass
+
+
     def run(self):
         if __name__ == '__main__':
             '''
@@ -168,6 +167,11 @@ class FCVA():
                     pass
                 except Exception as e:
                     print("Error in run, make sure stream is set. Example: app.source = cv2.VideoCapture(0)", e)
+
+def open_kivy(*args):
+    MainApp.shared_analysis_dictVAR = args[0]
+    MainApp.shared_metadata_dictVAR = args[1]
+    MainApp().run()
 
 app = FCVA()
 app.run() 
