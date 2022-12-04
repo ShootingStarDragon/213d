@@ -185,6 +185,7 @@ class FCVA():
         #put the imports here so that all users have to do is import FCVA and instantiate it in the top level
     
     def run(self):
+        print("LOADED MAIN FILE WHY", __name__ == '__main__')
         if __name__ == '__main__':
             '''
             this will set up multiprocessing and the kivy app as a subprocess:
