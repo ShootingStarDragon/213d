@@ -217,7 +217,8 @@ class FCVA():
         #put the imports here so that all users have to do is import FCVA and instantiate it in the top level
     
     def run(self):
-        if __name__ == '__main__':
+        print("name in main (loaded main_file_read) ", __name__ == '__main__', __name__)
+        if __name__ == '__main__' or __name__ == 'main_file_read':
             '''
             this will set up multiprocessing and the kivy app as a subprocess:
             '''
@@ -239,14 +240,17 @@ class FCVA():
 
             print("why is fps 0?", fps)
             video.release()
+            # read_subprocess = FCVA_mp.Process(target=open_read, args=(shared_analysis_dict,shared_metadata_dict, fps, source))
             read_subprocess = FCVA_mp.Process(target=open_read, args=(shared_analysis_dict,shared_metadata_dict, fps, source))
             read_subprocess.start()
 
             import time
             time.sleep(1)
+            # mediapipe_subprocess = FCVA_mp.Process(target=open_mediapipe, args=(shared_analysis_dict,shared_metadata_dict)) 
             mediapipe_subprocess = FCVA_mp.Process(target=open_mediapipe, args=(shared_analysis_dict,shared_metadata_dict)) 
             mediapipe_subprocess.start()
             
+            # kivy_subprocess = FCVA_mp.Process(target=open_kivy, args=(shared_analysis_dict,shared_metadata_dict))
             kivy_subprocess = FCVA_mp.Process(target=open_kivy, args=(shared_analysis_dict,shared_metadata_dict))
             kivy_subprocess.start()
 
@@ -263,9 +267,9 @@ class FCVA():
                 except Exception as e:
                     print("Error in run, make sure stream is set. Example: app.source = cv2.VideoCapture(0)", e)
 
-app = FCVA()
-# app.source = cv2.VideoCapture(0)
-app.run() 
+# app = FCVA()
+# # app.source = cv2.VideoCapture(0)
+# app.run() 
 
 
 '''
