@@ -105,7 +105,7 @@ def open_mediapipe(*args):
     shared_analysis_dict = args[0]
     shared_metadata_dict = args[1]
     cap = cv2.VideoCapture(0)
-    # cap = cv2.VideoCapture("Good-Night Kiss (Dance Cover) - 전효성(JUNHYOSEONG) [UhkaBOcIB2A].webm")
+    # cap = cv2.VideoCapture("cottonbro studio.mp4")
 
     if shared_metadata_dict["run_state"]:
         # Initiate holistic model
