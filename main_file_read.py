@@ -10,6 +10,8 @@ if __name__ != '__main__':
     from kivy.graphics.texture import Texture
     from kivy.clock import Clock
     import mediapipe as mp
+    import skvideo.io
+    import skvideo.datasets
 
     mp_drawing = mp.solutions.drawing_utils # Drawing helpers
     mp_holistic = mp.solutions.holistic # Mediapipe Solutions
@@ -104,6 +106,9 @@ def open_read(*args):
         shared_metadata_dict = args[1]
         frame_rate = args[2]
         cap = cv2.VideoCapture(args[3])
+        # trying scikit video as per this: https://stackoverflow.com/questions/42163058/how-to-turn-a-video-into-numpy-array
+        # cap = skvideo.io.vreader(skvideo.datasets.bigbuckbunny())
+        # cap = skvideo.io.vread("cottonbro studio.mp4")
 
         prev = time.time()
         while True:
@@ -112,12 +117,16 @@ def open_read(*args):
                 time_elapsed = time.time() - prev
 
                 if time_elapsed > 1./frame_rate:
+                    time_og = time.time()
                     ret, frame = cap.read()
+                    time_2 = time.time()
                     prev = time.time()
 
                     # Do something with your image here.
                     shared_metadata_dict["latest_cap_frame"] = frame
                     # print("keys????", time_elapsed, 1./frame_rate, flush=True)
+                    print("cv2 .read() takes long???", time_2 - time_og, 1./frame_rate, flush= True)
+                    #reading DOES take long.. 0.052001953125 0.02
     except Exception as e:
         print("read function died!", e, flush=True)
 
@@ -231,7 +240,8 @@ class FCVA():
             shared_metadata_dict["run_state"] = True
             
             #read just to get the fps
-            source = "Good-Night Kiss (Dance Cover) - 전효성(JUNHYOSEONG) [UhkaBOcIB2A].webm"
+            # source = "cottonbro studio.mp4"
+            source = 0
             video = cv2.VideoCapture(source)
             fps = video.get(cv2.CAP_PROP_FPS)
             
@@ -267,9 +277,9 @@ class FCVA():
                 except Exception as e:
                     print("Error in run, make sure stream is set. Example: app.source = cv2.VideoCapture(0)", e)
 
-# app = FCVA()
+app = FCVA()
 # # app.source = cv2.VideoCapture(0)
-# app.run() 
+app.run() 
 
 
 '''
