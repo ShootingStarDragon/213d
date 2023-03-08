@@ -104,8 +104,9 @@ def open_mediapipe(*args):
     # try:
     shared_analysis_dict = args[0]
     shared_metadata_dict = args[1]
-    cap = cv2.VideoCapture(0)
+    # cap = cv2.VideoCapture(0)
     # cap = cv2.VideoCapture("cottonbro studio.mp4")
+    cap = cv2.VideoCapture("【4K⧸60fps⧸MMD】  恋愛裁判 ⧸ Love Trial — YYB 初音MIKU.webm")
 
     if shared_metadata_dict["run_state"]:
         # Initiate holistic model

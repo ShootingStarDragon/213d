@@ -105,6 +105,7 @@ def open_read(*args):
         shared_analysis_dict = args[0]
         shared_metadata_dict = args[1]
         frame_rate = args[2]
+        print("what is framerate?", frame_rate)
         cap = cv2.VideoCapture(args[3])
         # trying scikit video as per this: https://stackoverflow.com/questions/42163058/how-to-turn-a-video-into-numpy-array
         # cap = skvideo.io.vreader(skvideo.datasets.bigbuckbunny())
@@ -241,7 +242,11 @@ class FCVA():
             
             #read just to get the fps
             # source = "cottonbro studio.mp4"
-            source = 0
+            # source = 0
+            # source = "COSTA RICA IN 4K 60fps HDR (ULTRA HD).mkv"
+            # source = "【4K⧸60fps⧸MMD】  恋愛裁判 ⧸ Love Trial — YYB 初音MIKU.webm"
+            # source = "Love Trial 720p.mp4"
+            source = "pexels-artem-podrez-6003986 720p.mp4"
             video = cv2.VideoCapture(source)
             fps = video.get(cv2.CAP_PROP_FPS)
             
@@ -249,7 +254,7 @@ class FCVA():
             # shared_metadata_dict["latest_cap_frame"] = fake_frame
 
             print("why is fps 0?", fps)
-            video.release()
+            # video.release()
             # read_subprocess = FCVA_mp.Process(target=open_read, args=(shared_analysis_dict,shared_metadata_dict, fps, source))
             read_subprocess = FCVA_mp.Process(target=open_read, args=(shared_analysis_dict,shared_metadata_dict, fps, source))
             read_subprocess.start()
