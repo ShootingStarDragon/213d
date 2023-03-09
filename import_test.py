@@ -3,9 +3,11 @@
 
 
 # from main_file_read import *
-import main_file_read #nice, so from x import * is unnecessary just do import x
-
+# import main_file_read #nice, so from x import * is unnecessary just do import x
+# https://stackoverflow.com/questions/42602584/how-to-use-multiprocessing-pool-in-an-imported-module
 # import main_file_read as MFR
+
+import main_file_readAFTERrun
 
 print("think twice", "open_read" in dir())
 if __name__ == '__main__':
@@ -20,5 +22,11 @@ if __name__ == '__main__':
     Doh! It works!!!! Thank you so much! I was missing the fact that it is the original main module that gets re-imported! 
     https://stackoverflow.com/questions/18204782/runtimeerror-on-windows-trying-python-multiprocessing
     '''
-    app = main_file_read.FCVA()
-    app.run() 
+    # app = main_file_read.FCVA()
+    # app.run() 
+    # import micromultiprocessingsub
+
+    app = main_file_readAFTERrun.FCVA()
+    # app.run() 
+    app.AFTERrun() 
+    

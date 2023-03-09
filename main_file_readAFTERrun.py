@@ -98,6 +98,7 @@ FCVA_screen_manager: #remember to return a root widget
 def open_kivy(*args):
     MainApp.shared_analysis_dictVAR = args[0]
     MainApp.shared_metadata_dictVAR = args[1]
+    # MainApp.source = args[2]
     MainApp().run()
 
 def open_read(*args):
@@ -226,9 +227,9 @@ class FCVA():
         self.frame_int = 0
         #put the imports here so that all users have to do is import FCVA and instantiate it in the top level
     
-    def run(self):
+    def AFTERrun(self):
         print("name in main (loaded main_file_read) ", __name__ == '__main__', __name__)
-        if __name__ == '__main__' or __name__ == 'main_file_read':
+        if __name__ == '__main__' or __name__ == 'main_file_read' or __name__ == 'main_file_readAFTERrun':
             '''
             this will set up multiprocessing and the kivy app as a subprocess:
             '''
@@ -282,9 +283,9 @@ class FCVA():
                 except Exception as e:
                     print("Error in run, make sure stream is set. Example: app.source = cv2.VideoCapture(0)", e)
 
-app = FCVA()
+# app = FCVA()
 # # app.source = cv2.VideoCapture(0)
-app.run() 
+# app.run() 
 
 
 '''
