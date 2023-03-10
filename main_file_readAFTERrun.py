@@ -10,8 +10,6 @@ if __name__ != '__main__':
     from kivy.graphics.texture import Texture
     from kivy.clock import Clock
     import mediapipe as mp
-    import skvideo.io
-    import skvideo.datasets
 
     mp_drawing = mp.solutions.drawing_utils # Drawing helpers
     mp_holistic = mp.solutions.holistic # Mediapipe Solutions
