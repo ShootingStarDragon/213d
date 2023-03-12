@@ -227,7 +227,7 @@ class FCVA():
     
     def AFTERrun(self):
         print("name in main (loaded main_file_read) ", __name__ == '__main__', __name__)
-        if __name__ == '__main__' or __name__ == 'main_file_read' or __name__ == 'main_file_readAFTERrun':
+        if __name__ == '__main__' or __name__ == 'main_file_read' or __name__ == 'main_file_readAFTERrun' or __name__ == "main_decorator_multiP_testing":
             '''
             this will set up multiprocessing and the kivy app as a subprocess:
             '''
