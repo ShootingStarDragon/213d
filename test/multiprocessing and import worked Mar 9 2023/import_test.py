@@ -7,7 +7,7 @@
 # https://stackoverflow.com/questions/42602584/how-to-use-multiprocessing-pool-in-an-imported-module
 # import main_file_read as MFR
 
-import main_file_readAFTERrun
+import main_decorator_multiP_testing
 
 print("think twice", "open_read" in dir())
 if __name__ == '__main__':
@@ -26,7 +26,7 @@ if __name__ == '__main__':
     # app.run() 
     # import micromultiprocessingsub
 
-    app = main_file_readAFTERrun.FCVA()
+    app = main_decorator_multiP_testing.FCVA()
     # app.run() 
     app.AFTERrun() 
     
