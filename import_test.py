@@ -1,4 +1,19 @@
 
+import main_decorator_multiP_testing
+app = main_decorator_multiP_testing.FCVA()
+
+#where does the decorator come from? (in top level of FCVA module)
+#need to blit the shared memory: 
+#shared_analysis_dict, that's it I think
+#
+@FCVA_use
+def my_cv_function(inputframe):
+    return outputframe
+
+if __name__ == '__main__' :
+    app.run()
+
+'''
 import FCVA
 
 app = FCVA()
@@ -9,7 +24,7 @@ def my_cv_function(inputframe):
 
 if __name__ == 'this filename':
     FCVA.run()
-
+'''
 
 # # from main_file_read import * #THIS IMPORTED MAIIIIIIIINHNNNNNNNNNNNNNNNNNNNNNNNNNN not main_file_read.py
 
