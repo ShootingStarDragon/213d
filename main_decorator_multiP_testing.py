@@ -112,6 +112,7 @@ def open_read(*args):
 
         prev = time.time()
         while True:
+            # print("read is not ready", shared_metadata_dict.keys())
             if "mp_ready" in shared_metadata_dict.keys(): #if the key exists, assume value is true, else I have to add yet another if statement...
 
                 time_elapsed = time.time() - prev
@@ -129,6 +130,34 @@ def open_read(*args):
                     #reading DOES take long.. 0.052001953125 0.02
     except Exception as e:
         print("read function died!", e, flush=True)
+
+def open_appliedcv(*args):
+    try:
+        shared_analysis_dict = args[0]
+        shared_metadata_dict = args[1]
+        appliedcv = args[2]
+        # cap = cv2.VideoCapture(0)
+        # cap = cv2.VideoCapture("Good-Night Kiss (Dance Cover) - 전효성(JUNHYOSEONG) [UhkaBOcIB2A].webm")
+        shared_metadata_dict["mp_ready"] = True
+
+        while True:
+            print("stats wtf", shared_metadata_dict.keys(), shared_metadata_dict["run_state"])
+            if "run_state" in shared_metadata_dict.keys() and "latest_cap_frame" in shared_metadata_dict.keys(): #assume true
+                if shared_metadata_dict["run_state"] == False:
+                    break
+                shared_analysis_dict[1] = cv2.flip(appliedcv(shared_metadata_dict["latest_cap_frame"]),0)
+                # shared_analysis_dict[1] = shared_metadata_dict["latest_cap_frame"]
+                print("why is this so fast? fps:", len(shared_analysis_dict),  flush= True)
+                # cv2.imshow('Raw Webcam Feed', image)
+
+                # if cv2.waitKey(10) & 0xFF == ord('q'):
+                #     break
+
+        # cap.release()
+        # cv2.destroyAllWindows()
+        # time.sleep(10000)
+    except Exception as e:
+        print("open_appliedcv died!", e)
 
 # https://stackoverflow.com/questions/69722401/mediapipe-process-first-self-argument
 # alternatively you could do: results = mp.solutions.hands.Hands().process(imgRGB)
@@ -246,7 +275,7 @@ class FCVA():
             # source = "【4K⧸60fps⧸MMD】  恋愛裁判 ⧸ Love Trial — YYB 初音MIKU.webm"
             # source = "Love Trial 720p.mp4"
             # source = "pexels-artem-podrez-6003986 720p.mp4"
-            source = "pexels-cottonbro-7791121 720p.mp4"
+            source = "media/pexels-cottonbro-7791121 720p.mp4"
             video = cv2.VideoCapture(source)
             fps = video.get(cv2.CAP_PROP_FPS)
             
@@ -262,9 +291,14 @@ class FCVA():
             import time
             time.sleep(1)
             # mediapipe_subprocess = FCVA_mp.Process(target=open_mediapipe, args=(shared_analysis_dict,shared_metadata_dict)) 
-            mediapipe_subprocess = FCVA_mp.Process(target=open_mediapipe, args=(shared_analysis_dict,shared_metadata_dict)) 
-            mediapipe_subprocess.start()
-            
+            # mediapipe_subprocess = FCVA_mp.Process(target=open_mediapipe, args=(shared_analysis_dict,shared_metadata_dict)) 
+            # mediapipe_subprocess.start()
+            if self.appliedcv != None:
+                cv_subprocess = FCVA_mp.Process(target=open_appliedcv, args=(shared_analysis_dict,shared_metadata_dict, self.appliedcv)) 
+                cv_subprocess.start()
+            else:
+                print("no func selected")
+
             # kivy_subprocess = FCVA_mp.Process(target=open_kivy, args=(shared_analysis_dict,shared_metadata_dict))
             kivy_subprocess = FCVA_mp.Process(target=open_kivy, args=(shared_analysis_dict,shared_metadata_dict))
             kivy_subprocess.start()

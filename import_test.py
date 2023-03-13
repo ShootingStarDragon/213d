@@ -5,13 +5,20 @@ app = main_decorator_multiP_testing.FCVA()
 #where does the decorator come from? (in top level of FCVA module)
 #need to blit the shared memory: 
 #shared_analysis_dict, that's it I think
-#
-@FCVA_use
+'''
+Can't use decorators since i have to reference shared memory, but it isn't created when decorators are being made, just stuff the function into fcva class as a method then keep going
+IIRC startup is smth like this:
+decorators being made
+kivy build > kivy run
+so yea...
+'''
+# @FCVA_use
 def my_cv_function(inputframe):
-    return outputframe
+    return inputframe
+app.appliedcv = my_cv_function
 
 if __name__ == '__main__' :
-    app.run()
+    app.AFTERrun()
 
 '''
 import FCVA
