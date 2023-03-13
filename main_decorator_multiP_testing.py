@@ -58,7 +58,6 @@ FCVA_screen_manager: #remember to return a root widget
             runTouchApp()
             #here we set shared_metadata_dictVAR["run_state"] to be false so main process knows to exit
             self.shared_metadata_dictVAR["run_state"] = False
-            # self.stop()
         
         def blit_from_shared_memory(self, *args):
             #problem is I don't think you can pickle the stream for multiprocessing (it's a tuple, idk if you can send tuples in a tuple), so send the frame instead
@@ -106,14 +105,10 @@ def open_read(*args):
         frame_rate = args[2]
         print("what is framerate?", frame_rate)
         cap = cv2.VideoCapture(args[3])
-        # trying scikit video as per this: https://stackoverflow.com/questions/42163058/how-to-turn-a-video-into-numpy-array
-        # cap = skvideo.io.vreader(skvideo.datasets.bigbuckbunny())
-        # cap = skvideo.io.vread("cottonbro studio.mp4")
 
         prev = time.time()
         while True:
-            # print("read is not ready", shared_metadata_dict.keys())
-            if "mp_ready" in shared_metadata_dict.keys(): #if the key exists, assume value is true, else I have to add yet another if statement...
+            if "mp_ready" in shared_metadata_dict.keys():
 
                 time_elapsed = time.time() - prev
 
@@ -125,9 +120,7 @@ def open_read(*args):
 
                     # Do something with your image here.
                     shared_metadata_dict["latest_cap_frame"] = frame
-                    # print("keys????", time_elapsed, 1./frame_rate, flush=True)
                     print("cv2 .read() takes long???", time_2 - time_og, 1./frame_rate, flush= True)
-                    #reading DOES take long.. 0.052001953125 0.02
     except Exception as e:
         print("read function died!", e, flush=True)
 
@@ -136,8 +129,6 @@ def open_appliedcv(*args):
         shared_analysis_dict = args[0]
         shared_metadata_dict = args[1]
         appliedcv = args[2]
-        # cap = cv2.VideoCapture(0)
-        # cap = cv2.VideoCapture("Good-Night Kiss (Dance Cover) - 전효성(JUNHYOSEONG) [UhkaBOcIB2A].webm")
         shared_metadata_dict["mp_ready"] = True
 
         while True:
@@ -146,16 +137,8 @@ def open_appliedcv(*args):
                 if shared_metadata_dict["run_state"] == False:
                     break
                 shared_analysis_dict[1] = cv2.flip(appliedcv(shared_metadata_dict["latest_cap_frame"]),0)
-                # shared_analysis_dict[1] = shared_metadata_dict["latest_cap_frame"]
                 print("why is this so fast? fps:", len(shared_analysis_dict),  flush= True)
-                # cv2.imshow('Raw Webcam Feed', image)
-
-                # if cv2.waitKey(10) & 0xFF == ord('q'):
-                #     break
-
-        # cap.release()
-        # cv2.destroyAllWindows()
-        # time.sleep(10000)
+                
     except Exception as e:
         print("open_appliedcv died!", e)
 
@@ -299,7 +282,6 @@ class FCVA():
             else:
                 print("no func selected")
 
-            # kivy_subprocess = FCVA_mp.Process(target=open_kivy, args=(shared_analysis_dict,shared_metadata_dict))
             kivy_subprocess = FCVA_mp.Process(target=open_kivy, args=(shared_analysis_dict,shared_metadata_dict))
             kivy_subprocess.start()
 
@@ -315,24 +297,3 @@ class FCVA():
                 except Exception as e:
                     print("Error in run, make sure stream is set. Example: app.source = cv2.VideoCapture(0)", e)
 
-# app = FCVA()
-# # app.source = cv2.VideoCapture(0)
-# app.run() 
-
-
-'''
-What I want people to do:
-
-from FCVA import FCVA
-
-@decorator
-their basic cv function
-#set the stream source:
-app = FCVA()
-app.source = cv2.VideoCapture(self.device_index)
-
-app.run() #FCVA().run()
-
-app.generate_exe() #FCVA.generate() <--- this will create a pyinstaller exe
-
-'''
