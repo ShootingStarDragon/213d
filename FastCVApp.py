@@ -121,8 +121,8 @@ def open_appliedcv(*args):
             if "run_state" and "latest_cap_frame" in shared_metadata_dict.keys():
                 if shared_metadata_dict["run_state"] == False:
                     break
-                #actually do your cv function here and stuff it in shared_analysis_dict shared memory. I have to flip the image because IIRC opencv is up to down, left to right, while kivy is down to up, left to right. in any case flip code 0 is vertical flip so it's a flip on up down axis while preserving horizontal axis.
-                shared_analysis_dict[1] = cv2.flip(appliedcv(shared_metadata_dict["latest_cap_frame"]),0)
+                #actually do your cv function here and stuff it in shared_analysis_dict shared memory. You might have to flip the image because IIRC opencv is up to down, left to right, while kivy is down to up, left to right. in any case cv2 flip code 0 is what you want most likely is vertical flip so it's a flip on up down axis while preserving horizontal axis.
+                shared_analysis_dict[1] = appliedcv(shared_metadata_dict["latest_cap_frame"],shared_analysis_dict ,shared_metadata_dict)
                 # print("why is this so fast? fps:", len(shared_analysis_dict),  flush= True)
                 
     except Exception as e:
@@ -137,7 +137,6 @@ class FCVA():
         #put the imports here so that all users have to do is import FCVA and instantiate it in the top level
     
     def run(self):
-        print("a")
         if __name__ == "FastCVApp":
             import multiprocessing as FCVA_mp
             #this is so that only 1 window is run when packaging with pyinstaller
@@ -155,7 +154,6 @@ class FCVA():
             video = cv2.VideoCapture(source)
             fps = video.get(cv2.CAP_PROP_FPS)
 
-            print("b")
             read_subprocess = FCVA_mp.Process(target=open_media, args=(shared_metadata_dict, fps, source))
             read_subprocess.start()
 
@@ -169,13 +167,18 @@ class FCVA():
 
             kivy_subprocess = FCVA_mp.Process(target=open_kivy, args=(shared_analysis_dict,shared_metadata_dict))
             kivy_subprocess.start()
-            print("end")
 
             #this try except block holds the main process open so the subprocesses aren't cleared when the main process exits early.
             while shared_metadata_dict["run_state"]:
+                if shared_metadata_dict["run_state"] == False:
+                    #when the while block is done, close all the subprocesses using .join to gracefully exit
+                    read_subprocess.join()
+                    cv_subprocess.join()
+                    kivy_subprocess.join()
+                    print("did join really exit everything?")
+                    break
                 try:
                     pass 
                 except Exception as e:
                     print("Error in run, make sure stream is set. Example: app.source = cv2.VideoCapture(0)", e)
-
 
