@@ -2,8 +2,7 @@
 import cv2 
 import time
 
-if __name__ != '__main__': #this is why it's loading multiple times, need to name the subprocess and run only from there
-    #think of this as the subprocess environment
+def open_kivy(*args):
     from kivy.app import App
     from kivy.lang import Builder
     from kivy.uix.screenmanager import ScreenManager, Screen
@@ -42,6 +41,10 @@ FCVA_screen_manager: #remember to return a root widget
         def on_start(self):
             #start blitting, get the fps as an option [todo]. 1/30 still works because it will always blit the latest image from open_appliedcv subprocess, but kivy itself will be at 30 fps
             Clock.schedule_interval(self.blit_from_shared_memory, 1/30)
+        
+        # def on_request_close(self, *args):
+        #     print("#make sure everybody gets the message to close:", flush=True)
+        #     self.shared_metadata_dictVAR["run_state"] = False
 
         def run(self):
             '''Launches the app in standalone mode.
@@ -52,7 +55,7 @@ FCVA_screen_manager: #remember to return a root widget
             self._run_prepare()
             from kivy.base import runTouchApp
             runTouchApp()
-            #here we set shared_metadata_dictVAR["run_state"] to be false so cv analysis process knows to exit
+            print("#here we set shared_metadata_dictVAR['run_state'] to be false so cv analysis process knows to exit")
             self.shared_metadata_dictVAR["run_state"] = False
         
         def blit_from_shared_memory(self, *args):
@@ -78,7 +81,8 @@ FCVA_screen_manager: #remember to return a root widget
     class StartScreen(Screen):
         pass
 
-def open_kivy(*args):
+
+
     MainApp.shared_analysis_dictVAR = args[0]
     MainApp.shared_metadata_dictVAR = args[1]
     # MainApp.source = args[2]
@@ -120,6 +124,7 @@ def open_appliedcv(*args):
         while True:
             if "run_state" and "latest_cap_frame" in shared_metadata_dict.keys():
                 if shared_metadata_dict["run_state"] == False:
+                    print("are u breaking?", flush=True)
                     break
                 #actually do your cv function here and stuff it in shared_analysis_dict shared memory. You might have to flip the image because IIRC opencv is up to down, left to right, while kivy is down to up, left to right. in any case cv2 flip code 0 is what you want most likely is vertical flip so it's a flip on up down axis while preserving horizontal axis.
                 shared_analysis_dict[1] = appliedcv(shared_metadata_dict["latest_cap_frame"],shared_analysis_dict ,shared_metadata_dict)
