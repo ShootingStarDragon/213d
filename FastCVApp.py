@@ -55,9 +55,7 @@ FCVA_screen_manager: #remember to return a root widget
             self._run_prepare()
             from kivy.base import runTouchApp
             runTouchApp()
-            print("#here we set a new key shared_metadata_dictVAR['fullSTOP'] to be true so cv analysis process knows to exit.", flush=True)
-            self.shared_metadata_dictVAR["fullSTOP"] = True
-            print("got to the end of kivyRUN1", flush=True)
+            self.shared_metadata_dictVAR["kivy_run_state"] = False
         
         def blit_from_shared_memory(self, *args):
             shared_analysis_dict = self.shared_analysis_dictVAR
@@ -96,10 +94,10 @@ def open_media(*args):
 
         prev = time.time()
         while True:
-            if "fullSTOP" in shared_metadata_dict.keys(): 
-                print("open_media breaking!", flush=True)
-                break
-            elif "mp_ready" in shared_metadata_dict.keys():
+            if "kivy_run_state" in shared_metadata_dict.keys(): 
+                if shared_metadata_dict["kivy_run_state"] == False:
+                    break
+            if "mp_ready" in shared_metadata_dict.keys():
                 time_elapsed = time.time() - prev
                 if time_elapsed > 1./frame_rate:
                     time_og = time.time()
@@ -111,7 +109,6 @@ def open_media(*args):
                     if ret:
                         shared_metadata_dict["latest_cap_frame"] = frame
                     # print("cv2 .read() takes long???", time_2 - time_og, 1./frame_rate, flush= True)
-        print("open_media breaking END!", flush=True)
     except Exception as e:
         print("read function died!", e, flush=True)
 
@@ -123,17 +120,16 @@ def open_appliedcv(*args):
         shared_metadata_dict["mp_ready"] = True
 
         while True:
-            if "fullSTOP" in shared_metadata_dict.keys(): 
-                print("open_appliedcv breaking module!", flush=True)
-                break
-            elif "run_state" and "latest_cap_frame" in shared_metadata_dict.keys():
-                if shared_metadata_dict["run_state"] == False:
+            if "kivy_run_state" in shared_metadata_dict.keys(): 
+                if shared_metadata_dict["kivy_run_state"] == False:
+                    break
+            if "kivy_run_state" and "latest_cap_frame" in shared_metadata_dict.keys():
+                if shared_metadata_dict["kivy_run_state"] == False:
                     print("are u breaking?", flush=True)
                     break
                 #actually do your cv function here and stuff it in shared_analysis_dict shared memory. You might have to flip the image because IIRC opencv is up to down, left to right, while kivy is down to up, left to right. in any case cv2 flip code 0 is what you want most likely is vertical flip so it's a flip on up down axis while preserving horizontal axis.
                 shared_analysis_dict[1] = appliedcv(shared_metadata_dict["latest_cap_frame"],shared_analysis_dict ,shared_metadata_dict)
                 # print("why is this so fast? fps:", len(shared_analysis_dict),  flush= True)
-        print("open_appliedcv breaking END!", flush=True)
     except Exception as e:
         print("open_appliedcv died!", e)
 
@@ -155,8 +151,8 @@ class FCVA():
             shared_analysis_dict = shared_mem_manager.dict()
             #shared_metadata_dict holds keys about run states so things don't error by reading something that doesn't exist
             shared_metadata_dict = shared_mem_manager.dict()
-            #set metadata run_state to true so cv subprocess will run and not get an error by reading uninstantiated shared memory.
-            shared_metadata_dict["run_state"] = True
+            #set metadata kivy_run_state to true so cv subprocess will run and not get an error by reading uninstantiated shared memory.
+            shared_metadata_dict["kivy_run_state"] = True
             
             #read just to get the fps
             source = "media/pexels-cottonbro-7791121 720p.mp4"
@@ -178,9 +174,8 @@ class FCVA():
             kivy_subprocess.start()
 
             #this try except block holds the main process open so the subprocesses aren't cleared when the main process exits early.
-            while "run_state" in shared_metadata_dict.keys():
-                # if shared_metadata_dict["run_state"] == False:
-                if "fullSTOP" in shared_metadata_dict.keys():
+            while "kivy_run_state" in shared_metadata_dict.keys():
+                if shared_metadata_dict["kivy_run_state"] == False:
                     #when the while block is done, close all the subprocesses using .join to gracefully exit
                     read_subprocess.join()
                     cv_subprocess.join()
