@@ -39,7 +39,7 @@ FCVA_screen_manager: #remember to return a root widget
             return build_app_from_kv
         
         def on_start(self):
-            #start blitting, get the fps as an option [todo]. 1/30 still works because it will always blit the latest image from open_appliedcv subprocess, but kivy itself will be at 30 fps
+            #start blitting. 1/30 still works because it will always blit the latest image from open_appliedcv subprocess, but kivy itself will be at 30 fps
             Clock.schedule_interval(self.blit_from_shared_memory, args[2])
         
         def on_request_close(self, *args):
@@ -99,9 +99,9 @@ def open_media(*args):
             if "mp_ready" in shared_metadata_dict.keys():
                 time_elapsed = time.time() - prev
                 if time_elapsed > 1./frame_rate:
-                    time_og = time.time()
+                    # time_og = time.time()
                     ret, frame = cap.read()
-                    time_2 = time.time()
+                    # time_2 = time.time()
                     prev = time.time()
 
                     # read the latest frame here and stuff it in the shared memory for open_appliedcv to manipulate
@@ -126,9 +126,8 @@ def open_appliedcv(*args):
                 if shared_metadata_dict["kivy_run_state"] == False:
                     print("are u breaking?", flush=True)
                     break
-                #actually do your cv function here and stuff it in shared_analysis_dict shared memory. You might have to flip the image because IIRC opencv is up to down, left to right, while kivy is down to up, left to right. in any case cv2 flip code 0 is what you want most likely is vertical flip so it's a flip on up down axis while preserving horizontal axis.
+                #actually do your cv function here and stuff your resulting numpy frame in shared_analysis_dict shared memory. You might have to flip the image because IIRC opencv is up to down, left to right, while kivy is down to up, left to right. in any case cv2 flip code 0 is what you want most likely is vertical flip so it's a flip on up down axis while preserving horizontal axis.
                 shared_analysis_dict[1] = appliedcv(shared_metadata_dict["latest_cap_frame"],shared_analysis_dict ,shared_metadata_dict)
-                # print("why is this so fast? fps:", len(shared_analysis_dict),  flush= True)
     except Exception as e:
         print("open_appliedcv died!", e)
 
@@ -138,7 +137,6 @@ class FCVA():
         self.frame_int = 0
         self.originpy = None
         self.appliedcv = None
-        #put the imports here so that all users have to do is import FCVA and instantiate it in the top level
     
     def run(self):
         if __name__ == "FastCVApp":
@@ -170,7 +168,7 @@ class FCVA():
                 print("FCVA.appliedcv block failed")
 
             if not hasattr(self, 'fps'):
-                #default to 30fps, or a blit buffer speed of 1/30 sec
+                #default to 30fps, else set blit buffer speed to 1/30 sec
                 self.fps = 1/30
             kivy_subprocess = FCVA_mp.Process(target=open_kivy, args=(shared_analysis_dict,shared_metadata_dict, self.fps))
             kivy_subprocess.start()
