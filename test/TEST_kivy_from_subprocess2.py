@@ -31,4 +31,5 @@ if __name__ == '__main__':
     b.start()
     #problem was I get here and then it kills kivy
     import time
-    time.sleep(1000)
+    # time.sleep(1000)
+    time.sleep(30)

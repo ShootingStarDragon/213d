@@ -71,4 +71,7 @@ def open_mediapipe(*args):
 app.appliedcv = open_mediapipe
 
 if __name__ == '__main__' :
+    print("OG MAIN #this is the guy that's not ending : - )", flush =True)
     app.run()
+    print("MAIN ENDED", flush = True)
+    
