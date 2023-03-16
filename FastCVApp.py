@@ -40,7 +40,7 @@ FCVA_screen_manager: #remember to return a root widget
         
         def on_start(self):
             #start blitting, get the fps as an option [todo]. 1/30 still works because it will always blit the latest image from open_appliedcv subprocess, but kivy itself will be at 30 fps
-            Clock.schedule_interval(self.blit_from_shared_memory, 1/30)
+            Clock.schedule_interval(self.blit_from_shared_memory, args[2])
         
         def on_request_close(self, *args):
             Clock.unschedule(self.blit_from_shared_memory)
@@ -169,7 +169,10 @@ class FCVA():
             else:
                 print("FCVA.appliedcv block failed")
 
-            kivy_subprocess = FCVA_mp.Process(target=open_kivy, args=(shared_analysis_dict,shared_metadata_dict))
+            if not hasattr(self, 'fps'):
+                #default to 30fps, or a blit buffer speed of 1/30 sec
+                self.fps = 1/30
+            kivy_subprocess = FCVA_mp.Process(target=open_kivy, args=(shared_analysis_dict,shared_metadata_dict, self.fps))
             kivy_subprocess.start()
 
             #this try except block holds the main process open so the subprocesses aren't cleared when the main process exits early.
