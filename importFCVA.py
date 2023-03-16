@@ -21,18 +21,12 @@ def open_mediapipe(*args):
     shared_metadata_dict = args[2]
     try:
         with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
-            #THIS IS SLOW, SO RUNNING HOLISTIC WITHIN ANOTHER LOOP iS WHAT'S KILLING IT
-            #checking here is 12 fps: shared_metadata_dict["run_state"]
-            # timea =  time.time()
-            # while shared_metadata_dict["run_state"] and cap.isOpened():
-            # print("keys?1??", shared_metadata_dict.keys(), flush = True)
             while True:
                 if "kivy_run_state" in shared_metadata_dict.keys(): 
                     if shared_metadata_dict["kivy_run_state"] == False:
                         break
             
                 frame = shared_metadata_dict["latest_cap_frame"]
-                # timef2 =  time.time()
                 # print("how long to read frame?", timef2 - timef1)# first frame takes a while and subsequent frames are fast: 0.9233419895172119 -> 0.006009101867675781
                 
                 # Recolor Feed
