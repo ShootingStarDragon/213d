@@ -82,7 +82,6 @@ FCVA_screen_manager: #remember to return a root widget
 
     MainApp.shared_analysis_dictVAR = args[0]
     MainApp.shared_metadata_dictVAR = args[1]
-    # MainApp.source = args[2]
     MainApp().run()
 
 def open_media(*args):
@@ -155,11 +154,11 @@ class FCVA():
             shared_metadata_dict["kivy_run_state"] = True
             
             #read just to get the fps
-            source = "media/pexels-cottonbro-7791121 720p.mp4"
-            video = cv2.VideoCapture(source)
+            self.source = "media/pexels-cottonbro-7791121 720p.mp4"
+            video = cv2.VideoCapture(self.source)
             fps = video.get(cv2.CAP_PROP_FPS)
 
-            read_subprocess = FCVA_mp.Process(target=open_media, args=(shared_metadata_dict, fps, source))
+            read_subprocess = FCVA_mp.Process(target=open_media, args=(shared_metadata_dict, fps, self.source))
             read_subprocess.start()
 
             if self.appliedcv != None:
@@ -185,5 +184,5 @@ class FCVA():
                 try:
                     pass 
                 except Exception as e:
-                    print("Error in run, make sure stream is set. Example: app.source = cv2.VideoCapture(0)", e)
+                    print("Error in run, make sure stream is set. Example: app.source = 0 (so opencv will open videocapture 0)", e)
 
