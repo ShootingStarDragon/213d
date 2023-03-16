@@ -43,6 +43,7 @@ FCVA_screen_manager: #remember to return a root widget
             Clock.schedule_interval(self.blit_from_shared_memory, 1/30)
         
         def on_request_close(self, *args):
+            Clock.unschedule(self.blit_from_shared_memory)
             print("#kivy subprocess closed END!", flush=True)
 
         def run(self):
@@ -56,6 +57,7 @@ FCVA_screen_manager: #remember to return a root widget
             runTouchApp()
             print("#here we set a new key shared_metadata_dictVAR['fullSTOP'] to be true so cv analysis process knows to exit.", flush=True)
             self.shared_metadata_dictVAR["fullSTOP"] = True
+            print("got to the end of kivyRUN1", flush=True)
         
         def blit_from_shared_memory(self, *args):
             shared_analysis_dict = self.shared_analysis_dictVAR
@@ -122,7 +124,7 @@ def open_appliedcv(*args):
 
         while True:
             if "fullSTOP" in shared_metadata_dict.keys(): 
-                print("open_appliedcv breaking!", flush=True)
+                print("open_appliedcv breaking module!", flush=True)
                 break
             elif "run_state" and "latest_cap_frame" in shared_metadata_dict.keys():
                 if shared_metadata_dict["run_state"] == False:
@@ -132,7 +134,6 @@ def open_appliedcv(*args):
                 shared_analysis_dict[1] = appliedcv(shared_metadata_dict["latest_cap_frame"],shared_analysis_dict ,shared_metadata_dict)
                 # print("why is this so fast? fps:", len(shared_analysis_dict),  flush= True)
         print("open_appliedcv breaking END!", flush=True)
-              
     except Exception as e:
         print("open_appliedcv died!", e)
 
@@ -178,12 +179,13 @@ class FCVA():
 
             #this try except block holds the main process open so the subprocesses aren't cleared when the main process exits early.
             while "run_state" in shared_metadata_dict.keys():
-                if shared_metadata_dict["run_state"] == False:
+                # if shared_metadata_dict["run_state"] == False:
+                if "fullSTOP" in shared_metadata_dict.keys():
                     #when the while block is done, close all the subprocesses using .join to gracefully exit
                     read_subprocess.join()
                     cv_subprocess.join()
+                    video.release()
                     kivy_subprocess.join()
-                    print("did join really exit everything?")
                     break
                 try:
                     pass 
