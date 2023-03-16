@@ -72,5 +72,6 @@ app.appliedcv = open_mediapipe
 
 if __name__ == '__main__' :
     app.source = "media/pexels-cottonbro-7791121 720p.mp4"
+    app.fps = 1/30
     app.run()
     
