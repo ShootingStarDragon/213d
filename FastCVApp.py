@@ -134,7 +134,6 @@ def open_appliedcv(*args):
 class FCVA():
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.frame_int = 0
         self.originpy = None
         self.appliedcv = None
     
