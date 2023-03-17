@@ -160,7 +160,7 @@ class FCVA():
             shared_metadata_dict["kivy_run_state"] = True
             
             #read just to get the fps
-            self.source = "media/pexels-cottonbro-7791121 720p.mp4"
+            # self.source = "media/pexels-cottonbro-7791121 720p.mp4"
             video = cv2.VideoCapture(self.source)
             fps = video.get(cv2.CAP_PROP_FPS)
 
