@@ -15,6 +15,7 @@ def open_kivy(*args):
             super().__init__(*args, **kwargs)
             #remember that the KV string IS THE ACTUAL FILE AND MUST BE INDENTED PROPERLY TO THE LEFT!
             self.KV_string = '''
+#:import kivy.app kivy.app
 <FCVA_screen_manager>:
     id: FCVA_screen_managerID
     StartScreen:
@@ -28,8 +29,10 @@ def open_kivy(*args):
         orientation: 'vertical'
         Image:
             id: image_textureID
-        Label:
+        Button:
+            id: StartScreenButton
             text: "hello world!"
+            on_release: kivy.app.App.get_running_app().toggleCV()
 
 FCVA_screen_manager: #remember to return a root widget
 '''
@@ -73,7 +76,13 @@ FCVA_screen_manager: #remember to return a root widget
                 if len(shared_analysis_dict) > 5:
                     min_key = min(shared_analysis_dict.keys())
                     del shared_analysis_dict[min_key]
-
+        
+        def toggleCV(self, *args):
+            if "toggleCV" not in self.shared_metadata_dictVAR.keys():
+                self.shared_metadata_dictVAR["toggleCV"] = True
+            else:
+                self.shared_metadata_dictVAR["toggleCV"] = not self.shared_metadata_dictVAR["toggleCV"]
+            
     class FCVA_screen_manager(ScreenManager):
         pass
 
@@ -96,7 +105,8 @@ def open_media(*args):
             if "kivy_run_state" in shared_metadata_dict.keys(): 
                 if shared_metadata_dict["kivy_run_state"] == False:
                     break
-            if "mp_ready" in shared_metadata_dict.keys():
+            #the list comprehension just checks if a key is in the list then gets the value of the key. useful since keys might not exist in the shared dict yet :
+            if "mp_ready" in shared_metadata_dict.keys() and [shared_metadata_dict[key] for key in shared_metadata_dict.keys() if key == "toggleCV"] == [True]:
                 time_elapsed = time.time() - prev
                 if time_elapsed > 1./frame_rate:
                     # time_og = time.time()
@@ -122,7 +132,7 @@ def open_appliedcv(*args):
             if "kivy_run_state" in shared_metadata_dict.keys(): 
                 if shared_metadata_dict["kivy_run_state"] == False:
                     break
-            if "kivy_run_state" and "latest_cap_frame" in shared_metadata_dict.keys():
+            if "kivy_run_state" and "latest_cap_frame" in shared_metadata_dict.keys() and [shared_metadata_dict[key] for key in shared_metadata_dict.keys() if key == "toggleCV"] == [True]:
                 if shared_metadata_dict["kivy_run_state"] == False:
                     print("are u breaking?", flush=True)
                     break
@@ -134,7 +144,6 @@ def open_appliedcv(*args):
 class FCVA():
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.originpy = None
         self.appliedcv = None
     
     def run(self):
