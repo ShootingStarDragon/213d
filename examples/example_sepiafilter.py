@@ -25,7 +25,7 @@ def sepia_filter(*args):
 app.appliedcv = sepia_filter
 
 if __name__ == '__main__' :
-    app.source = "creativecommonsmedia/Elephants Dream charstart.webm"
+    app.source = "creativecommonsmedia/Elephants Dream charstart2.webm"
     app.fps = 1/30
     app.title = "Sepia filter example by Pengindoramu"
     app.run()

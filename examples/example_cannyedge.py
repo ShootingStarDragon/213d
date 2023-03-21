@@ -25,7 +25,7 @@ def canny_filter(*args):
 app.appliedcv = canny_filter
 
 if __name__ == '__main__' :
-    app.source = "creativecommonsmedia/Elephants Dream charstart.webm"
+    app.source = "creativecommonsmedia/Elephants Dream charstart2.webm"
     app.fps = 1/30
     app.title = "Canny edge example by Pengindoramu"
     app.run()

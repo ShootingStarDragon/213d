@@ -21,7 +21,7 @@ def open_backsub(*args):
 app.appliedcv = open_backsub
 
 if __name__ == '__main__' :
-    app.source = "creativecommonsmedia/Elephants Dream charstart.webm"
+    app.source = "creativecommonsmedia/Elephants Dream charstart2.webm"
     app.fps = 1/30
     app.title = "Background subtraction example by Pengindoramu"
     app.run()
