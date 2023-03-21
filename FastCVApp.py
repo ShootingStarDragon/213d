@@ -31,13 +31,13 @@ def open_kivy(*args):
             id: image_textureID
         Button:
             id: StartScreenButton
-            text: "hello world!"
+            text: "Start analyzing!"
             on_release: kivy.app.App.get_running_app().toggleCV()
 
 FCVA_screen_manager: #remember to return a root widget
 '''
         def build(self):
-            self.title = "Fast CV App Example v0.1.0 by Pengindoramu"
+            self.title = self.shared_metadata_dictVAR['title']
             build_app_from_kv = Builder.load_string(self.KV_string)
             return build_app_from_kv
         
@@ -104,7 +104,7 @@ def open_media(*args):
     try:
         shared_metadata_dict = args[0]
         frame_rate = args[1]
-        print("what is framerate?", frame_rate, flush=True)
+        # print("what is framerate?", frame_rate, flush=True)
         cap = cv2.VideoCapture(args[2])
 
         prev = time.time()
@@ -184,6 +184,11 @@ class FCVA():
             if not hasattr(self, 'fps'):
                 #default to 30fps, else set blit buffer speed to 1/30 sec
                 self.fps = 1/30
+            if not hasattr(self, 'title'):
+                shared_metadata_dict['title'] = "Fast CV App Example v0.1.0 by Pengindoramu"
+            else: 
+                shared_metadata_dict['title'] = self.title
+
             kivy_subprocess = FCVA_mp.Process(target=open_kivy, args=(shared_analysis_dict,shared_metadata_dict, self.fps))
             kivy_subprocess.start()
 
