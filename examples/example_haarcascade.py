@@ -7,7 +7,17 @@ import FastCVApp
 app = FastCVApp.FCVA()
 import cv2
 
-face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades+'haarcascade_frontalface_default.xml')
+if hasattr(sys, '_MEIPASS'):
+    #if file is frozen by pyinstaller add the MEIPASS folder to path:
+    sys.path.append(sys._MEIPASS)
+    import os
+    sourcing = os.path.join(sys._MEIPASS + os.sep + 'haarcascade_frontalface_default.xml')
+    # print("source?", sourcing, flush = True)
+    face_cascade = cv2.CascadeClassifier(sourcing)
+else:
+    #this example is importing from a higher level package: https://stackoverflow.com/a/41575089
+    sys.path.append('../FastCVApp')
+    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades+'haarcascade_frontalface_default.xml')
 
 def cascade_this(*args):
     #reference: https://stackoverflow.com/questions/70805922/why-does-the-haarcascades-does-not-work-on-opencv

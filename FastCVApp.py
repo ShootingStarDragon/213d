@@ -8,7 +8,6 @@ def open_kivy(*args):
     from kivy.uix.screenmanager import ScreenManager, Screen
     from kivy.graphics.texture import Texture
     from kivy.clock import Clock
-    import mediapipe as mp
 
     class MainApp(App):
         def __init__(self, *args, **kwargs):

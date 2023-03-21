@@ -16,7 +16,7 @@ poetry.lock
 media
 creativecommonsmedia/Elephants Dream charstart.webm
 examples/build
-examples/dist
+examples/dist/MediapipExample.exe
 
 
 
