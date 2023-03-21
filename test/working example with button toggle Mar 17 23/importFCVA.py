@@ -60,7 +60,7 @@ def open_mediapipe(*args):
                                 
                 shared_analysis_dict[1] = cv2.flip(image,0)
     except Exception as e:
-        print("open_mediapipe died!", e, flush=True)
+        print("open_mediapipe died!", e)
 
 app.appliedcv = open_mediapipe
 
