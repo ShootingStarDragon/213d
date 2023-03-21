@@ -12,8 +12,12 @@ if args.algo == 'MOG2':
 else:
     backSub = cv.createBackgroundSubtractorKNN()
 # capture = cv.VideoCapture(cv.samples.findFileOrKeep(args.input))
+<<<<<<< HEAD
 # capture = cv.VideoCapture(0)
 capture = cv.VideoCapture("F:\\CODING\\FastCVApp\\creativecommonsmedia\\Elephants Dream.webm")
+=======
+capture = cv.VideoCapture(0)
+>>>>>>> origin
 if not capture.isOpened():
     print('Unable to open: ' + args.input)
     exit(0)

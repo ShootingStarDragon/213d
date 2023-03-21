@@ -8,13 +8,20 @@ def open_kivy(*args):
     from kivy.uix.screenmanager import ScreenManager, Screen
     from kivy.graphics.texture import Texture
     from kivy.clock import Clock
+<<<<<<< HEAD
+=======
+    import mediapipe as mp
+>>>>>>> origin
 
     class MainApp(App):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
             #remember that the KV string IS THE ACTUAL FILE AND MUST BE INDENTED PROPERLY TO THE LEFT!
             self.KV_string = '''
+<<<<<<< HEAD
 #:import kivy.app kivy.app
+=======
+>>>>>>> origin
 <FCVA_screen_manager>:
     id: FCVA_screen_managerID
     StartScreen:
@@ -28,15 +35,24 @@ def open_kivy(*args):
         orientation: 'vertical'
         Image:
             id: image_textureID
+<<<<<<< HEAD
         Button:
             id: StartScreenButton
             text: "Start analyzing!"
             on_release: kivy.app.App.get_running_app().toggleCV()
+=======
+        Label:
+            text: "hello world!"
+>>>>>>> origin
 
 FCVA_screen_manager: #remember to return a root widget
 '''
         def build(self):
+<<<<<<< HEAD
             self.title = self.shared_metadata_dictVAR['title']
+=======
+            self.title = "Fast CV App Example v0.1.0 by Pengindoramu"
+>>>>>>> origin
             build_app_from_kv = Builder.load_string(self.KV_string)
             return build_app_from_kv
         
@@ -64,6 +80,7 @@ FCVA_screen_manager: #remember to return a root widget
             if len(shared_analysis_dict) > 0:
                 max_key = max(shared_analysis_dict.keys())
                 frame = shared_analysis_dict[max_key]
+<<<<<<< HEAD
                 # print("frame is?",type(frame), frame.shape, flush=True)
 
                 #complicated way of safely checking if a value may or may not exist, then get that value:
@@ -71,6 +88,8 @@ FCVA_screen_manager: #remember to return a root widget
                 #only valid dimensions are if pixels are 3 (RGB) or 4 (RGBA, but u have to also set the colorfmt)
                 if [x for x in existence_check if x == 3 or x == 4] == []:
                     raise Exception("check your numpy dimensions! should be height x width x 3/4: like  (1920,1080,3):",frame.shape)
+=======
+>>>>>>> origin
                 buf = frame.tobytes()
                 #texture documentation: https://github.com/kivy/kivy/blob/master/kivy/graphics/texture.pyx
                 #blit to texture
@@ -82,6 +101,7 @@ FCVA_screen_manager: #remember to return a root widget
                 if len(shared_analysis_dict) > 5:
                     min_key = min(shared_analysis_dict.keys())
                     del shared_analysis_dict[min_key]
+<<<<<<< HEAD
         
         def toggleCV(self, *args):
             if "toggleCV" not in self.shared_metadata_dictVAR.keys():
@@ -89,6 +109,9 @@ FCVA_screen_manager: #remember to return a root widget
             else:
                 self.shared_metadata_dictVAR["toggleCV"] = not self.shared_metadata_dictVAR["toggleCV"]
             
+=======
+
+>>>>>>> origin
     class FCVA_screen_manager(ScreenManager):
         pass
 
@@ -103,7 +126,11 @@ def open_media(*args):
     try:
         shared_metadata_dict = args[0]
         frame_rate = args[1]
+<<<<<<< HEAD
         # print("what is framerate?", frame_rate, flush=True)
+=======
+        print("what is framerate?", frame_rate, flush=True)
+>>>>>>> origin
         cap = cv2.VideoCapture(args[2])
 
         prev = time.time()
@@ -111,8 +138,12 @@ def open_media(*args):
             if "kivy_run_state" in shared_metadata_dict.keys(): 
                 if shared_metadata_dict["kivy_run_state"] == False:
                     break
+<<<<<<< HEAD
             #the list comprehension just checks if a key is in the list then gets the value of the key. useful since keys might not exist in the shared dict yet :
             if "mp_ready" in shared_metadata_dict.keys() and [shared_metadata_dict[key] for key in shared_metadata_dict.keys() if key == "toggleCV"] == [True]:
+=======
+            if "mp_ready" in shared_metadata_dict.keys():
+>>>>>>> origin
                 time_elapsed = time.time() - prev
                 if time_elapsed > 1./frame_rate:
                     # time_og = time.time()
@@ -138,18 +169,31 @@ def open_appliedcv(*args):
             if "kivy_run_state" in shared_metadata_dict.keys(): 
                 if shared_metadata_dict["kivy_run_state"] == False:
                     break
+<<<<<<< HEAD
             if "kivy_run_state" and "latest_cap_frame" in shared_metadata_dict.keys() and [shared_metadata_dict[key] for key in shared_metadata_dict.keys() if key == "toggleCV"] == [True]:
                 if shared_metadata_dict["kivy_run_state"] == False:
                     break
                 #actually do your cv function here and stuff your resulting numpy frame in shared_analysis_dict shared memory. You might have to flip the image because IIRC opencv is up to down, left to right, while kivy is down to up, left to right. in any case cv2 flip code 0 is what you want most likely is vertical flip so it's a flip on up down axis while preserving horizontal axis.
                 shared_analysis_dict[1] = appliedcv(shared_metadata_dict["latest_cap_frame"],shared_analysis_dict ,shared_metadata_dict)
                 # shared_analysis_dict[1] = cv2.flip(appliedcv(shared_metadata_dict["latest_cap_frame"],shared_analysis_dict ,shared_metadata_dict),0)
+=======
+            if "kivy_run_state" and "latest_cap_frame" in shared_metadata_dict.keys():
+                if shared_metadata_dict["kivy_run_state"] == False:
+                    print("are u breaking?", flush=True)
+                    break
+                #actually do your cv function here and stuff your resulting numpy frame in shared_analysis_dict shared memory. You might have to flip the image because IIRC opencv is up to down, left to right, while kivy is down to up, left to right. in any case cv2 flip code 0 is what you want most likely is vertical flip so it's a flip on up down axis while preserving horizontal axis.
+                shared_analysis_dict[1] = appliedcv(shared_metadata_dict["latest_cap_frame"],shared_analysis_dict ,shared_metadata_dict)
+>>>>>>> origin
     except Exception as e:
         print("open_appliedcv died!", e)
 
 class FCVA():
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+<<<<<<< HEAD
+=======
+        self.originpy = None
+>>>>>>> origin
         self.appliedcv = None
     
     def run(self):
@@ -166,6 +210,10 @@ class FCVA():
             shared_metadata_dict["kivy_run_state"] = True
             
             #read just to get the fps
+<<<<<<< HEAD
+=======
+            self.source = "media/pexels-cottonbro-7791121 720p.mp4"
+>>>>>>> origin
             video = cv2.VideoCapture(self.source)
             fps = video.get(cv2.CAP_PROP_FPS)
 
@@ -183,11 +231,14 @@ class FCVA():
             if not hasattr(self, 'fps'):
                 #default to 30fps, else set blit buffer speed to 1/30 sec
                 self.fps = 1/30
+<<<<<<< HEAD
             if not hasattr(self, 'title'):
                 shared_metadata_dict['title'] = "Fast CV App Example v0.1.0 by Pengindoramu"
             else: 
                 shared_metadata_dict['title'] = self.title
 
+=======
+>>>>>>> origin
             kivy_subprocess = FCVA_mp.Process(target=open_kivy, args=(shared_analysis_dict,shared_metadata_dict, self.fps))
             kivy_subprocess.start()
 
