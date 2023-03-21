@@ -7,7 +7,11 @@ license = "MIT License"
 readme = "README.md"
 
 [tool.poetry.dependencies]
+<<<<<<< HEAD
 python = "^3.9,<3.12"
+=======
+python = "^3.9"
+>>>>>>> origin
 Kivy = "^2.1.0"
 opencv-python = "^4.6.0.66"
 pydantic = "^1.10.2"
@@ -19,7 +23,10 @@ trio = "^0.22.0"
 [tool.poetry.group.dev.dependencies]
 black = "^22.10.0"
 PySnooper = "^1.1.1"
+<<<<<<< HEAD
 pyinstaller = "^5.9.0"
+=======
+>>>>>>> origin
 
 [build-system]
 requires = ["poetry-core"]
