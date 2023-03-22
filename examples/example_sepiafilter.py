@@ -1,6 +1,11 @@
-#this example is importing from a higher level package: https://stackoverflow.com/a/41575089
 import sys
-sys.path.append('../FastCVApp')
+if hasattr(sys, '_MEIPASS'):
+    #if file is frozen by pyinstaller add the MEIPASS folder to path:
+    sys.path.append(sys._MEIPASS)
+else:
+    #this example is importing from a higher level package: https://stackoverflow.com/a/41575089
+    sys.path.append('..')
+
 
 import FastCVApp
 

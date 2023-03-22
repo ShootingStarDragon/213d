@@ -4,7 +4,7 @@ if hasattr(sys, '_MEIPASS'):
     sys.path.append(sys._MEIPASS)
 else:
     #this example is importing from a higher level package: https://stackoverflow.com/a/41575089
-    sys.path.append('../FastCVApp')
+    sys.path.append('..')
 
 import FastCVApp
 app = FastCVApp.FCVA()
