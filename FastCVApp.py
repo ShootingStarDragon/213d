@@ -1,6 +1,7 @@
 #so that main and subprocesses have access to this
 import cv2 
 import time
+import os
 
 def open_kivy(*args):
     from kivy.app import App
@@ -61,6 +62,8 @@ FCVA_screen_manager: #remember to return a root widget
         
         def blit_from_shared_memory(self, *args):
             shared_analysis_dict = self.shared_analysis_dictVAR
+            shared_metadata_dict = self.shared_metadata_dictVAR
+
             if len(shared_analysis_dict) > 0:
                 max_key = max(shared_analysis_dict.keys())
                 frame = shared_analysis_dict[max_key]
@@ -72,11 +75,20 @@ FCVA_screen_manager: #remember to return a root widget
                 if [x for x in existence_check if x == 3 or x == 4] == []:
                     raise Exception("check your numpy dimensions! should be height x width x 3/4: like  (1920,1080,3):",frame.shape)
                 buf = frame.tobytes()
+                
+                #check for existence of colorfmt in shared_metadata_dict, then if so, set colorfmt:
+                formatoption = [shared_metadata_dict[x] for x in shared_metadata_dict.keys() if x == "colorfmt"]
+                if len(formatoption) != 0:
+                    self.colorfmtval = formatoption[0]
+                else:
+                    #default to bgr
+                    self.colorfmtval = "bgr"
+                
                 #texture documentation: https://github.com/kivy/kivy/blob/master/kivy/graphics/texture.pyx
                 #blit to texture
                 #blit buffer example: https://stackoverflow.com/questions/61122285/kivy-camera-application-with-opencv-in-android-shows-black-screen
-                texture1 = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt='bgr') 
-                texture1.blit_buffer(buf, colorfmt='bgr', bufferfmt='ubyte')
+                texture1 = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt=self.colorfmtval) 
+                texture1.blit_buffer(buf, colorfmt=self.colorfmtval, bufferfmt='ubyte')
                 App.get_running_app().root.get_screen('start_screen_name').ids["image_textureID"].texture = texture1
                 #after blitting delete some key/value pairs if dict has more than 5 frames:
                 if len(shared_analysis_dict) > 5:
@@ -103,7 +115,7 @@ def open_media(*args):
     try:
         shared_metadata_dict = args[0]
         frame_rate = args[1]
-        # print("what is framerate?", frame_rate, flush=True)
+        print("what is framerate?", frame_rate, flush=True)
         cap = cv2.VideoCapture(args[2])
 
         prev = time.time()
@@ -168,6 +180,13 @@ class FCVA():
             #read just to get the fps
             video = cv2.VideoCapture(self.source)
             fps = video.get(cv2.CAP_PROP_FPS)
+            # print("args ok?", shared_metadata_dict, fps, self.source, os.path.isfile(self.source))
+
+            #complain if file doesn't exist:
+            if not os.path.isfile(self.source):
+                
+                raise Exception ("Source failed isfile check: " + str(os.path.isfile(self.source)) + ". Checking location: "+ str(os.path.join(os.getcwd(), self.source)))
+            
 
             read_subprocess = FCVA_mp.Process(target=open_media, args=(shared_metadata_dict, fps, self.source))
             read_subprocess.start()
@@ -187,6 +206,9 @@ class FCVA():
                 shared_metadata_dict['title'] = "Fast CV App Example v0.1.0 by Pengindoramu"
             else: 
                 shared_metadata_dict['title'] = self.title
+
+            if hasattr(self, 'colorfmt'):
+                shared_metadata_dict['colorfmt'] = self.colorfmt
 
             kivy_subprocess = FCVA_mp.Process(target=open_kivy, args=(shared_analysis_dict,shared_metadata_dict, self.fps))
             kivy_subprocess.start()

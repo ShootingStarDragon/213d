@@ -4,7 +4,7 @@ if hasattr(sys, '_MEIPASS'):
     sys.path.append(sys._MEIPASS)
 else:
     #this example is importing from a higher level package: https://stackoverflow.com/a/41575089
-    sys.path.append('..')
+    sys.path.append('../FastCVApp')
 
 import FastCVApp
 
@@ -65,7 +65,7 @@ def open_mediapipe(*args):
 app.appliedcv = open_mediapipe
 
 if __name__ == '__main__' :
-    app.source = "creativecommonsmedia/Elephants Dream charstart2.webm"
+    app.source = "examples/creativecommonsmedia/Elephants Dream charstart2.webm"
     app.fps = 1/30
     app.title = "Mediapipe example by Pengindoramu"
     app.run()
