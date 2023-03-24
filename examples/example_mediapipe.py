@@ -10,16 +10,17 @@ import FastCVApp
 
 app = FastCVApp.FCVA()
 
+#importing here means it's available to the subprocess as well. You can probably cut loading time by only loading mediapipe for the right subprocess.
 import mediapipe as mp
 mp_drawing = mp.solutions.drawing_utils # Drawing helpers
 mp_holistic = mp.solutions.holistic # Mediapipe Solutions
 import cv2
 
 def open_mediapipe(*args):
-    image = args[0]
-    shared_analysis_dict = args[1]
-    shared_metadata_dict = args[2]
     try:
+        image = args[0]
+        shared_analysis_dict = args[1]
+        shared_metadata_dict = args[2]
         with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
             while True:
                 if "kivy_run_state" in shared_metadata_dict.keys(): 

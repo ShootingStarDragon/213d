@@ -3,7 +3,7 @@ if hasattr(sys, '_MEIPASS'):
     #if file is frozen by pyinstaller add the MEIPASS folder to path:
     sys.path.append(sys._MEIPASS)
 else:
-    #this example is importing from a higher level package: https://stackoverflow.com/a/41575089
+    #this example is importing from a higher level package if running from cmd: https://stackoverflow.com/a/41575089
     sys.path.append('../FastCVApp')
 
 import FastCVApp
@@ -21,12 +21,11 @@ def open_backsub(*args):
         image = cv2.cvtColor(image,cv2.COLOR_GRAY2RGB)
         return cv2.flip(image,0)
     except Exception as e:
-        print("open_backsub died!", e, flush=True)
+        print("open_backsub subprocess died! ", e, flush=True)
 app.appliedcv = open_backsub
 
 if __name__ == '__main__' :
     app.source = "examples/creativecommonsmedia/Elephants Dream charstart2.webm"
-    # app.source = "creativecommonsmedia/Elephants Dream charstart21.webm"
     app.fps = 1/30
     app.title = "Background subtraction example by Pengindoramu"
     app.colorfmt = 'bgr'
