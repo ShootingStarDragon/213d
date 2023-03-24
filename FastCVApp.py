@@ -1,4 +1,4 @@
-#so that main and subprocesses have access to this
+#so that main and subprocesses have access to this since it's not under if __name__ is main
 import cv2 
 import time
 import os
@@ -47,7 +47,7 @@ FCVA_screen_manager: #remember to return a root widget
             return build_app_from_kv
         
         def on_start(self):
-            #start blitting. 1/30 still works because it will always blit the latest image from open_appliedcv subprocess, but kivy itself will be at 30 fps
+            #start blitting. 1/30 always works because it will always blit the latest image from open_appliedcv subprocess, but kivy itself will be at 30 fps
             Clock.schedule_interval(self.blit_from_shared_memory, args[2])
         
         def on_request_close(self, *args):
@@ -78,7 +78,7 @@ FCVA_screen_manager: #remember to return a root widget
                 existence_check = [frame.shape[x] for x in range(0,len(frame.shape)) if x == 2]
                 #only valid dimensions are if pixels are 3 (RGB) or 4 (RGBA, but u have to also set the colorfmt)
                 if [x for x in existence_check if x == 3 or x == 4] == []:
-                    raise Exception("check your numpy dimensions! should be height x width x 3/4: like  (1920,1080,3):",frame.shape)
+                    raise Exception("check your numpy dimensions! should be height x width x 3/4: like  (1920,1080,3): ",frame.shape)
                 buf = frame.tobytes()
                 
                 #check for existence of colorfmt in shared_metadata_dict, then if so, set colorfmt:
@@ -120,7 +120,7 @@ def open_media(*args):
     try:
         shared_metadata_dict = args[0]
         frame_rate = args[1]
-        print("what is framerate?", frame_rate, flush=True)
+        # print("what is framerate?", frame_rate, flush=True)
         cap = cv2.VideoCapture(args[2])
 
         prev = time.time()
@@ -128,7 +128,7 @@ def open_media(*args):
             if "kivy_run_state" in shared_metadata_dict.keys(): 
                 if shared_metadata_dict["kivy_run_state"] == False:
                     break
-            #the list comprehension just checks if a key is in the list then gets the value of the key. useful since keys might not exist in the shared dict yet :
+            #the list comprehension just checks if a key is in the list then gets the value of the key. useful since keys might not exist in the shared dict yet:
             if "mp_ready" in shared_metadata_dict.keys() and [shared_metadata_dict[key] for key in shared_metadata_dict.keys() if key == "toggleCV"] == [True]:
                 time_elapsed = time.time() - prev
                 if time_elapsed > 1./frame_rate:
@@ -158,7 +158,7 @@ def open_appliedcv(*args):
             if "kivy_run_state" and "latest_cap_frame" in shared_metadata_dict.keys() and [shared_metadata_dict[key] for key in shared_metadata_dict.keys() if key == "toggleCV"] == [True]:
                 if shared_metadata_dict["kivy_run_state"] == False:
                     break
-                #actually do your cv function here and stuff your resulting numpy frame in shared_analysis_dict shared memory. You might have to flip the image because IIRC opencv is up to down, left to right, while kivy is down to up, left to right. in any case cv2 flip code 0 is what you want most likely is vertical flip so it's a flip on up down axis while preserving horizontal axis.
+                #actually do your cv function here and stuff your resulting numpy frame in shared_analysis_dict shared memory. You might have to flip the image because IIRC opencv is up to down, left to right, while kivy is down to up, left to right. in any case cv2 flip code 0 is what you want most likely since code 0 is vertical flip (and preserves horizontal axis).
                 shared_analysis_dict[1] = appliedcv(shared_metadata_dict["latest_cap_frame"],shared_analysis_dict ,shared_metadata_dict)
                 # shared_analysis_dict[1] = cv2.flip(appliedcv(shared_metadata_dict["latest_cap_frame"],shared_analysis_dict ,shared_metadata_dict),0)
     except Exception as e:
@@ -223,7 +223,7 @@ class FCVA():
             #this try except block holds the main process open so the subprocesses aren't cleared when the main process exits early.
             while "kivy_run_state" in shared_metadata_dict.keys():
                 if shared_metadata_dict["kivy_run_state"] == False:
-                    #when the while block is done, close all the subprocesses using .join to gracefully exit
+                    #when the while block is done, close all the subprocesses using .join to gracefully exit. also make sure opencv releases the video.
                     read_subprocess.join()
                     cv_subprocess.join()
                     video.release()
