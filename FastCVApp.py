@@ -13,8 +13,13 @@ def open_kivy(*args):
     class MainApp(App):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
-            #remember that the KV string IS THE ACTUAL FILE AND MUST BE INDENTED PROPERLY TO THE LEFT!
-            self.KV_string = '''
+            shared_metadata_dict = self.shared_metadata_dictVAR
+            kvstring_check = [shared_metadata_dict[x] for x in shared_metadata_dict.keys() if x == "kvstring"]
+            if len(kvstring_check) != 0:
+                self.KV_string = kvstring_check[0]
+            else:
+                #remember that the KV string IS THE ACTUAL FILE AND MUST BE INDENTED PROPERLY TO THE LEFT!
+                self.KV_string = '''
 #:import kivy.app kivy.app
 <FCVA_screen_manager>:
     id: FCVA_screen_managerID
@@ -206,9 +211,11 @@ class FCVA():
                 shared_metadata_dict['title'] = "Fast CV App Example v0.1.0 by Pengindoramu"
             else: 
                 shared_metadata_dict['title'] = self.title
-
             if hasattr(self, 'colorfmt'):
                 shared_metadata_dict['colorfmt'] = self.colorfmt
+            if hasattr(self, 'kvstring'):
+                shared_metadata_dict['kvstring'] = self.kvstring
+
 
             kivy_subprocess = FCVA_mp.Process(target=open_kivy, args=(shared_analysis_dict,shared_metadata_dict, self.fps))
             kivy_subprocess.start()

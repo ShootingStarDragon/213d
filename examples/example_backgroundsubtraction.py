@@ -30,5 +30,27 @@ if __name__ == '__main__' :
     app.fps = 1/30
     app.title = "Background subtraction example by Pengindoramu"
     app.colorfmt = 'bgr'
+    app.kvstring = '''
+#:import kivy.app kivy.app
+<FCVA_screen_manager>:
+    id: FCVA_screen_managerID
+    StartScreen:
+        id: start_screen_id
+        name: 'start_screen_name'
+        manager: 'FCVA_screen_managerID'
+
+<StartScreen>:
+    id: start_screen_id
+    BoxLayout:
+        orientation: 'vertical'
+        Image:
+            id: image_textureID
+        Button:
+            id: StartScreenButton
+            text: "Start analyzing! This GUI was made with a custom KV string."
+            on_release: kivy.app.App.get_running_app().toggleCV()
+
+FCVA_screen_manager: #remember to return a root widget
+'''
     app.run()
     
