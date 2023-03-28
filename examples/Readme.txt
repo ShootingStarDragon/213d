@@ -1,6 +1,6 @@
-for building with pyInstaller:
-first make sure you have Poetry so all dependencies are installed by the pyproject.toml file
-tutorial is here: https://kivyschool.com/installation/
+For building with pyInstaller:
+First make sure you have Poetry so all dependencies are installed by the pyproject.toml file
+Tutorial is here: https://kivyschool.com/installation/
 Once poetry is installed:
     poetry update
     poetry shell
