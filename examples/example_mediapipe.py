@@ -1,21 +1,26 @@
-#this example is importing from a higher level package: https://stackoverflow.com/a/41575089
 import sys
-sys.path.append('../FastCVApp')
+if hasattr(sys, '_MEIPASS'):
+    #if file is frozen by pyinstaller add the MEIPASS folder to path:
+    sys.path.append(sys._MEIPASS)
+else:
+    #this example is importing from a higher level package: https://stackoverflow.com/a/41575089
+    sys.path.append('../FastCVApp')
 
 import FastCVApp
 
 app = FastCVApp.FCVA()
 
+#importing here means it's available to the subprocess as well. You can probably cut loading time by only loading mediapipe for the right subprocess.
 import mediapipe as mp
 mp_drawing = mp.solutions.drawing_utils # Drawing helpers
 mp_holistic = mp.solutions.holistic # Mediapipe Solutions
 import cv2
 
 def open_mediapipe(*args):
-    image = args[0]
-    shared_analysis_dict = args[1]
-    shared_metadata_dict = args[2]
     try:
+        image = args[0]
+        shared_analysis_dict = args[1]
+        shared_metadata_dict = args[2]
         with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
             while True:
                 if "kivy_run_state" in shared_metadata_dict.keys(): 
@@ -61,7 +66,7 @@ def open_mediapipe(*args):
 app.appliedcv = open_mediapipe
 
 if __name__ == '__main__' :
-    app.source = "creativecommonsmedia/Elephants Dream charstart2.webm"
+    app.source = "examples/creativecommonsmedia/Elephants Dream charstart2.webm"
     app.fps = 1/30
     app.title = "Mediapipe example by Pengindoramu"
     app.run()
