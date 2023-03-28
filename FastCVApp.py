@@ -220,9 +220,10 @@ class FCVA():
                 #if you're in examples folder, path is gonna be wrong, so fix it:
                 dirlist = os.getcwd().split(os.path.sep)
                 if 'examples' in dirlist[-1]:
-                    dirlist_source = os.path.join(*dirlist[:len(dirlist)-1]) + self.source
-                    if not os.pathisfile(dirlist_source):
-                        print("not a playable file: ", dirlist_source)
+                    #pathjoin is weird: https://stackoverflow.com/questions/2422798/python-os-path-join-on-windows
+                    dirlist_source = dirlist[0] + os.path.sep + os.path.join(*dirlist[1:len(dirlist)-1]) + os.path.sep + self.source
+                    if not os.path.isfile(dirlist_source):
+                        print("not a playable file: ??", dirlist_source)
                     else:
                         self.source = dirlist_source
                 #NOW check current directory:
