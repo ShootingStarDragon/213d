@@ -2,8 +2,6 @@
 import cv2 
 import time
 import os, sys
-print("WHERE IS THE TEMPFILE WTF", os.getcwd())
-print("mac option", os.path.sep.join(sys.argv[0].split(os.path.sep)[:-1]))
 
 def open_kivy(*args):
     from kivy.app import App
@@ -184,19 +182,27 @@ class FCVA():
             #set metadata kivy_run_state to true so cv subprocess will run and not get an error by reading uninstantiated shared memory.
             shared_metadata_dict["kivy_run_state"] = True
             
-            import os
-            print("WHERE IS THE TEMPFILE WTF", os.getcwd())
+            #complain if file doesn't exist:
+            if not os.path.isfile(self.source):
+                raise Exception ("Source failed isfile check: " + str(os.path.isfile(self.source)) + ". Checking location: "+ str(os.path.join(os.getcwd(), self.source)))
+            
+            #reference: https://stackoverflow.com/questions/8220108/how-do-i-check-the-operating-system-in-python
+            from sys import platform
+            if platform == "linux" or platform == "linux2":
+                # linux
+            elif platform == "darwin":
+                # OS X, need to change filepath so pyinstaller exe will work
+                #reference: https://stackoverflow.com/questions/54837659/python-pyinstaller-on-mac-current-directory-problem 
+                mac_path = os.path.sep.join(sys.argv[0].split(os.path.sep)[:-1])
+                print("mac option", mac_path + os.path.sep)
+                self.source = mac_path + self.source
+            #elif platform == "win32": #do nothing, app assumes windows
+                # Windows...
             
             #read just to get the fps
             video = cv2.VideoCapture(self.source)
             fps = video.get(cv2.CAP_PROP_FPS)
             # print("args ok?", shared_metadata_dict, fps, self.source, os.path.isfile(self.source))
-
-            #complain if file doesn't exist:
-            if not os.path.isfile(self.source):
-                
-                raise Exception ("Source failed isfile check: " + str(os.path.isfile(self.source)) + ". Checking location: "+ str(os.path.join(os.getcwd(), self.source)))
-            
 
             read_subprocess = FCVA_mp.Process(target=open_media, args=(shared_metadata_dict, fps, self.source))
             read_subprocess.start()
