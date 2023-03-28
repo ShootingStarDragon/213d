@@ -189,22 +189,59 @@ class FCVA():
                 pass
             elif platform == "darwin":
                 # OS X, need to change filepath so pyinstaller exe will work
-                #reference: https://stackoverflow.com/questions/54837659/python-pyinstaller-on-mac-current-directory-problem 
                 mac_path = os.path.sep.join(sys.argv[0].split(os.path.sep)[:-1])+ os.path.sep
                 print("mac option", mac_path )
                 print("what is self source then?", self.source)
-                
-                # this gets to local folder but for convenience go to temp file instead
-                # self.source = mac_path + self.source
-                tempsource = sys._MEIPASS + os.sep + self.source
-                print("go to tmpfile", tempsource)
-                self.source = tempsource
+                mac_source = mac_path + self.source
+
+                # check if file exists in dir, if not then check tmp folder, if nothing, raise error:
+                # reference: https://stackoverflow.com/questions/54837659/python-pyinstaller-on-mac-current-directory-problem 
+                if os.path.isfile(mac_source):
+                    print("file exists in dir ", mac_source)
+                    self.source = mac_source
+                elif not os.path.isfile(mac_source):
+                    print("File not in .dmg directory, location failed isfile check, checking tmp dir: ", mac_source)
+
+                #checking tempfolder
+                if hasattr(sys, '_MEIPASS'):
+                    #if file is frozen by pyinstaller add the MEIPASS folder to path:
+                    sys.path.append(sys._MEIPASS)
+                    tempsource = sys._MEIPASS + os.sep + self.source
+
+                    if os.path.isfile(tempsource): 
+                        self.source = tempsource
+                    elif not os.path.isfile(tempsource):
+                        raise Exception ("Source failed isfile check: " + str(tempsource))
 
             elif platform == "win32": 
                 # Windows...
-                #complain if file doesn't exist:
-                if not os.path.isfile(self.source):
-                    raise Exception ("Source failed isfile check: " + str(os.path.isfile(self.source)) + ". Checking location: "+ str(os.path.join(os.getcwd(), self.source)))
+                # check current directory, then check tmpfolder, then complain:
+
+                #if you're in examples folder, path is gonna be wrong, so fix it:
+                dirlist = os.getcwd().split(os.path.sep)
+                if 'examples' in dirlist[-1]:
+                    dirlist_source = os.path.join(*dirlist[:len(dirlist)-1]) + self.source
+                    if not os.pathisfile(dirlist_source):
+                        print("not a playable file: ", dirlist_source)
+                    else:
+                        self.source = dirlist_source
+                #NOW check current directory:
+                elif os.path.isfile(self.source):
+                    print("file loaded:", os.getcwd() + os.sep + self.source)
+                elif not os.path.isfile(self.source):
+                    print("Source failed isfile check: " + str(os.path.isfile(self.source)) + ". Checking location: "+ str(os.path.join(os.getcwd(), self.source)) + " Checking tmpdir next:")
+                
+                # print("#check sys attr:", hasattr(sys, '_MEIPASS'))
+                if hasattr(sys, '_MEIPASS'):
+                    #if file is frozen by pyinstaller add the MEIPASS folder to path:
+                    sys.path.append(sys._MEIPASS)
+                    tempsource = sys._MEIPASS + os.sep + self.source
+
+                    if os.path.isfile(tempsource): 
+                        self.source = tempsource
+                    #checked everything, now complain:
+                    elif not os.path.isfile(tempsource):
+                        raise Exception ("Source failed isfile check: " + str(tempsource))
                 
             
             #read just to get the fps
