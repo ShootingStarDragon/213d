@@ -182,22 +182,23 @@ class FCVA():
             #set metadata kivy_run_state to true so cv subprocess will run and not get an error by reading uninstantiated shared memory.
             shared_metadata_dict["kivy_run_state"] = True
             
-            #complain if file doesn't exist:
-            if not os.path.isfile(self.source):
-                raise Exception ("Source failed isfile check: " + str(os.path.isfile(self.source)) + ". Checking location: "+ str(os.path.join(os.getcwd(), self.source)))
-            
             #reference: https://stackoverflow.com/questions/8220108/how-do-i-check-the-operating-system-in-python
             from sys import platform
             if platform == "linux" or platform == "linux2":
                 # linux
+                pass
             elif platform == "darwin":
                 # OS X, need to change filepath so pyinstaller exe will work
                 #reference: https://stackoverflow.com/questions/54837659/python-pyinstaller-on-mac-current-directory-problem 
-                mac_path = os.path.sep.join(sys.argv[0].split(os.path.sep)[:-1])
-                print("mac option", mac_path + os.path.sep)
+                mac_path = os.path.sep.join(sys.argv[0].split(os.path.sep)[:-1])+ os.path.sep
+                print("mac option", mac_path )
                 self.source = mac_path + self.source
-            #elif platform == "win32": #do nothing, app assumes windows
+            elif platform == "win32": 
                 # Windows...
+                #complain if file doesn't exist:
+                if not os.path.isfile(self.source):
+                    raise Exception ("Source failed isfile check: " + str(os.path.isfile(self.source)) + ". Checking location: "+ str(os.path.join(os.getcwd(), self.source)))
+                
             
             #read just to get the fps
             video = cv2.VideoCapture(self.source)
