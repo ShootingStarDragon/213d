@@ -165,6 +165,9 @@ class FCVA():
             #set metadata kivy_run_state to true so cv subprocess will run and not get an error by reading uninstantiated shared memory.
             shared_metadata_dict["kivy_run_state"] = True
             
+            import os
+            print("WHERE IS THE TEMPFILE WTF", os.getcwd())
+            
             #read just to get the fps
             video = cv2.VideoCapture(self.source)
             fps = video.get(cv2.CAP_PROP_FPS)
