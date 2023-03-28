@@ -8,7 +8,7 @@ a = Analysis(
     ['examples/example_backgroundsubtraction.py'],
     pathex=[],
     binaries=[],
-    datas=[('FastCVApp.py', '.'), ('examples/creativecommonsmedia','creativecommonsmedia')],
+    datas=[('FastCVApp.py', '.'), ('examples/creativecommonsmedia/','creativecommonsmedia')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
