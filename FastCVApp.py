@@ -1,7 +1,9 @@
 #so that main and subprocesses have access to this since it's not under if __name__ is main
 import cv2 
 import time
-import os
+import os, sys
+print("WHERE IS THE TEMPFILE WTF", os.getcwd())
+print("mac option", os.path.sep.join(sys.argv[0].split(os.path.sep)[:-1]))
 
 def open_kivy(*args):
     from kivy.app import App
