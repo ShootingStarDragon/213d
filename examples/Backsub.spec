@@ -4,7 +4,7 @@ from kivy_deps import sdl2, glew
 block_cipher = None
 
 #don't think I can use pathex since I run the spec file in examples folder and then it goes back up to look for "examples\FastCVApp.py"
-basedir = F:\\CODING\\FastCVApp\\ # replace basedir with the location of "FastCVApp" folder
+basedir = "F:\\CODING\\FastCVApp\\" # replace basedir with the location of "FastCVApp" folder
 
 a = Analysis(
     ['example_backgroundsubtraction.py'],

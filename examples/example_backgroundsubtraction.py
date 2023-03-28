@@ -5,7 +5,15 @@ if hasattr(sys, '_MEIPASS'):
     print("meipass should have already been added...")
 else:
     #this example is importing from a higher level package if running from cmd: https://stackoverflow.com/a/41575089
-    sys.path.append('../FastCVApp')
+    import os
+    #add the right path depending on if you're running from examples or from main folder:
+    if 'examples' in os.getcwd().split(os.path.sep)[-1]:
+        sys.path.append('..') #when running from examples folder, append the upper level
+    else:
+        #assume they're in main folder trying `python examples/example_backgroundsubtraction.py`
+        sys.path.append('../FastCVApp') #when running from main folder
+    print("adding above level sys")
+    print("cwd?", os.getcwd().split(os.path.sep))
 
 import FastCVApp
 app = FastCVApp.FCVA()
