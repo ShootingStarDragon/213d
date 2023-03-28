@@ -192,7 +192,14 @@ class FCVA():
                 #reference: https://stackoverflow.com/questions/54837659/python-pyinstaller-on-mac-current-directory-problem 
                 mac_path = os.path.sep.join(sys.argv[0].split(os.path.sep)[:-1])+ os.path.sep
                 print("mac option", mac_path )
-                self.source = mac_path + self.source
+                print("what is self source then?", self.source)
+                
+                # this gets to local folder but for convenience go to temp file instead
+                # self.source = mac_path + self.source
+                tempsource = sys._MEIPASS + os.sep + self.source
+                print("go to tmpfile", tempsource)
+                self.source = tempsource
+
             elif platform == "win32": 
                 # Windows...
                 #complain if file doesn't exist:

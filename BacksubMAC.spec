@@ -5,10 +5,10 @@ block_cipher = None
 
 
 a = Analysis(
-    ['examples/example_backgroundsubtraction.py'],
+    ['examples//example_backgroundsubtraction.py'],
     pathex=[],
     binaries=[],
-    datas=[('FastCVApp.py', '.'), ('examples/creativecommonsmedia/','creativecommonsmedia')],
+    datas=[('FastCVApp.py', '.'), ('examples//creativecommonsmedia//','examples//creativecommonsmedia')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
