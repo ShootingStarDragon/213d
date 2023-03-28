@@ -2,6 +2,7 @@ import sys
 if hasattr(sys, '_MEIPASS'):
     #if file is frozen by pyinstaller add the MEIPASS folder to path:
     sys.path.append(sys._MEIPASS)
+    print("meipass should have already been added...")
 else:
     #this example is importing from a higher level package if running from cmd: https://stackoverflow.com/a/41575089
     sys.path.append('../FastCVApp')
