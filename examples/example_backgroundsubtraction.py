@@ -2,8 +2,9 @@ import sys
 if hasattr(sys, '_MEIPASS'):
     #if file is frozen by pyinstaller add the MEIPASS folder to path:
     sys.path.append(sys._MEIPASS)
-    print("meipass should have already been added...")
+    # print("meipass should have already been added...")
 else:
+    #if you're making your own app, you don't need this else block. This is just vanity code so I can run this from main FastCVApp folder or from the examples subfolder.
     #this example is importing from a higher level package if running from cmd: https://stackoverflow.com/a/41575089
     import os
     #add the right path depending on if you're running from examples or from main folder:
@@ -12,8 +13,6 @@ else:
     else:
         #assume they're in main folder trying `python examples/example_backgroundsubtraction.py`
         sys.path.append('../FastCVApp') #when running from main folder
-    print("adding above level sys")
-    print("cwd?", os.getcwd().split(os.path.sep))
 
 import FastCVApp
 app = FastCVApp.FCVA()

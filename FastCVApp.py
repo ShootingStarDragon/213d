@@ -230,7 +230,7 @@ class FCVA():
                 elif os.path.isfile(self.source):
                     print("file loaded:", os.getcwd() + os.sep + self.source)
                 elif not os.path.isfile(self.source):
-                    print("Source failed isfile check: " + str(os.path.isfile(self.source)) + ". Checking location: "+ str(os.path.join(os.getcwd(), self.source)) + " Checking tmpdir next:")
+                    print("Source failed isfile check for current directory: " + str(os.path.isfile(self.source)) + ". Checking location: "+ str(os.path.join(os.getcwd(), self.source)) + " Checking tmpdir next:")
                 
                 # print("#check sys attr:", hasattr(sys, '_MEIPASS'))
                 if hasattr(sys, '_MEIPASS'):
