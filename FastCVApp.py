@@ -4,6 +4,9 @@ import time
 import os, sys
 
 def open_kivy(*args):
+    #infinite recursion bug when packaging with pyinstaller with no console: https://github.com/kivy/kivy/issues/8074#issuecomment-1364595283
+    if sys.__stdout__ is None or sys.__stderr__ is None:
+        os.environ['KIVY_NO_CONSOLELOG'] = '1'
     from kivy.app import App
     from kivy.lang import Builder
     from kivy.uix.screenmanager import ScreenManager, Screen
