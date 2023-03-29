@@ -33,8 +33,8 @@ def open_backsub(*args):
 app.appliedcv = open_backsub
 
 if __name__ == '__main__' :
-    # / fails but \ path separator will work
-    app.source = "examples\creativecommonsmedia\Elephants Dream charstart2.webm"
+    # / and \ works on windows, only / on mac tho
+    app.source = "examples/creativecommonsmedia/Elephants Dream charstart2.webm"
     app.fps = 1/30
     app.title = "Background subtraction example by Pengindoramu"
     app.colorfmt = 'bgr'

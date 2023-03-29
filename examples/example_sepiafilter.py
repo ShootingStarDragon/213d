@@ -39,6 +39,7 @@ def sepia_filter(*args):
 app.appliedcv = sepia_filter
 
 if __name__ == '__main__' :
+    # / and \ works on windows, only / on mac tho
     app.source = "examples/creativecommonsmedia/Elephants Dream charstart2.webm"
     app.fps = 1/30
     app.title = "Sepia filter example by Pengindoramu"
