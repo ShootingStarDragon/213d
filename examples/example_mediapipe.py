@@ -73,6 +73,7 @@ def open_mediapipe(*args):
 app.appliedcv = open_mediapipe
 
 if __name__ == '__main__' :
+    # / and \ works on windows, only / on mac tho
     app.source = "examples/creativecommonsmedia/Elephants Dream charstart2.webm"
     app.fps = 1/30
     app.title = "Mediapipe example by Pengindoramu"

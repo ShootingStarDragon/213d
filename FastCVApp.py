@@ -187,12 +187,16 @@ class FCVA():
             if platform == "linux" or platform == "linux2":
                 # linux
                 pass
-            elif platform == "darwin":
+            elif platform == "darwin_old":
                 # OS X, need to change filepath so pyinstaller exe will work
                 mac_path = os.path.sep.join(sys.argv[0].split(os.path.sep)[:-1])+ os.path.sep
                 print("mac option", mac_path )
                 print("what is self source then?", self.source)
-                mac_source = mac_path + self.source
+                #vanity code so example works from main file or from examples folder
+                if 'examples' in mac_path:
+                    mac_source = self.source
+                else:
+                    mac_source = mac_path + self.source
 
                 # check if file exists in dir, if not then check tmp folder, if nothing, raise error:
                 # reference: https://stackoverflow.com/questions/54837659/python-pyinstaller-on-mac-current-directory-problem 
@@ -213,7 +217,7 @@ class FCVA():
                     elif not os.path.isfile(tempsource):
                         raise Exception ("Source failed isfile check: " + str(tempsource))
 
-            elif platform == "win32": 
+            elif platform == "win32" or platform == "darwin": 
                 # Windows...
                 # check current directory, then check tmpfolder, then complain:
 
