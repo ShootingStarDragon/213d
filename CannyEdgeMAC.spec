@@ -5,7 +5,7 @@ block_cipher = None
 
 
 a = Analysis(
-    ['examples//example_backgroundsubtraction.py'],
+    ['examples/example_cannyedge.py'],
     pathex=[],
     binaries=[],
     datas=[('FastCVApp.py', '.'), ('examples//creativecommonsmedia//','examples//creativecommonsmedia')],
@@ -28,14 +28,14 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='BacksubMAC',
+    name='CannyEdgeMAC',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,
+    console=True,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
@@ -43,7 +43,9 @@ exe = EXE(
     entitlements_file=None,
 )
 # https://pyinstaller.org/en/stable/spec-files.html#spec-file-options-for-a-macos-bundle
-app = BUNDLE(exe,
-    name='BacksubMAC.app',
+app = BUNDLE(
+    exe,
+    name='CannyEdgeMAC.app',
     icon=None,
-    bundle_identifier=None)
+    bundle_identifier=None,
+)
