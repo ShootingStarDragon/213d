@@ -5,7 +5,7 @@ block_cipher = None
 
 
 a = Analysis(
-    ['examples//example_backgroundsubtraction.py'],
+    ['examples/example_sepiafilter.py'],
     pathex=[],
     binaries=[],
     datas=[('FastCVApp.py', '.'), ('examples//creativecommonsmedia//','examples//creativecommonsmedia')],
@@ -28,7 +28,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='BacksubMAC',
+    name='SepiafilterMAC',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -43,7 +43,9 @@ exe = EXE(
     entitlements_file=None,
 )
 # https://pyinstaller.org/en/stable/spec-files.html#spec-file-options-for-a-macos-bundle
-app = BUNDLE(exe,
-    name='BacksubMAC.app',
+app = BUNDLE(
+    exe,
+    name='SepiaFilterMAC.app',
     icon=None,
-    bundle_identifier=None)
+    bundle_identifier=None,
+)

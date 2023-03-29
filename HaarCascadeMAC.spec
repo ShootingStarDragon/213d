@@ -3,13 +3,13 @@
 
 block_cipher = None
 
-
+import cv2
 a = Analysis(
-    ['examples//example_backgroundsubtraction.py'],
+    ['examples/example_haarcascade.py'],
     pathex=[],
     binaries=[],
-    datas=[('FastCVApp.py', '.'), ('examples//creativecommonsmedia//','examples//creativecommonsmedia')],
-    hiddenimports=[],
+    datas=[('FastCVApp.py', '.'), ('examples//creativecommonsmedia//','examples//creativecommonsmedia'), (cv2.data.haarcascades+'haarcascade_frontalface_default.xml', ".")],
+    hiddenimports=['kivy'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -28,14 +28,14 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='BacksubMAC',
+    name='HaarCascadeMAC',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,
+    console=True,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
@@ -43,7 +43,9 @@ exe = EXE(
     entitlements_file=None,
 )
 # https://pyinstaller.org/en/stable/spec-files.html#spec-file-options-for-a-macos-bundle
-app = BUNDLE(exe,
-    name='BacksubMAC.app',
+app = BUNDLE(
+    exe,
+    name='HaarCascadeMAC.app',
     icon=None,
-    bundle_identifier=None)
+    bundle_identifier=None,
+)
