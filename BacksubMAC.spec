@@ -1,16 +1,15 @@
 # -*- mode: python ; coding: utf-8 -*-
-from kivy_deps import sdl2, glew
+
 
 block_cipher = None
 
-basedir = "F:\\CODING\\FastCVApp\\" # replace basedir with the location of "FastCVApp" folder
 
 a = Analysis(
-    ['example_sepiafilter.py'],
+    ['examples//example_backgroundsubtraction.py'],
     pathex=[],
     binaries=[],
-    datas=[(basedir + "FastCVApp.py", "."), (basedir + "examples\\creativecommonsmedia\\", "examples\\creativecommonsmedia")],
-    hiddenimports=['kivy'],
+    datas=[('FastCVApp.py', '.'), ('examples//creativecommonsmedia//','examples//creativecommonsmedia')],
+    hiddenimports=[],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -28,8 +27,8 @@ exe = EXE(
     a.binaries,
     a.zipfiles,
     a.datas,
-    *[Tree(p) for p in (sdl2.dep_bins + glew.dep_bins)],
-    name='SepiaFilter',
+    [],
+    name='BacksubMAC',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -43,3 +42,8 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
 )
+# https://pyinstaller.org/en/stable/spec-files.html#spec-file-options-for-a-macos-bundle
+app = BUNDLE(exe,
+    name='BacksubMAC.app',
+    icon=None,
+    bundle_identifier=None)
