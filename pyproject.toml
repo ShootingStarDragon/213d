@@ -6,6 +6,9 @@ authors = ["ShootingStarDragon"]
 license = "MIT License"
 readme = "README.md"
 repository = "https://github.com/ShootingStarDragon/FastCVApp"
+include = [
+    "LICENSE",
+]
 
 [tool.poetry.dependencies]
 python = "^3.8,<3.12"
@@ -24,6 +27,8 @@ trio = "^0.22.0"
 black = "^22.10.0"
 PySnooper = "^1.1.1"
 pyinstaller = "^5.9.0"
+mkdocs = "^1.4.2"
+mkdocs-material = "^9.1.4"
 
 [build-system]
 requires = ["poetry-core"]
