@@ -14,6 +14,7 @@ numpy = "^1.23.4"
 #environment markers as per: https://python-poetry.org/docs/dependency-specification/#using-environment-markers
 mediapipe = {version = "^0.9.0",  markers = "sys_platform == 'win32'"}
 mediapipe-silicon = {version = "^0.9.1",  markers = "sys_platform == 'darwin'"}
+#mediapipe silicon is for m1 chip, if ur install is failing try regular mediapipe
 
 [tool.poetry.group.dev.dependencies]
 pydantic = "^1.10.2"
