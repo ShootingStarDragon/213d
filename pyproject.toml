@@ -5,13 +5,20 @@ description = "Create a computer vision app FAST! Multiprocessing made easy, rig
 authors = ["ShootingStarDragon"]
 license = "MIT License"
 readme = "README.md"
+repository = "https://github.com/ShootingStarDragon/FastCVApp"
+include = [
+    "LICENSE",
+]
 
 [tool.poetry.dependencies]
 python = "^3.8,<3.12"
 Kivy = "^2.1.0"
 opencv-python = "^4.6.0.66"
 numpy = "^1.23.4"
-mediapipe-silicon = "^0.9.1"
+#environment markers as per: https://python-poetry.org/docs/dependency-specification/#using-environment-markers
+mediapipe = {version = "^0.9.0",  markers = "sys_platform == 'win32'"}
+mediapipe-silicon = {version = "^0.9.1",  markers = "sys_platform == 'darwin'"}
+#mediapipe silicon is for m1 chip, if ur install is failing try regular mediapipe
 
 [tool.poetry.group.dev.dependencies]
 pydantic = "^1.10.2"
@@ -20,6 +27,8 @@ trio = "^0.22.0"
 black = "^22.10.0"
 PySnooper = "^1.1.1"
 pyinstaller = "^5.9.0"
+mkdocs = "^1.4.2"
+mkdocs-material = "^9.1.4"
 
 [build-system]
 requires = ["poetry-core"]
