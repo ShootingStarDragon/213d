@@ -122,12 +122,14 @@ FCVA_screen_manager: #remember to return a root widget
 def open_media(*args):
     try:
         shared_metadata_dict = args[0]
-        frame_rate = args[1]
+        # frame_rate = args[1]
+        frame_rate = 500
         # print("what is framerate?", frame_rate, flush=True)
         cap = cv2.VideoCapture(args[2])
 
         prev = time.time()
         while True:
+            # time_og = time.time()
             if "kivy_run_state" in shared_metadata_dict.keys(): 
                 if shared_metadata_dict["kivy_run_state"] == False:
                     break
@@ -144,6 +146,8 @@ def open_media(*args):
                     if ret:
                         shared_metadata_dict["latest_cap_frame"] = frame
                     # print("cv2 .read() takes long???", time_2 - time_og, 1./frame_rate, flush= True)
+            # time_2 = time.time()
+            # print("cv2 .read() takes long???", time_2 - time_og, 1./frame_rate, flush= True)
     except Exception as e:
         print("read function died!", e, flush=True)
 
