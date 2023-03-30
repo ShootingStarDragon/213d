@@ -95,9 +95,20 @@ FCVA_screen_manager: #remember to return a root widget
                 #texture documentation: https://github.com/kivy/kivy/blob/master/kivy/graphics/texture.pyx
                 #blit to texture
                 #blit buffer example: https://stackoverflow.com/questions/61122285/kivy-camera-application-with-opencv-in-android-shows-black-screen
-                texture1 = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt=self.colorfmtval) 
-                texture1.blit_buffer(buf, colorfmt=self.colorfmtval, bufferfmt='ubyte')
-                App.get_running_app().root.get_screen('start_screen_name').ids["image_textureID"].texture = texture1
+                
+                #I think creating a new texture is lagging the app, opencv reads the file faster than the video ends
+                #reference this, u need a reload observer: https://stackoverflow.com/questions/51546327/in-kivy-is-there-a-way-to-dynamically-change-the-shape-of-a-texture
+
+                if hasattr(self,'texture1'):
+                    print("texture size?", self.texture1.size[0] != frame.shape[1] and self.texture1.size[1] != frame.shape[0])
+                    if self.texture1.size[0] != frame.shape[1] and self.texture1.size[1] != frame.shape[0]:
+                        print("texture size changed!", self.texture1.size)
+                else:
+                    self.texture1 = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt=self.colorfmtval) 
+                
+                self.texture1 = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt=self.colorfmtval)
+                self.texture1.blit_buffer(buf, colorfmt=self.colorfmtval, bufferfmt='ubyte')
+                App.get_running_app().root.get_screen('start_screen_name').ids["image_textureID"].texture = self.texture1
                 #after blitting delete some key/value pairs if dict has more than 5 frames:
                 if len(shared_analysis_dict) > 5:
                     min_key = min(shared_analysis_dict.keys())
@@ -122,14 +133,14 @@ FCVA_screen_manager: #remember to return a root widget
 def open_media(*args):
     try:
         shared_metadata_dict = args[0]
-        # frame_rate = args[1]
-        frame_rate = 500
-        # print("what is framerate?", frame_rate, flush=True)
+        frame_rate = args[1]
+        # frame_rate = 30
+        print("what is framerate?", frame_rate, flush=True)
         cap = cv2.VideoCapture(args[2])
 
         prev = time.time()
         while True:
-            # time_og = time.time()
+            time_og = time.time()
             if "kivy_run_state" in shared_metadata_dict.keys(): 
                 if shared_metadata_dict["kivy_run_state"] == False:
                     break
@@ -146,10 +157,15 @@ def open_media(*args):
                     if ret:
                         shared_metadata_dict["latest_cap_frame"] = frame
                     # print("cv2 .read() takes long???", time_2 - time_og, 1./frame_rate, flush= True)
-            # time_2 = time.time()
-            # print("cv2 .read() takes long???", time_2 - time_og, 1./frame_rate, flush= True)
+                time_2 = time.time()
+                if (time_2 - time_og) > 0:
+                    print("cv2 .read() takes long???", "fps:", 1/(time_2 - time_og) , time_2 - time_og, 1./frame_rate, flush= True)
+                else:
+                    print("cv2 .read() takes long???", "fps:", "err", time_2 - time_og, 1./frame_rate, flush= True)
     except Exception as e:
         print("read function died!", e, flush=True)
+        import traceback
+        print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
 
 def open_appliedcv(*args):
     try:

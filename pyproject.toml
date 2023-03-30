@@ -29,6 +29,7 @@ PySnooper = "^1.1.1"
 pyinstaller = "^5.9.0"
 mkdocs = "^1.4.2"
 mkdocs-material = "^9.1.4"
+imutils = "^0.5.4"
 
 [build-system]
 requires = ["poetry-core"]
