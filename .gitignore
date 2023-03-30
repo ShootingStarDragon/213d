@@ -18,7 +18,7 @@ creativecommonsmedia/Elephants Dream charstart.webm
 #creativecommonsmedia/
 examples/build
 examples/dist/MediapipeExample.exe
-test/
+# test/
 .DS_Store
 site
 
