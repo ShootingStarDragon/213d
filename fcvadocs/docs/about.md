@@ -1,8 +1,8 @@
 # Welcome to Fast CV App!
 
-What is Fast CV App? Fast Computer Vision App is a small framework, guide, and examples about running Python code with multiprocessing from start to finish, beginning with `python main.py` and ending with an executable with PyInstaller on Windows and Mac.
+Fast Computer Vision App is a small framework, guide, and examples about running Python code with multiprocessing from start to finish, beginning with `python main.py` and ending with PyInstaller creating an executable file on Windows and Mac.
 
-Here you will learn know how to sidestep bottlenecks using multiprocessing and shared memory. Fast CV App was inspired by the ease and speed of [FastAPI](https://fastapi.tiangolo.com/), and while the decorator functionality of FastAPI is not available, rest assured that there are tutorials and examples to make a working CV App within 15 minutes. 
+Here you will learn know how to sidestep bottlenecks using multiprocessing and shared memory. Fast CV App was inspired by the ease and speed of [FastAPI](https://fastapi.tiangolo.com/), and similarly there are tutorials and examples to make a working CV App within 15 minutes. 
 
 
 # See for yourself:
