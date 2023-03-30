@@ -21,6 +21,7 @@ PyInstaller is used to create the Windows and MacOS (M1 chip) files, and associa
 - documentation: readthedocs
 
 
+
 - > done
 ~ > added to todolist
 -what FCVA is about (sell)
