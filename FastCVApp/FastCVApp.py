@@ -68,10 +68,13 @@ FCVA_screen_manager: #remember to return a root widget
             runTouchApp()
             self.shared_metadata_dictVAR["kivy_run_state"] = False
         
+        def populate_texture(self, texture, buffervar):
+            texture.blit_buffer(buffervar)
+
         def blit_from_shared_memory(self, *args):
             shared_analysis_dict = self.shared_analysis_dictVAR
             shared_metadata_dict = self.shared_metadata_dictVAR
-
+            timeog = time.time()
             if len(shared_analysis_dict) > 0:
                 max_key = max(shared_analysis_dict.keys())
                 frame = shared_analysis_dict[max_key]
@@ -100,11 +103,15 @@ FCVA_screen_manager: #remember to return a root widget
                 #reference this, u need a reload observer: https://stackoverflow.com/questions/51546327/in-kivy-is-there-a-way-to-dynamically-change-the-shape-of-a-texture
 
                 if hasattr(self,'texture1'):
-                    print("texture size?", self.texture1.size[0] != frame.shape[1] and self.texture1.size[1] != frame.shape[0])
+                    # print("texture size?", self.texture1.size[0] != frame.shape[1] and self.texture1.size[1] != frame.shape[0])
                     if self.texture1.size[0] != frame.shape[1] and self.texture1.size[1] != frame.shape[0]:
                         print("texture size changed!", self.texture1.size)
+                        self.texture1 = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt=self.colorfmtval) 
+                        self.texture1.add_reload_observer(self.populate_texture)    
+                    self.populate_texture(self.texture1, buf)
                 else:
                     self.texture1 = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt=self.colorfmtval) 
+                    self.texture1.add_reload_observer(self.populate_texture)
                 
                 self.texture1 = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt=self.colorfmtval)
                 self.texture1.blit_buffer(buf, colorfmt=self.colorfmtval, bufferfmt='ubyte')
@@ -113,6 +120,9 @@ FCVA_screen_manager: #remember to return a root widget
                 if len(shared_analysis_dict) > 5:
                     min_key = min(shared_analysis_dict.keys())
                     del shared_analysis_dict[min_key]
+            newt = time.time()
+            # if time.time()-timeog > 0:
+            #     print("fps?", 1/(newt- timeog))
         
         def toggleCV(self, *args):
             if "toggleCV" not in self.shared_metadata_dictVAR.keys():
@@ -144,7 +154,7 @@ def open_media(*args):
             if "kivy_run_state" in shared_metadata_dict.keys(): 
                 if shared_metadata_dict["kivy_run_state"] == False:
                     break
-            #the list comprehension just checks if a key is in the list then gets the value of the key. useful since keys might not exist in the shared dict yet:
+            # #the list comprehension just checks if a key is in the list then gets the value of the key. useful since keys might not exist in the shared dict yet:
             if "mp_ready" in shared_metadata_dict.keys() and [shared_metadata_dict[key] for key in shared_metadata_dict.keys() if key == "toggleCV"] == [True]:
                 time_elapsed = time.time() - prev
                 if time_elapsed > 1./frame_rate:
@@ -153,10 +163,14 @@ def open_media(*args):
                     # time_2 = time.time()
                     prev = time.time()
 
-                    # read the latest frame here and stuff it in the shared memory for open_appliedcv to manipulate
+            #         # read the latest frame here and stuff it in the shared memory for open_appliedcv to manipulate
                     if ret:
                         shared_metadata_dict["latest_cap_frame"] = frame
-                    # print("cv2 .read() takes long???", time_2 - time_og, 1./frame_rate, flush= True)
+            #             cv2.imshow("is read the block?", frame)
+            #             #wtf is this https://stackoverflow.com/a/8894589
+            #             if cv2.waitKey(25) & 0xFF == ord('q'):
+            #                 break
+            #         # print("cv2 .read() takes long???", time_2 - time_og, 1./frame_rate, flush= True)
                 time_2 = time.time()
                 if (time_2 - time_og) > 0:
                     print("cv2 .read() takes long???", "fps:", 1/(time_2 - time_og) , time_2 - time_og, 1./frame_rate, flush= True)
