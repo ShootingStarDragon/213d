@@ -146,7 +146,10 @@ def open_media(*args):
         frame_rate = args[1]
         # frame_rate = 30
         print("what is framerate?", frame_rate, flush=True)
-        cap = cv2.VideoCapture(args[2])
+        from imutils.video import FileVideoStream
+
+        cap = FileVideoStream(args[2]).start()
+        # cap = cv2.VideoCapture(args[2])
 
         prev = time.time()
         while True:
@@ -159,13 +162,17 @@ def open_media(*args):
                 time_elapsed = time.time() - prev
                 if time_elapsed > 1./frame_rate:
                     # time_og = time.time()
-                    ret, frame = cap.read()
+                    # ret, frame = cap.read() #for opencv version
+                    frame = cap.read() #for videostream as per: https://stackoverflow.com/questions/63584905/increase-the-capture-and-stream-speed-of-a-video-using-opencv-and-python/63585204#63585204
                     # time_2 = time.time()
+                    #see if size of frame is making sharedmem slow:
                     prev = time.time()
 
             #         # read the latest frame here and stuff it in the shared memory for open_appliedcv to manipulate
-                    if ret:
-                        shared_metadata_dict["latest_cap_frame"] = frame
+                    # if ret: #for opencv
+                    if cap.more():
+                        frame = cv2.resize(frame, (500, 300))
+                        shared_metadata_dict["latest_cap_frame"] = frame #THIS LINE IS THE BOTtLENECK, I FOUND YOU
             #             cv2.imshow("is read the block?", frame)
             #             #wtf is this https://stackoverflow.com/a/8894589
             #             if cv2.waitKey(25) & 0xFF == ord('q'):
