@@ -31,7 +31,7 @@ while(cap.isOpened()):
 	gray = frame
 
 	# resizing the frame size according to our need
-	gray = cv2.resize(gray, (500, 300))
+	# gray = cv2.resize(gray, (500, 300))
 
 	# font which we will be using to display FPS
 	font = cv2.FONT_HERSHEY_SIMPLEX
