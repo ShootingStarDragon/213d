@@ -101,6 +101,7 @@ FCVA_screen_manager: #remember to return a root widget
                 
                 #I think creating a new texture is lagging the app, opencv reads the file faster than the video ends
                 #reference this, u need a reload observer: https://stackoverflow.com/questions/51546327/in-kivy-is-there-a-way-to-dynamically-change-the-shape-of-a-texture
+                #for later, if I need to clear a texture this is the reference: https://stackoverflow.com/questions/55099463/how-to-update-a-texture-from-array-in-kivy
 
                 if hasattr(self,'texture1'):
                     # print("texture size?", self.texture1.size[0] != frame.shape[1] and self.texture1.size[1] != frame.shape[0])
