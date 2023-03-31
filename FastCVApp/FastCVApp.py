@@ -77,7 +77,8 @@ FCVA_screen_manager: #remember to return a root widget
             timeog = time.time()
             if len(shared_analysis_dict) > 0:
                 max_key = max(shared_analysis_dict.keys())
-                frame = shared_analysis_dict[max_key]
+                # frame = shared_analysis_dict[max_key] 
+                frame = shared_analysis_dict[max_key].copy() #try copying the frame instead of referencing the shared memory here
                 # print("frame is?",type(frame), frame.shape, flush=True)
 
                 #complicated way of safely checking if a value may or may not exist, then get that value:
