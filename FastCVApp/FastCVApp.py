@@ -76,9 +76,10 @@ FCVA_screen_manager: #remember to return a root widget
             shared_metadata_dict = self.shared_metadata_dictVAR
             timeog = time.time()
             if len(shared_analysis_dict) > 0:
-                max_key = max(shared_analysis_dict.keys())
+                #instead of geting max, get the min key because you want to consume them in order
+                min_key = min(shared_analysis_dict.keys())
                 # frame = shared_analysis_dict[max_key] 
-                frame = shared_analysis_dict[max_key].copy() #try copying the frame instead of referencing the shared memory here
+                frame = shared_analysis_dict[min_key].copy() #try copying the frame instead of referencing the shared memory here
                 # print("frame is?",type(frame), frame.shape, flush=True)
 
                 #complicated way of safely checking if a value may or may not exist, then get that value:
@@ -87,6 +88,8 @@ FCVA_screen_manager: #remember to return a root widget
                 if [x for x in existence_check if x == 3 or x == 4] == []:
                     raise Exception("check your numpy dimensions! should be height x width x 3/4: like  (1920,1080,3): ",frame.shape)
                 buf = frame.tobytes()
+                #at this point, you already got the frame, time to delete
+                shared_analysis_dict.pop(min_key)
                 
                 #check for existence of colorfmt in shared_metadata_dict, then if so, set colorfmt:
                 formatoption = [shared_metadata_dict[x] for x in shared_metadata_dict.keys() if x == "colorfmt"]
@@ -119,9 +122,9 @@ FCVA_screen_manager: #remember to return a root widget
                 self.texture1.blit_buffer(buf, colorfmt=self.colorfmtval, bufferfmt='ubyte')
                 App.get_running_app().root.get_screen('start_screen_name').ids["image_textureID"].texture = self.texture1
                 #after blitting delete some key/value pairs if dict has more than 5 frames:
-                if len(shared_analysis_dict) > 5:
-                    min_key = min(shared_analysis_dict.keys())
-                    del shared_analysis_dict[min_key]
+                # if len(shared_analysis_dict) > 5:
+                #     min_key = min(shared_analysis_dict.keys())
+                #     del shared_analysis_dict[min_key]
             newt = time.time()
             # if time.time()-timeog > 0:
             #     print("fps?", 1/(newt- timeog))
@@ -154,6 +157,7 @@ def open_media(*args):
         # cap = cv2.VideoCapture(args[2])
 
         prev = time.time()
+        internal_i = 0
         while True:
             time_og = time.time()
             if "kivy_run_state" in shared_metadata_dict.keys(): 
@@ -165,16 +169,20 @@ def open_media(*args):
                 if time_elapsed > 1./frame_rate:
                     # time_og = time.time()
                     # ret, frame = cap.read() #for opencv version
-                    frame = cap.read() #for videostream as per: https://stackoverflow.com/questions/63584905/increase-the-capture-and-stream-speed-of-a-video-using-opencv-and-python/63585204#63585204
                     # time_2 = time.time()
                     #see if size of frame is making sharedmem slow:
                     prev = time.time()
 
-            #         # read the latest frame here and stuff it in the shared memory for open_appliedcv to manipulate
+            #       # read the latest frame here and stuff it in the shared memory for open_appliedcv to manipulate
                     # if ret: #for opencv
-                    if cap.more():
-                        frame = cv2.resize(frame, (500, 300))
-                        shared_metadata_dict["latest_cap_frame"] = frame #THIS LINE IS THE BOTtLENECK, I FOUND YOU
+                    if cap.more() and len(shared_metadata_dict) < 16:
+                        frame1 = cap.read() #for videostream as per: https://stackoverflow.com/questions/63584905/increase-the-capture-and-stream-speed-of-a-video-using-opencv-and-python/63585204#63585204
+                        frame2 = cap.read() #for videostream as per: https://stackoverflow.com/questions/63584905/increase-the-capture-and-stream-speed-of-a-video-using-opencv-and-python/63585204#63585204
+                        frame3 = cap.read() #for videostream as per: https://stackoverflow.com/questions/63584905/increase-the-capture-and-stream-speed-of-a-video-using-opencv-and-python/63585204#63585204
+                        # frame = cv2.resize(frame, (500, 300))
+                        # shared_metadata_dict["latest_cap_frame"] = frame #THIS LINE IS THE BOTtLENECK, I FOUND YOU
+                        #didct.update: https://stackoverflow.com/a/21222526
+                        shared_metadata_dict.update({str(internal_i):frame1,str(internal_i+1):frame2, str(internal_i+2): frame3})
             #             cv2.imshow("is read the block?", frame)
             #             #wtf is this https://stackoverflow.com/a/8894589
             #             if cv2.waitKey(25) & 0xFF == ord('q'):
@@ -204,8 +212,27 @@ def open_appliedcv(*args):
             if "kivy_run_state" and "latest_cap_frame" in shared_metadata_dict.keys() and [shared_metadata_dict[key] for key in shared_metadata_dict.keys() if key == "toggleCV"] == [True]:
                 if shared_metadata_dict["kivy_run_state"] == False:
                     break
+                #analyze 3 frames
+                metakeylist = shared_metadata_dict.keys()
+                
+                # https://stackoverflow.com/questions/22108488/are-list-comprehensions-and-functional-functions-faster-than-for-loops
+                # As for functional list processing functions: While these are written in C and probably outperform equivalent functions written in Python, they are not necessarily the fastest option. Some speed up is expected if the function is written in C too. But most cases using a lambda (or other Python function), the overhead of repeatedly setting up Python stack frames etc. eats up any savings. Simply doing the same work in-line, without function calls (e.g. a list comprehension instead of map or filter) is often slightly faster.
+                # use map instead? https://wiki.python.org/moin/PythonSpeed/PerformanceTips#Loops
+                #this guy says go to array, ? https://towardsdatascience.com/list-comprehensions-vs-for-loops-it-is-not-what-you-think-34071d4d8207
+                # verdict, just test it out...
+                
+                #i feel like this func is gonna be slow af
+
+                #do appliedcv on first 3 keys (if they exist)
+                for key in metakeylist[:2]:
+                    shared_analysis_dict.update({
+                        metakeylist[key]:appliedcv(shared_metadata_dict[key],shared_analysis_dict ,shared_metadata_dict),
+                    })
+                    #delete consumed frames
+                    shared_metadata_dict.pop(key)
+
                 #actually do your cv function here and stuff your resulting numpy frame in shared_analysis_dict shared memory. You might have to flip the image because IIRC opencv is up to down, left to right, while kivy is down to up, left to right. in any case cv2 flip code 0 is what you want most likely since code 0 is vertical flip (and preserves horizontal axis).
-                shared_analysis_dict[1] = appliedcv(shared_metadata_dict["latest_cap_frame"],shared_analysis_dict ,shared_metadata_dict)
+                # shared_analysis_dict[1] = appliedcv(shared_metadata_dict["latest_cap_frame"],shared_analysis_dict ,shared_metadata_dict)
                 # shared_analysis_dict[1] = cv2.flip(appliedcv(shared_metadata_dict["latest_cap_frame"],shared_analysis_dict ,shared_metadata_dict),0)
     except Exception as e:
         print("open_appliedcv died!", e)
