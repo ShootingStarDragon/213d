@@ -57,7 +57,21 @@ FCVA_screen_manager: #remember to return a root widget
 
         def on_start(self):
             # start blitting. 1/30 always works because it will always blit the latest image from open_appliedcv subprocess, but kivy itself will be at 30 fps
-            Clock.schedule_interval(self.blit_from_shared_memory, args[2])
+            self.index = 0
+            # Clock.schedule_interval(self.blit_from_shared_memory, args[2])
+            Clock.schedule_interval(self.framecounter, args[2])
+            # Clock.schedule_interval(self.blocker, args[2])
+            self.oldtime = time.time()
+        
+        def framecounter(self, *args):
+            self.index += 1
+            self.newertime = time.time()
+            if self.newertime - self.oldtime > 0:
+                print("am i being delayed?",1/(self.newertime - self.oldtime))
+                self.oldtime = time.time()
+
+        def blocker(self, *args):
+            time.sleep(2)
 
         def on_request_close(self, *args):
             Clock.unschedule(self.blit_from_shared_memory)
@@ -82,8 +96,9 @@ FCVA_screen_manager: #remember to return a root widget
             shared_analysis_dict = self.shared_analysis_dictVAR
             shared_metadata_dict = self.shared_metadata_dictVAR
             timeog = time.time()
-            self.index = self.shared_globalindexVAR["curframe"]
-            print("shared analyzed keys?", self.shared_analyzedAVAR.keys(), flush = True)
+            # self.index = self.shared_globalindexVAR["curframe"]
+            # self.index = self.shared_globalindexVAR["curframe"]
+            # print("shared analyzed keys?", self.shared_analyzedAVAR.keys(), flush = True)
             if len(self.shared_analyzedAVAR) > 10:
                 # instead of geting max, get the min key because you want to consume them in order
                 # min_key = min(shared_analysis_dict.keys())
@@ -92,17 +107,19 @@ FCVA_screen_manager: #remember to return a root widget
                 if self.index %3 == 0:
                     # print("key vs me", self.shared_speedtestAVAR.keys(), type(self.shared_speedtestAVAR.keys()[0]), self.index, self.index %2, type(self.index%2) )
                     frame = self.shared_analyzedAVAR[self.index]
-                    self.shared_analyzedAVAR.pop(self.index)
+                    # self.shared_analyzedAVAR.pop(self.index)
                 if self.index %3 == 1:
                     # print("key vs me", self.shared_speedtestBVAR.keys(), type(self.shared_speedtestBVAR.keys()[0]), self.index, self.index %2, type(self.index%2) )
                     frame = self.shared_analyzedBVAR[self.index]
-                    self.shared_analyzedBVAR.pop(self.index)
+                    # self.shared_analyzedBVAR.pop(self.index)
                 if self.index %3 == 2:
                     # print("key vs me", self.shared_speedtestCVAR.keys(), type(self.shared_speedtestCVAR.keys()[0]), self.index, self.index %2, type(self.index%2) )
                     frame = self.shared_analyzedCVAR[self.index]
-                    self.shared_analyzedCVAR.pop(self.index)
-                print("got this key at this time:", self.shared_globalindexVAR["curframe"], time.time(), flush = True)
-                self.shared_globalindexVAR["curframe"] = self.shared_globalindexVAR["curframe"] + 1
+                    # self.shared_analyzedCVAR.pop(self.index)
+                self.newt = time.time()
+                # print("got this key at this time:", self.shared_globalindexVAR["curframe"], time.time(), flush = True)
+                # self.shared_globalindexVAR["curframe"] = self.shared_globalindexVAR["curframe"] + 1
+                self.index += 1
 
                 # frame = shared_analysis_dict[
                 #     min_key
@@ -120,9 +137,6 @@ FCVA_screen_manager: #remember to return a root widget
                         frame.shape,
                     )
                 buf = frame.tobytes()
-                
-                    
-
                 # check for existence of colorfmt in shared_metadata_dict, then if so, set colorfmt:
                 formatoption = [
                     shared_metadata_dict[x]
@@ -183,9 +197,10 @@ FCVA_screen_manager: #remember to return a root widget
                 # if len(shared_analysis_dict) > 5:
                 #     min_key = min(shared_analysis_dict.keys())
                 #     del shared_analysis_dict[min_key]
-            newt = time.time()
-            # if time.time()-timeog > 0:
-            #     print("fps?", 1/(newt- timeog))
+            # self.newt = time.time()
+            if hasattr(self, 'newt'):
+                if self.newt - timeog > 0:
+                    print("fps?", 1/(self.newt- timeog))
 
         def toggleCV(self, *args):
             if "toggleCV" not in self.shared_metadata_dictVAR.keys():
@@ -349,7 +364,7 @@ def open_appliedcv(*args):
                 if len(shared_speedtestVAR.keys())>0:
                     keylist = shared_speedtestVAR.keys()
                     rightframe = shared_speedtestVAR[keylist[0]]
-                    print("write fast enough?: ", keylist[0] in shared_speedtestVAR.keys(), keylist[0], shared_speedtestVAR.keys(), flush = True)
+                    # print("write fast enough?: ", keylist[0] in shared_speedtestVAR.keys(), keylist[0], shared_speedtestVAR.keys(), flush = True)
                     shared_speedtestVAR.pop(keylist[0])
                     # frametest = shared_speedtestVAR[keylist[0]]
                     frametest = rightframe
@@ -377,7 +392,7 @@ def open_appliedcv(*args):
                             ),
                         }
                     )
-                    print("updated framekey with a flip:",keylist[0], time.time(), flush= True)
+                    # print("updated framekey with a flip:",keylist[0], time.time(), flush= True)
                     # # delete consumed frames
                     # # shared_speedtestVAR.pop(keylist[0])
                     # shared_speedtestVAR.update(
