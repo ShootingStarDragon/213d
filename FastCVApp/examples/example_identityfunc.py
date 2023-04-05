@@ -39,6 +39,7 @@ def sepia_filter(*args):
         # print("what does id func get?", type(image))
 
         return cv2.flip(image, 0)
+        # return image
     except Exception as e:
         print("sepia_filter subprocess died! ", e, flush=True)
 
