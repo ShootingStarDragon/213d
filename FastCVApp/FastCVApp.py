@@ -101,7 +101,6 @@ FCVA_screen_manager: #remember to return a root widget
                     "sizeB:", len(self.shared_analyzedBVAR.keys()), max(self.shared_analyzedBVAR.keys()),
                     "sizeC:", len(self.shared_analyzedCVAR.keys()), max(self.shared_analyzedCVAR.keys()),
                     flush = True)
-                print("why is it getting bigger? (reading function isn't throttled....)", self.shared_analyzedCVAR.keys())
                 # instead of geting max, get the min key because you want to consume them in order
                 # min_key = min(shared_analysis_dict.keys())
                 # frame = shared_analysis_dict[max_key]
@@ -109,16 +108,27 @@ FCVA_screen_manager: #remember to return a root widget
                 if self.index %3 == 0:
                     # print("key vs me", self.shared_speedtestAVAR.keys(), type(self.shared_speedtestAVAR.keys()[0]), self.index, self.index %2, type(self.index%2) )
                     frame = self.shared_analyzedAVAR[self.index]
-                    self.shared_analyzedAVAR.pop(self.index)
+                    # self.shared_analyzedAVAR.pop(self.index)
+                    # #delete all the keys < our index:
+                    # [self.shared_analyzedAVAR.pop(x) for x in self.shared_analyzedAVAR.keys() if x < self.index]
+                    print("why is it getting bigger? A(reading function isn't throttled....)", self.index, self.shared_analyzedAVAR.keys())
                 if self.index %3 == 1:
                     # print("key vs me", self.shared_speedtestBVAR.keys(), type(self.shared_speedtestBVAR.keys()[0]), self.index, self.index %2, type(self.index%2) )
                     frame = self.shared_analyzedBVAR[self.index]
-                    self.shared_analyzedBVAR.pop(self.index)
+                    # self.shared_analyzedBVAR.pop(self.index)
+                    # [self.shared_analyzedBVAR.pop(x) for x in self.shared_analyzedBVAR.keys() if x < self.index]
+                    print("why is it getting bigger? B(reading function isn't throttled....)", self.index, self.shared_analyzedBVAR.keys())
                 if self.index %3 == 2:
                     # print("key vs me", self.shared_speedtestCVAR.keys(), type(self.shared_speedtestCVAR.keys()[0]), self.index, self.index %2, type(self.index%2) )
                     frame = self.shared_analyzedCVAR[self.index]
-                    self.shared_analyzedCVAR.pop(self.index)
+                    # self.shared_analyzedCVAR.pop(self.index)
+                    # [self.shared_analyzedCVAR.pop(x) for x in self.shared_analyzedCVAR.keys() if x < self.index]
+                    print("why is it getting bigger? C(reading function isn't throttled....)", self.index, self.shared_analyzedCVAR.keys())
                 self.newt = time.time()
+
+                #tell openmedia to del less than this frame:
+                self.shared_globalindexVAR["curframe"] = self.index
+
                 # print("got this key at this time:", self.shared_globalindexVAR["curframe"], time.time(), flush = True)
                 # self.shared_globalindexVAR["curframe"] = self.shared_globalindexVAR["curframe"] + 1
                 # self.index += 1
@@ -245,6 +255,10 @@ def open_media(*args):
         shared_speedtestAVAR = args[3]
         shared_speedtestBVAR = args[4]
         shared_speedtestCVAR = args[5]
+        # shared_globalindexVAR = args[6]
+        # shared_analyzedAVAR = args[7]
+        # shared_analyzedBVAR = args[8]
+        # shared_analyzedCVAR = args[9]
 
         prev = time.time()
         internal_i = 0
@@ -270,7 +284,10 @@ def open_media(*args):
                     #       # read the latest frame here and stuff it in the shared memory for open_appliedcv to manipulate
                     # if ret: #for opencv
                     # print("if failed", cap.more(), len(shared_metadata_dict) < 16, flush = True)
-                    if cap.more():
+                    if cap.more() and \
+                    len(shared_speedtestAVAR) < 5 and \
+                    len(shared_speedtestBVAR) < 5 and \
+                    len(shared_speedtestCVAR) < 5:
                         frame1 = (
                             cap.read()
                         )  # for videostream as per: https://stackoverflow.com/questions/63584905/increase-the-capture-and-stream-speed-of-a-video-using-opencv-and-python/63585204#63585204
@@ -294,11 +311,26 @@ def open_media(*args):
                         shared_speedtestBVAR[internal_i+1] = frame2
                         shared_speedtestCVAR[internal_i+2] = frame3
                         internal_i += 3
-                        # time_2 = time.time()
-                        # if (time_2 - time_og) > 0:
-                        #     if 1/(time_2 - time_og) <100:
-                        #         print("metadata keys", shared_metadata_dict.keys(), flush = True)
-                        #         print("cv2 .read/write multiple takes long???", "fps:", 1/(time_2 - time_og) , time_2 - time_og, 1./frame_rate, flush= True)
+                    # #delete extra frames:
+                    # delkeylist = [x for x in shared_analyzedAVAR.keys() if x < shared_globalindexVAR["curframe"]]
+                    # for delkey in delkeylist:
+                    #     del shared_analyzedAVAR[delkey]
+                    # # print("not del wtf",shared_globalindexVAR["curframe"], shared_analyzedAVAR.keys(), delkeylist, flush = True)
+                    
+                    # delkeylist = [x for x in shared_analyzedBVAR.keys() if x < shared_globalindexVAR["curframe"]]
+                    # for delkey in delkeylist:
+                    #     del shared_analyzedBVAR[delkey]
+                    
+                    # delkeylist = [x for x in shared_analyzedCVAR.keys() if x < shared_globalindexVAR["curframe"]]
+                    # for delkey in delkeylist:
+                    #     del shared_analyzedCVAR[delkey]
+
+
+                    # time_2 = time.time()
+                    # if (time_2 - time_og) > 0:
+                    #     if 1/(time_2 - time_og) <100:
+                    #         print("metadata keys", shared_metadata_dict.keys(), flush = True)
+                    #         print("cv2 .read/write multiple takes long???", "fps:", 1/(time_2 - time_og) , time_2 - time_og, 1./frame_rate, flush= True)
 
                         # print("wtf update", flush= True)
                         # shared_metadata_dict[str(internal_i)] = frame1
@@ -391,9 +423,20 @@ def open_appliedcv(*args):
                                 frametest,
                                 shared_analysis_dict,
                                 shared_metadata_dict,
+                                shared_globalindexVAR
                             ),
                         }
                     )
+
+                    #pop all the extra frames (that got skipped, for example)
+                    delkeylist = [x for x in shared_analyzedVAR.keys() if x < shared_globalindexVAR["curframe"]]
+                    # for delkey in delkeylist:
+                    #     del shared_analyzedVAR[delkey]
+                    if len(delkeylist) > 1:
+                        del shared_analyzedVAR[delkeylist[0]]
+                    print("not del wtf",shared_globalindexVAR["curframe"], shared_analyzedVAR.keys(), delkeylist, flush = True)
+
+
                     # print("updated framekey with a flip:",keylist[0], time.time(), flush= True)
                     # # delete consumed frames
                     # # shared_speedtestVAR.pop(keylist[0])
@@ -432,12 +475,13 @@ def open_appliedcv(*args):
                 #     #         flush=True,
                 #     #     )
                 if applytimeend - applytimestart > 0:
-                    pass
-                    # print(
-                    #     "is apply lagging?",
-                    #     1 / (applytimeend - applytimestart),
-                    #     flush=True,
-                    # )
+                    if 1 / (applytimeend - applytimestart) < 500:
+                        print(
+                            "is apply lagging?",
+                            1 / (applytimeend - applytimestart),
+                            flush=True,
+                        )
+                        # pass
     except Exception as e:
         print("open_appliedcv died!", e)
         import traceback
@@ -576,7 +620,7 @@ class FCVA:
             # print("args ok?", shared_metadata_dict, fps, self.source, os.path.isfile(self.source))
 
             read_subprocess = FCVA_mp.Process(
-                target=open_media, args=(shared_metadata_dict, fps, self.source, shared_speedtestA, shared_speedtestB, shared_speedtestC)
+                target=open_media, args=(shared_metadata_dict, fps, self.source, shared_speedtestA, shared_speedtestB, shared_speedtestC, shared_globalindex, shared_analyzedA, shared_analyzedB, shared_analyzedC)
             )
             read_subprocess.start()
 
