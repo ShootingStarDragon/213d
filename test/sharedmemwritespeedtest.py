@@ -132,11 +132,18 @@ def open_appliedcv(*args):
                 # keylist[0] in shared_speedtestVAR.keys()
                 # rightframe = [shared_speedtestVAR[x] for x in shared_speedtestVAR.keys() if x == keylist[0]]
                 # if len(rightframe)>0:
-                if len(shared_speedtestVAR.keys())>0:
+
+                #get current frame:
+                spf = 1/30
+                framecount = int((time.time() - shared_globalindexVAR["curframe"])/spf)
+                # print("framecount in keys", framecount, shared_speedtestVAR.keys(), flush = True)
+
+                if framecount in shared_speedtestVAR.keys():
                     keylist = shared_speedtestVAR.keys()
-                    rightframe = shared_speedtestVAR[keylist[0]]
+                    # rightframe = shared_speedtestVAR[keylist[0]]
+                    rightframe = shared_speedtestVAR[framecount]
                     # print("write fast enough?: ", keylist[0] in shared_speedtestVAR.keys(), keylist[0], shared_speedtestVAR.keys(), flush = True)
-                    shared_speedtestVAR.pop(keylist[0])
+                    shared_speedtestVAR.pop(framecount)
                     # frametest = shared_speedtestVAR[keylist[0]]
                     frametest = rightframe
                     #     raise Exception('I know Python!')
@@ -164,6 +171,19 @@ def open_appliedcv(*args):
                             ),
                         }
                     )
+                    
+                    if framecount > 0:
+                        #del everything less than framecount:
+                        delkeylist = [x for x in shared_analyzedVAR.keys() if x < framecount]
+                        # for delkey in delkeylist:
+                        #     del shared_analyzedVAR[delkey]
+                        if len(delkeylist) > 1:
+                            del shared_analyzedVAR[delkeylist[0]]
+                        # print("not del wtf",framecount, shared_analyzedVAR.keys(), delkeylist, flush = True)
+                        # shared_globalindexVAR["curframe"] = time.time()
+                    print("not del wtf2b",framecount, shared_analyzedVAR.keys(), flush = True)
+
+
                     # print("updated framekey with a flip:",keylist[0], time.time(), flush= True)
                     # # delete consumed frames
                     # # shared_speedtestVAR.pop(keylist[0])
@@ -204,7 +224,7 @@ def open_appliedcv(*args):
                 if applytimeend - applytimestart > 0:
                     if 1 / (applytimeend - applytimestart) < 500:
                         print(
-                            "is apply lagging?", os.getpid(),
+                            "is apply lagging?", os.getpid(), shared_analyzedVAR.keys(),
                             1 / (applytimeend - applytimestart),
                             flush=True,
                         )
@@ -310,6 +330,8 @@ class FCVA:
                     )
                 else:
                     print("FCVA.appliedcv block failed")
+                
+                shared_globalindex["curframe"] = time.time()+5
                 
                 # print("while block", flush = True)
                 # # this try except block holds the main process open so the subprocesses aren't cleared when the main process exits early.
