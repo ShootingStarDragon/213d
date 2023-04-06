@@ -2,6 +2,7 @@
 import cv2
 import time
 import os, sys
+import numpy as np
 
 
 def open_media(*args):
@@ -58,9 +59,10 @@ def open_media(*args):
                         #         internal_i + 2: frame3,
                         #     }
                         # )
-                        shared_speedtestAVAR[internal_i] = frame1
-                        shared_speedtestBVAR[internal_i+1] = frame2
-                        shared_speedtestCVAR[internal_i+2] = frame3
+                        print("shape pls", frame1.shape, flush = True)
+                        shared_speedtestAVAR[internal_i] = frame1.tobytes()
+                        shared_speedtestBVAR[internal_i+1] = frame2.tobytes()
+                        shared_speedtestCVAR[internal_i+2] = frame3.tobytes()
                         internal_i += 3
                         # time_2 = time.time()
                         # if (time_2 - time_og) > 0:
@@ -361,7 +363,12 @@ def sepia_filter(*args):
     try:
         # reference: https://medium.com/dataseries/designing-image-filters-using-opencv-like-abode-photoshop-express-part-2-4479f99fb35
 
-        image = args[0]
+        # image = args[0]
+        #reference: 
+        # https://stackoverflow.com/questions/49511753/python-byte-image-to-numpy-array-using-opencv
+        #reference: bytetonympyarray.py
+        image = np.frombuffer(args[0], np.uint8).copy().reshape(1080, 1920, 3)
+        # image = cv2.imdecode(np.frombuffer(args[0], np.uint8), -1)
         # print("who are u?", type(image))
         # image = np.array(image, dtype=np.float64) # converting to float to prevent loss
         # image = cv2.transform(image, np.matrix([[0.272, 0.534, 0.131],
@@ -369,9 +376,10 @@ def sepia_filter(*args):
         #                                 [0.393, 0.769, 0.189]]))
         # image[np.where(image > 255)] = 255 # normalizing values greater than 255 to 255
         # image = np.array(image, dtype=np.uint8) # converting back to int
-        # print("what does id func get?", type(image))
+        # print("what does id func get?", type(args[0]), type(image), flush = True)
 
-        return cv2.flip(image, 0)
+        image = cv2.flip(image, 0)
+        return image.tobytes()
         # return image
     except Exception as e:
         print("sepia_filter subprocess died! ", e, flush=True)
