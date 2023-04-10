@@ -148,7 +148,12 @@ def open_media(*args):
         shared_metadata_dict = args[0]
         frame_rate = args[1]
         # frame_rate = 30
+        cap = cv2.VideoCapture(args[2])
         print("what is framerate?", frame_rate, flush=True)
+        # reference: https://stackoverflow.com/questions/25359288/how-to-know-total-number-of-frame-in-a-file-with-cv2-in-python
+        print("#less than 30fps?", int(cap.get(cv2.CAP_PROP_FRAME_COUNT)),flush = True)
+
+        cap.release()
         from imutils.video import FileVideoStream
         cap = FileVideoStream(args[2]).start()
         # cap = cv2.VideoCapture(args[2])
@@ -172,14 +177,16 @@ def open_media(*args):
                     # cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number-1) #this is slow, RIP
                     # ret, frame = cap.read() #for opencv version
                     # frame = cap.read() #for videostream as per: https://stackoverflow.com/questions/63584905/increase-the-capture-and-stream-speed-of-a-video-using-opencv-and-python/63585204#63585204
-                    frame = cap.read() #for videostream as per: https://stackoverflow.com/questions/63584905/increase-the-capture-and-stream-speed-of-a-video-using-opencv-and-python/63585204#63585204
+                    # frame = cap.read() #for videostream as per: https://stackoverflow.com/questions/63584905/increase-the-capture-and-stream-speed-of-a-video-using-opencv-and-python/63585204#63585204
                     #we know index_count and frame_number. just speed read until u get to frame_number:
                     drift = frame_number - index_count
                     #assume frame_number and index_count match (count from 0)
                     # if drift > 1:
                     #     for x in range(drift-1):
                     #         frame=cap.read()
+                    
 
+               
                     #then this is actual frame:
                     frame= cap.read()
 
@@ -352,7 +359,7 @@ class FCVA():
             kivy_subprocess = FCVA_mp.Process(target=open_kivy, args=(shared_analysis_dict,shared_metadata_dict, self.fps, shared_timer_dict))
             kivy_subprocess.start()
 
-            shared_timer_dict["start_time"]= time.time()+5
+            shared_timer_dict["start_time"]= time.time()+10
 
             #this try except block holds the main process open so the subprocesses aren't cleared when the main process exits early.
             while "kivy_run_state" in shared_metadata_dict.keys():
