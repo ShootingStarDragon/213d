@@ -111,7 +111,7 @@ FCVA_screen_manager: #remember to return a root widget
                         pass
                     else:
                         frameref = "frame" + keyref[0].replace("key",'')
-                        print("this diedA", frameref, self.shared_analyzedAVAR.keys(), frameref.shape, flush = True)
+                        print("this diedA", frameref, self.shared_analyzedAVAR.keys(), flush = True)
                         frame = self.shared_analyzedAVAR[frameref]
                     # frame = self.shared_analyzedAVAR[self.index]
                     # self.shared_analyzedAVAR.pop(self.index)
@@ -126,7 +126,7 @@ FCVA_screen_manager: #remember to return a root widget
                         pass
                     else:
                         frameref = "frame" + keyref[0].replace("key",'')
-                        print("this diedB", frameref, self.shared_analyzedBVAR.keys(), frameref.shape, flush = True)
+                        print("this diedB", frameref, self.shared_analyzedBVAR.keys(), flush = True)
                         frame = self.shared_analyzedBVAR[frameref]
                     # frame = self.shared_analyzedBVAR[self.index]
                     # self.shared_analyzedBVAR.pop(self.index)
@@ -140,7 +140,7 @@ FCVA_screen_manager: #remember to return a root widget
                         pass
                     else:
                         frameref = "frame" + keyref[0].replace("key",'')
-                        print("this diedC", frameref, self.shared_analyzedCVAR.keys(), frameref.shape, flush = True)
+                        print("this diedC", frameref, self.shared_analyzedCVAR.keys(), flush = True)
                         frame = self.shared_analyzedCVAR[frameref]
                     # frame = self.shared_analyzedCVAR[self.index]
                     # self.shared_analyzedCVAR.pop(self.index)
@@ -325,8 +325,8 @@ def open_media(*args):
                     # it doesn't matter, just check if there are frames that have already been used, then blit update
                     # man this might occur too often, maybe a thread is right? not sure
                     
-                    #initate dicts if they're less than size 20:
-                    if len(shared_speedtestAVAR.keys()) < 20:
+                    #initate dicts if they're less than size 10:
+                    if len(shared_speedtestAVAR.keys()) < 10:
                         #replace all and say it
                         for x in range(10):
                             shared_speedtestAVAR["key" + str(x)] = -1
@@ -410,11 +410,11 @@ def open_media(*args):
                     #     del shared_analyzedCVAR[delkey]
 
 
-                    # time_2 = time.time()
-                    # if (time_2 - time_og) > 0:
-                    #     if 1/(time_2 - time_og) <100:
-                    #         print("metadata keys", shared_metadata_dict.keys(), flush = True)
-                    #         print("cv2 .read/write multiple takes long???", "fps:", 1/(time_2 - time_og) , time_2 - time_og, 1./frame_rate, flush= True)
+                    time_2 = time.time()
+                    if (time_2 - time_og) > 0:
+                        if 1/(time_2 - time_og) <100:
+                            # print("metadata keys", shared_metadata_dict.keys(), flush = True)
+                            print("cv2 .read/write multiple takes long???", "fps:", 1/(time_2 - time_og) , time_2 - time_og, 1./frame_rate, flush= True)
 
                         # print("wtf update", flush= True)
                         # shared_metadata_dict[str(internal_i)] = frame1
@@ -592,7 +592,7 @@ def open_appliedcv(*args):
                 if applytimeend - applytimestart > 0:
                     if 1 / (applytimeend - applytimestart) < 500:
                         print(
-                            "is apply lagging?",
+                            "is apply lagging?", os.getpid(),
                             1 / (applytimeend - applytimestart),
                             flush=True,
                         )
