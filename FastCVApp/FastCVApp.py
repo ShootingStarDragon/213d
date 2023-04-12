@@ -107,7 +107,7 @@ FCVA_screen_manager: #remember to return a root widget
                     #now u have to search for self.index in shared_analyzedAVAR.keys for the right key:
                     keyref = [x for x in self.shared_analyzedAVAR.keys() if 'key' in x and self.shared_analyzedAVAR[x] == self.index]
                     if keyref == []:
-                        print("keyref fail! A,",self.index, keyref, self.shared_analyzedAVAR.keys(),[self.shared_analyzedAVAR[x] for x in self.shared_analyzedAVAR.keys() if isinstance(self.shared_analyzedAVAR[x],int)],  flush = True)
+                        # print("keyref fail! A,",self.index, keyref, self.shared_analyzedAVAR.keys(),[self.shared_analyzedAVAR[x] for x in self.shared_analyzedAVAR.keys() if isinstance(self.shared_analyzedAVAR[x],int)],  flush = True)
                         pass
                     else:
                         frameref = "frame" + keyref[0].replace("key",'')
@@ -122,7 +122,7 @@ FCVA_screen_manager: #remember to return a root widget
                     # print("key vs me", self.shared_speedtestBVAR.keys(), type(self.shared_speedtestBVAR.keys()[0]), self.index, self.index %2, type(self.index%2) )
                     keyref = [x for x in self.shared_analyzedBVAR.keys() if 'key' in x and self.shared_analyzedBVAR[x] == self.index]
                     if keyref == []:
-                        print("keyref fail! B,",self.index, keyref, self.shared_analyzedBVAR.keys(),[self.shared_analyzedBVAR[x] for x in self.shared_analyzedBVAR.keys() if isinstance(self.shared_analyzedBVAR[x],int)], flush = True)
+                        # print("keyref fail! B,",self.index, keyref, self.shared_analyzedBVAR.keys(),[self.shared_analyzedBVAR[x] for x in self.shared_analyzedBVAR.keys() if isinstance(self.shared_analyzedBVAR[x],int)], flush = True)
                         pass
                     else:
                         frameref = "frame" + keyref[0].replace("key",'')
@@ -136,7 +136,7 @@ FCVA_screen_manager: #remember to return a root widget
                     # print("key vs me", self.shared_speedtestCVAR.keys(), type(self.shared_speedtestCVAR.keys()[0]), self.index, self.index %2, type(self.index%2) )
                     keyref = [x for x in self.shared_analyzedCVAR.keys() if 'key' in x and self.shared_analyzedCVAR[x] == self.index]
                     if keyref == []:
-                        print("keyref fail! C,",self.index, keyref, self.shared_analyzedCVAR.keys(),[self.shared_analyzedCVAR[x] for x in self.shared_analyzedCVAR.keys() if isinstance(self.shared_analyzedAVAR[x],int)],flush = True)
+                        # print("keyref fail! C,",self.index, keyref, self.shared_analyzedCVAR.keys(),[self.shared_analyzedCVAR[x] for x in self.shared_analyzedCVAR.keys() if isinstance(self.shared_analyzedAVAR[x],int)],flush = True)
                         pass
                     else:
                         frameref = "frame" + keyref[0].replace("key",'')
@@ -325,10 +325,15 @@ def open_media(*args):
                     # it doesn't matter, just check if there are frames that have already been used, then blit update
                     # man this might occur too often, maybe a thread is right? not sure
                     
+                    #reminder: if u change the length of this, change for open analysis subprocess as well, and u need to change 4 spots: 
+                    # if len < x*2 and (TWICE, here and in subprocess)
+                    # for var in range of x (TWICE, here and in subprocess)
                     #initate dicts if they're less than size 10:
-                    if len(shared_speedtestAVAR.keys()) < 10:
+                    if len(shared_speedtestAVAR.keys()) < 20:
+                    # if len(shared_speedtestAVAR.keys()) < 10:
                         #replace all and say it
                         for x in range(10):
+                        # for x in range(5):
                             shared_speedtestAVAR["key" + str(x)] = -1
                             shared_speedtestAVAR["frame" + str(x)] = -1
 
@@ -469,8 +474,10 @@ def open_appliedcv(*args):
 
                 #init shared dict if keys < 20:
                 if len(shared_analyzedVAR.keys()) < 20:
+                # if len(shared_analyzedVAR.keys()) < 10:
                     #replace all and say it
                     for x in range(10):
+                    # for x in range(5):
                         shared_analyzedVAR["key" + str(x)] = -1
                         shared_analyzedVAR["frame" + str(x)] = -1
                     print("reset analysis keys!", flush = True)
