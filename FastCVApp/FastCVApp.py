@@ -242,10 +242,10 @@ FCVA_screen_manager: #remember to return a root widget
                 # if len(shared_analysis_dict) > 5:
                 #     min_key = min(shared_analysis_dict.keys())
                 #     del shared_analysis_dict[min_key]
-            # self.newt = time.time()
-            # if hasattr(self, 'newt'):
-            #     if self.newt - timeog > 0:
-            #         print("fps?", 1/(self.newt- timeog))
+            self.newt = time.time()
+            if hasattr(self, 'newt'):
+                if self.newt - timeog > 0:
+                    print("fps?", 1/(self.newt- timeog))
 
         def toggleCV(self, *args):
             if "toggleCV" not in self.shared_metadata_dictVAR.keys():
@@ -383,6 +383,7 @@ def open_media(*args):
                             # slotsA[0] -> this is the 1st key to replace
                             # so key(0-9), ex: key0, key1
                             # then get the number and say frame + number is to replace as well
+                            #make sure to update frame before you update key otherwise u get sequencing errors
                             shared_speedtestAVAR["frame" + slotsA[0].replace("key",'')] = frame1
                             shared_speedtestAVAR[slotsA[0]] = internal_i
 
@@ -391,10 +392,12 @@ def open_media(*args):
 
                             shared_speedtestCVAR["frame" + slotsC[0].replace("key",'')] = frame3
                             shared_speedtestCVAR[slotsC[0]] = internal_i + 2
+                            time_2 = time.time() #this is still decently fast, 14 fps for 3 frames is 42 fps total....
                             
-                            print("#new format: keyA: frame#, frameA: framedata",shared_speedtestAVAR[slotsA[0]], type(shared_speedtestAVAR["frame" + slotsA[0].replace("key",'')]), [type(shared_speedtestAVAR[x]) for x in shared_speedtestAVAR.keys()], flush=True)
+                            # print("#new format: keyA: frame#, frameA: framedata",shared_speedtestAVAR[slotsA[0]], type(shared_speedtestAVAR["frame" + slotsA[0].replace("key",'')]), [type(shared_speedtestAVAR[x]) for x in shared_speedtestAVAR.keys()], flush=True) #this print statement is slow, gets the read function to 3 fps...
                             #new format: keyA: frame#, frameA: framedata
                             internal_i += 3
+                            # time_2 = time.time() 
                     # #delete extra frames:
                     # delkeylist = [x for x in shared_analyzedAVAR.keys() if x < shared_globalindexVAR["curframe"]]
                     # for delkey in delkeylist:
