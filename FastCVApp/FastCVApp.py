@@ -3,6 +3,7 @@ import cv2
 import time
 import os, sys
 import numpy as np
+from imutils.video import FileVideoStream
 
 def open_kivy(*args):
     # infinite recursion bug when packaging with pyinstaller with no console: https://github.com/kivy/kivy/issues/8074#issuecomment-1364595283
@@ -283,9 +284,7 @@ def open_media(*args):
         shared_metadata_dict = args[0]
         frame_rate = args[1]
         # frame_rate = 30
-        print("what is framerate?", frame_rate, flush=True)
-        from imutils.video import FileVideoStream
-
+        print("what is framerate?", frame_rate, flush=True)        
         cap = FileVideoStream(args[2]).start()
         # cap = cv2.VideoCapture(args[2])
         shared_speedtestAVAR = args[3]
