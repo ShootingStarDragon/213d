@@ -267,13 +267,13 @@ FCVA_screen_manager: #remember to return a root widget
 
     MainApp.shared_analysis_dictVAR = args[0]
     MainApp.shared_metadata_dictVAR = args[1]
-    MainApp.shared_rawAVAR = args[3] #these are actually the raw frames now
-    MainApp.shared_rawBVAR = args[4] #these are actually the raw frames now
-    MainApp.shared_rawCVAR = args[5] #these are actually the raw frames now
-    MainApp.shared_globalindexVAR = args[6]
-    MainApp.shared_analyzedAVAR = args[7]
-    MainApp.shared_analyzedBVAR = args[8]
-    MainApp.shared_analyzedCVAR = args[9]
+    # MainApp.shared_rawAVAR = args[3] #these are actually the raw frames now
+    # MainApp.shared_rawBVAR = args[4] #these are actually the raw frames now
+    # MainApp.shared_rawCVAR = args[5] #these are actually the raw frames now
+    MainApp.shared_globalindexVAR = args[3]
+    MainApp.shared_analyzedAVAR = args[4]
+    MainApp.shared_analyzedBVAR = args[5]
+    MainApp.shared_analyzedCVAR = args[6]
 
     MainApp().run()
 
@@ -313,7 +313,7 @@ def open_media(*args):
                 # if time_elapsed > 1.0 / frame_rate:
                 if True:
                     time_og = time.time()
-                    # ret, frame = cap.read() #for opencv version
+                    # ret, frame1 = cap.read() #for opencv version
                     # time_2 = time.time()
                     # see if size of frame is making sharedmem slow:
 
@@ -351,7 +351,8 @@ def open_media(*args):
                     slotsA = [x for x in shared_speedtestAVAR.keys() if 'key' in x and (shared_speedtestAVAR[x] < current_framenumber or shared_speedtestAVAR[x] == -1)] 
                     slotsB = [x for x in shared_speedtestBVAR.keys() if 'key' in x and (shared_speedtestBVAR[x] < current_framenumber or shared_speedtestBVAR[x] == -1)]
                     slotsC = [x for x in shared_speedtestCVAR.keys() if 'key' in x and (shared_speedtestCVAR[x] < current_framenumber or shared_speedtestCVAR[x] == -1)]
-                    print("check slots?", len(slotsA),len(slotsB),len(slotsC), flush = True)
+                    slotscheck = [shared_speedtestAVAR[x] for x in shared_speedtestAVAR.keys() if 'key' in x] 
+                    print("check slots?", len(slotsA),current_framenumber, slotscheck, len(slotsB),len(slotsC), flush = True)
                     #if there are 3 free slots in raw shared dict (one per shared dict), update:
                     if len(slotsA) > 0 and \
                         len(slotsB) > 0 and \
@@ -361,16 +362,18 @@ def open_media(*args):
                         #       # read the latest frame here and stuff it in the shared memory for open_appliedcv to manipulate
                         # if ret: #for opencv
                         # print("if failed", cap.more(), len(shared_metadata_dict) < 16, flush = True)
-                        if cap.more():
+                        if cap.more(): #for FileVideoStream
                             frame1 = (
                                 cap.read()
                             )  # for videostream as per: https://stackoverflow.com/questions/63584905/increase-the-capture-and-stream-speed-of-a-video-using-opencv-and-python/63585204#63585204
                             frame2 = (
                                 cap.read()
-                            )  # for videostream as per: https://stackoverflow.com/questions/63584905/increase-the-capture-and-stream-speed-of-a-video-using-opencv-and-python/63585204#63585204
+                            )
                             frame3 = (
                                 cap.read()
-                            )  # for videostream as per: https://stackoverflow.com/questions/63584905/increase-the-capture-and-stream-speed-of-a-video-using-opencv-and-python/63585204#63585204
+                            )
+                            # ret, frame2 = cap.read()
+                            # ret, frame3 = cap.read()
                             # frame = cv2.resize(frame, (500, 300))
                             # shared_metadata_dict["latest_cap_frame"] = frame #THIS LINE IS THE BOTtLENECK, I FOUND YOU
                             # didct.update: https://stackoverflow.com/a/21222526
@@ -397,7 +400,7 @@ def open_media(*args):
 
                             shared_speedtestCVAR["frame" + slotsC[0].replace("key",'')] = frame3
                             shared_speedtestCVAR[slotsC[0]] = internal_i + 2
-                            time_2 = time.time() #this is still decently fast, 14 fps for 3 frames is 42 fps total....
+                            # time_2 = time.time() #this is still decently fast, 14 fps for 3 frames is 42 fps total....
                             
                             # print("#new format: keyA: frame#, frameA: framedata",shared_speedtestAVAR[slotsA[0]], type(shared_speedtestAVAR["frame" + slotsA[0].replace("key",'')]), [type(shared_speedtestAVAR[x]) for x in shared_speedtestAVAR.keys()], flush=True) #this print statement is slow, gets the read function to 3 fps...
                             #new format: keyA: frame#, frameA: framedata
@@ -419,6 +422,7 @@ def open_media(*args):
 
 
                     time_2 = time.time()
+                    # time_2 = time.time()
                     if (time_2 - time_og) > 0:
                         if 1/(time_2 - time_og) <100:
                             # print("metadata keys", shared_metadata_dict.keys(), flush = True)
@@ -602,7 +606,7 @@ def open_appliedcv(*args):
                 if applytimeend - applytimestart > 0:
                     if 1 / (applytimeend - applytimestart) < 500:
                         print(
-                            "is apply lagging?", os.getpid(),
+                            "is apply lagging? pid, fps", os.getpid(),
                             1 / (applytimeend - applytimestart),
                             flush=True,
                         )
@@ -812,8 +816,9 @@ class FCVA:
 
             kivy_subprocess = FCVA_mp.Process(
                 target=open_kivy,
-                args=(shared_analysis_dict, shared_metadata_dict, self.fps, shared_speedtestA,shared_speedtestB,shared_speedtestC, shared_globalindex, shared_analyzedA, shared_analyzedB, shared_analyzedC)
+                args=(shared_analysis_dict, shared_metadata_dict, self.fps, shared_globalindex, shared_analyzedA, shared_analyzedB, shared_analyzedC)
             )
+            #old args: args=(shared_analysis_dict, shared_metadata_dict, self.fps, shared_speedtestA,shared_speedtestB,shared_speedtestC, shared_globalindex, shared_analyzedA, shared_analyzedB, shared_analyzedC)
             kivy_subprocess.start()
 
             # this try except block holds the main process open so the subprocesses aren't cleared when the main process exits early.
