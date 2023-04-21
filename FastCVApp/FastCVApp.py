@@ -88,8 +88,8 @@ FCVA_screen_manager: #remember to return a root widget
             # self.index = self.shared_globalindexVAR["curframe"]
             # print("shared analyzed keys?", self.shared_analyzedAVAR.keys(), flush = True)
             spf = 1/30
-            sharedmetadatakeys = self.shared_metadata_dictVAR.keys()
-            if "toggleCV" in sharedmetadatakeys and self.shared_metadata_dictVAR["toggleCV"] == True and self.shared_globalindexVAR["starttime"] != None:
+            # sharedmetadatakeys = self.shared_metadata_dictVAR.keys()
+            if "toggleCV" in self.shared_metadata_dictVAR.keys() and self.shared_metadata_dictVAR["toggleCV"] == True and self.shared_globalindexVAR["starttime"] != None:
                 self.index = int((time.time() - self.starttime)/spf)
                 if self.index < 0:
                     self.index = 0
@@ -305,14 +305,15 @@ def open_media(*args):
         internal_i = 0
         while True:
             time_og = time.time()
-            metadatakeys = shared_metadata_dict.keys()
-            if "kivy_run_state" in metadatakeys:
+            # metadatakeys = shared_metadata_dict.keys()
+            if "kivy_run_state" in shared_metadata_dict.keys():
                 if shared_metadata_dict["kivy_run_state"] == False:
+                    print("exiting openmedia", flush=True)
                     break
             # #the list comprehension just checks if a key is in the list then gets the value of the key. useful since keys might not exist in the shared dict yet:
-            if "mp_ready" in metadatakeys and [
+            if "mp_ready" in shared_metadata_dict.keys() and [
                 shared_metadata_dict[key]
-                for key in metadatakeys
+                for key in shared_metadata_dict.keys()
                 if key == "toggleCV"
             ] == [True]:
                 time_elapsed = time.time() - prev
@@ -472,7 +473,7 @@ def open_appliedcv(*args):
         analyzedframecounter = 0
 
         while True:
-            sharedmetadatakeys = shared_metadata_dict.keys()
+            # sharedmetadatakeys = shared_metadata_dict.keys()
             sharedanalyzedkeysA = shared_analyzedVAR.keys()
             # if "kivy_run_state" in sharedmetadatakeys:
             #     if shared_metadata_dict["kivy_run_state"] == False:
@@ -482,8 +483,9 @@ def open_appliedcv(*args):
             #     for key in shared_metadata_dict.keys()
             #     if key == "toggleCV"
             # ] == [True]:
-            if "kivy_run_state" in sharedmetadatakeys:
+            if "kivy_run_state" in shared_metadata_dict.keys():
                 if shared_metadata_dict["kivy_run_state"] == False:
+                    print("exiting open_appliedcv", os.getpid(), flush=True)
                     break
 
                 #init shared dict if keys < 20:
