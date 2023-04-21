@@ -172,10 +172,14 @@ FCVA_screen_manager: #remember to return a root widget
                     frame = None
                 
                 # https://stackoverflow.com/questions/43748991/how-to-check-if-a-variable-is-either-a-python-list-numpy-array-or-pandas-series
-                if not isinstance(frame,np.ndarray):
+                # if not isinstance(frame,np.ndarray):
+                if frame is None:
                     # print("frame ded")
                     pass
                 else:
+                    #frame is already in bytes, just reshape it then reset to bytes again
+                    buf = frame
+                    frame = np.frombuffer(frame, np.uint8).copy().reshape(1080, 1920, 3)
                     # complicated way of safely checking if a value may or may not exist, then get that value:
                     existence_check = [
                         frame.shape[x] for x in range(0, len(frame.shape)) if x == 2
@@ -186,7 +190,8 @@ FCVA_screen_manager: #remember to return a root widget
                             "check your numpy dimensions! should be height x width x 3/4: like  (1920,1080,3): ",
                             frame.shape, frame
                         )
-                    buf = frame.tobytes()
+                    # buf = frame.tobytes()
+                    
                     # check for existence of colorfmt in shared_metadata_dict, then if so, set colorfmt:
                     formatoption = [
                         shared_metadata_dict[x]
@@ -295,9 +300,6 @@ def open_media(*args):
         shared_speedtestBVAR = args[4]
         shared_speedtestCVAR = args[5]
         shared_globalindexVAR = args[6]
-        # shared_analyzedAVAR = args[7]
-        # shared_analyzedBVAR = args[8]
-        # shared_analyzedCVAR = args[9]
 
         prev = time.time()
         internal_i = 0
@@ -399,13 +401,13 @@ def open_media(*args):
                             # so key(0-9), ex: key0, key1
                             # then get the number and say frame + number is to replace as well
                             #make sure to update frame before you update key otherwise u get sequencing errors
-                            shared_speedtestAVAR["frame" + slotsA[0].replace("key",'')] = frame1
+                            shared_speedtestAVAR["frame" + slotsA[0].replace("key",'')] = frame1.tobytes()
                             shared_speedtestAVAR[slotsA[0]] = internal_i
 
-                            shared_speedtestBVAR["frame" + slotsB[0].replace("key",'')] = frame2
+                            shared_speedtestBVAR["frame" + slotsB[0].replace("key",'')] = frame2.tobytes()
                             shared_speedtestBVAR[slotsB[0]] = internal_i + 1
 
-                            shared_speedtestCVAR["frame" + slotsC[0].replace("key",'')] = frame3
+                            shared_speedtestCVAR["frame" + slotsC[0].replace("key",'')] = frame3.tobytes()
                             shared_speedtestCVAR[slotsC[0]] = internal_i + 2
                             # time_2 = time.time() #this is still decently fast, 14 fps for 3 frames is 42 fps total....
                             
@@ -522,7 +524,7 @@ def open_appliedcv(*args):
                     # print("write fast enough?: ", keylist[0] in shared_speedtestVAR.keys(), keylist[0], shared_speedtestVAR.keys(), flush = True)
                     # shared_speedtestVAR.pop(keylist[0]) #POP IS SLOW, NEVER POP
                     # frametest = shared_speedtestVAR[keylist[0]]
-                    frametest = rightframe
+                    # frametest = rightframe
                     #     raise Exception('I know Python!')
                     # do appliedcv on first 3 keys (if they exist)
                     # for key in keylist:
@@ -541,14 +543,18 @@ def open_appliedcv(*args):
                     #just need to update shared analyzed var ONLY, keep framecount as-is
                     #maybe update only keeps datatype, try the old style:
                     
+                    #convert from bytes to a numpy array
+                    rightframe = np.frombuffer(rightframe, np.uint8).copy().reshape(1080, 1920, 3)
+
                     #update frame
                     result = appliedcv(
-                                frametest,
+                                rightframe,
                                 shared_analysis_dict,
                                 shared_metadata_dict,
                                 shared_globalindexVAR
                             )
-                    shared_analyzedVAR[frameref] = result
+                    #store bytes again:
+                    shared_analyzedVAR[frameref] = result.tobytes()
                     #update key:
                     shared_analyzedVAR[keylist[0]] = shared_speedtestVAR[keylist[0]]
                     
@@ -564,8 +570,8 @@ def open_appliedcv(*args):
                     # )
                     #update analyzedframecounter so u know if you've analyzed the frame
                     analyzedframecounter = shared_speedtestVAR[keylist[0]]
-                    print("updated in sharedanalyze", type(result), type(frametest), frameref,analyzedframecounter,keylist[0],flush = True)
-                    print("sharedanalzye shapes", result.shape, frametest.shape, flush = True)
+                    print("updated in sharedanalyze", type(result), type(rightframe), frameref,analyzedframecounter,keylist[0],flush = True)
+                    print("sharedanalzye shapes", result.shape, rightframe.shape, flush = True)
 
                     #pop all the extra frames (that got skipped, for example)
                     # delkeylist = [x for x in shared_analyzedVAR.keys() if x < shared_globalindexVAR["curframe"]]
