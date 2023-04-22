@@ -107,14 +107,14 @@ FCVA_screen_manager: #remember to return a root widget
                     # print("key vs me", self.shared_speedtestAVAR.keys(), type(self.shared_speedtestAVAR.keys()[0]), self.index, self.index %2, type(self.index%2) )
                     
                     #now u have to search for self.index in shared_analyzedAVAR.keys for the right key:
-                    sharedanalyzedkeysA = self.shared_analyzedAVAR.keys()
-                    keyref = [x for x in sharedanalyzedkeysA if 'key' in x and self.shared_analyzedAVAR[x] == self.index]
+                    # sharedanalyzedkeysA = self.shared_analyzedAVAR.keys()
+                    keyref = [x for x in self.shared_analyzedAVAR.keys() if 'key' in x and self.shared_analyzedAVAR[x] == self.index]
                     if keyref == []:
                         # print("keyref fail! A,",self.index, keyref, self.shared_analyzedAVAR.keys(),[self.shared_analyzedAVAR[x] for x in self.shared_analyzedAVAR.keys() if isinstance(self.shared_analyzedAVAR[x],int)],  flush = True)
                         pass
                     else:
                         frameref = "frame" + keyref[0].replace("key",'')
-                        print("this diedA", frameref, sharedanalyzedkeysA, flush = True)
+                        print("this diedA", frameref, self.shared_analyzedAVAR.keys(), flush = True)
                         frame = self.shared_analyzedAVAR[frameref]
                     # frame = self.shared_analyzedAVAR[self.index]
                     # self.shared_analyzedAVAR.pop(self.index)
@@ -123,14 +123,14 @@ FCVA_screen_manager: #remember to return a root widget
                     # print("why is it getting bigger? A(reading function isn't throttled....)", self.index, self.shared_analyzedAVAR.keys())
                 if self.index %3 == 1:
                     # print("key vs me", self.shared_speedtestBVAR.keys(), type(self.shared_speedtestBVAR.keys()[0]), self.index, self.index %2, type(self.index%2) )
-                    sharedanalyzedB = self.shared_analyzedBVAR.keys()
-                    keyref = [x for x in sharedanalyzedB if 'key' in x and self.shared_analyzedBVAR[x] == self.index]
+                    # sharedanalyzedB = self.shared_analyzedBVAR.keys()
+                    keyref = [x for x in self.shared_analyzedBVAR.keys() if 'key' in x and self.shared_analyzedBVAR[x] == self.index]
                     if keyref == []:
                         # print("keyref fail! B,",self.index, keyref, self.shared_analyzedBVAR.keys(),[self.shared_analyzedBVAR[x] for x in self.shared_analyzedBVAR.keys() if isinstance(self.shared_analyzedBVAR[x],int)], flush = True)
                         pass
                     else:
                         frameref = "frame" + keyref[0].replace("key",'')
-                        print("this diedB", frameref, sharedanalyzedB, flush = True)
+                        print("this diedB", frameref, self.shared_analyzedBVAR.keys(), flush = True)
                         frame = self.shared_analyzedBVAR[frameref]
                     # frame = self.shared_analyzedBVAR[self.index]
                     # self.shared_analyzedBVAR.pop(self.index)
@@ -138,14 +138,14 @@ FCVA_screen_manager: #remember to return a root widget
                     # print("why is it getting bigger? B(reading function isn't throttled....)", self.index, self.shared_analyzedBVAR.keys())
                 if self.index %3 == 2:
                     # print("key vs me", self.shared_speedtestCVAR.keys(), type(self.shared_speedtestCVAR.keys()[0]), self.index, self.index %2, type(self.index%2) )
-                    sharedanalyzedkeysC = self.shared_analyzedCVAR.keys()
-                    keyref = [x for x in sharedanalyzedkeysC if 'key' in x and self.shared_analyzedCVAR[x] == self.index]
+                    # sharedanalyzedkeysC = self.shared_analyzedCVAR.keys()
+                    keyref = [x for x in self.shared_analyzedCVAR.keys() if 'key' in x and self.shared_analyzedCVAR[x] == self.index]
                     if keyref == []:
                         # print("keyref fail! C,",self.index, keyref, self.shared_analyzedCVAR.keys(),[self.shared_analyzedCVAR[x] for x in self.shared_analyzedCVAR.keys() if isinstance(self.shared_analyzedAVAR[x],int)],flush = True)
                         pass
                     else:
                         frameref = "frame" + keyref[0].replace("key",'')
-                        print("this diedC", frameref, sharedanalyzedkeysC, flush = True)
+                        print("this diedC", frameref, self.shared_analyzedCVAR.keys(), flush = True)
                         frame = self.shared_analyzedCVAR[frameref]
                     # frame = self.shared_analyzedCVAR[self.index]
                     # self.shared_analyzedCVAR.pop(self.index)
@@ -336,10 +336,10 @@ def open_media(*args):
                     # if len < x*2 and (TWICE, here and in subprocess)
                     # for var in range of x (TWICE, here and in subprocess)
                     #initate dicts if they're less than size 10:
-                    speedtestkeysA = shared_speedtestAVAR.keys()
-                    speedtestkeysB = shared_speedtestBVAR.keys()
-                    speedtestkeysC = shared_speedtestCVAR.keys()
-                    if len(speedtestkeysA) < 20:
+                    # speedtestkeysA = shared_speedtestAVAR.keys().copy()
+                    # speedtestkeysB = shared_speedtestBVAR.keys().copy()
+                    # speedtestkeysC = shared_speedtestCVAR.keys().copy()
+                    if len(shared_speedtestAVAR.keys()) < 20:
                     # if len(shared_speedtestAVAR.keys()) < 10:
                         #replace all and say it
                         for x in range(10):
@@ -358,10 +358,10 @@ def open_media(*args):
                     current_framenumber = int((time.time() - shared_globalindexVAR["starttime"])/(1/frame_rate))
                     print("read media frame#", current_framenumber,  flush = True)
                     #check for key in keyname and if we passed it already
-                    slotsA = [x for x in speedtestkeysA if 'key' in x and (shared_speedtestAVAR[x] < current_framenumber or shared_speedtestAVAR[x] == -1)] 
-                    slotsB = [x for x in speedtestkeysB if 'key' in x and (shared_speedtestBVAR[x] < current_framenumber or shared_speedtestBVAR[x] == -1)]
-                    slotsC = [x for x in speedtestkeysC if 'key' in x and (shared_speedtestCVAR[x] < current_framenumber or shared_speedtestCVAR[x] == -1)]
-                    slotscheck = [shared_speedtestAVAR[x] for x in speedtestkeysA if 'key' in x] 
+                    slotsA = [x for x in shared_speedtestAVAR.keys() if 'key' in x and (shared_speedtestAVAR[x] < current_framenumber or shared_speedtestAVAR[x] == -1)] 
+                    slotsB = [x for x in shared_speedtestBVAR.keys() if 'key' in x and (shared_speedtestBVAR[x] < current_framenumber or shared_speedtestBVAR[x] == -1)]
+                    slotsC = [x for x in shared_speedtestCVAR.keys() if 'key' in x and (shared_speedtestCVAR[x] < current_framenumber or shared_speedtestCVAR[x] == -1)]
+                    slotscheck = [shared_speedtestAVAR[x] for x in shared_speedtestAVAR.keys() if 'key' in x] 
                     print("check slots?", len(slotsA),current_framenumber, slotscheck, len(slotsB),len(slotsC), flush = True)
                     #if there are 3 free slots in raw shared dict (one per shared dict), update:
                     if len(slotsA) > 0 and \
@@ -376,12 +376,15 @@ def open_media(*args):
                             frame1 = (
                                 cap.read()
                             )  # for videostream as per: https://stackoverflow.com/questions/63584905/increase-the-capture-and-stream-speed-of-a-video-using-opencv-and-python/63585204#63585204
+                            # frame1 = frame1.tobytes()
                             frame2 = (
                                 cap.read()
                             )
+                            # frame2 = frame2.tobytes()
                             frame3 = (
                                 cap.read()
                             )
+                            # frame3 = frame3.tobytes()
                             # ret, frame2 = cap.read()
                             # ret, frame3 = cap.read()
                             # frame = cv2.resize(frame, (500, 300))
@@ -474,7 +477,7 @@ def open_appliedcv(*args):
 
         while True:
             # sharedmetadatakeys = shared_metadata_dict.keys()
-            sharedanalyzedkeysA = shared_analyzedVAR.keys()
+            # sharedanalyzedkeysA = shared_analyzedVAR.keys()
             # if "kivy_run_state" in sharedmetadatakeys:
             #     if shared_metadata_dict["kivy_run_state"] == False:
             #         break
@@ -489,7 +492,7 @@ def open_appliedcv(*args):
                     break
 
                 #init shared dict if keys < 20:
-                if len(sharedanalyzedkeysA) < 20:
+                if len(shared_analyzedVAR.keys()) < 20:
                 # if len(shared_analyzedVAR.keys()) < 10:
                     #replace all and say it
                     for x in range(10):
@@ -511,9 +514,9 @@ def open_appliedcv(*args):
                 # keylist = [obj for obj in metakeylist if isinstance(obj, int)][:3]
                 # keylist = [shared_globalindexVAR["curframe"]]
                 #hoping that and sequence evals L to R so that I don't have to sequentially clear stuff, else checking -1 and if frame# < analyzedframecounter is gonna be a pain
-                speedtestkeys = shared_speedtestVAR.keys()
+                # speedtestkeys = shared_speedtestVAR.keys()
 
-                keylist = [x for x in speedtestkeys if 'key' in x and shared_speedtestVAR[x] != -1 and analyzedframecounter < shared_speedtestVAR[x]]
+                keylist = [x for x in shared_speedtestVAR.keys() if 'key' in x and shared_speedtestVAR[x] != -1 and analyzedframecounter < shared_speedtestVAR[x]]
                 applytimestart = time.time()
                 # print("keylist?",metakeylist, keylist, flush=True)
                 # keylist[0] in shared_speedtestVAR.keys()
@@ -572,8 +575,8 @@ def open_appliedcv(*args):
                     # )
                     #update analyzedframecounter so u know if you've analyzed the frame
                     analyzedframecounter = shared_speedtestVAR[keylist[0]]
-                    print("updated in sharedanalyze", type(result), type(rightframe), frameref,analyzedframecounter,keylist[0],flush = True)
-                    print("sharedanalzye shapes", result.shape, rightframe.shape, flush = True)
+                    # print("updated in sharedanalyze", type(result), type(rightframe), frameref,analyzedframecounter,keylist[0],flush = True)
+                    # print("sharedanalzye shapes", result.shape, rightframe.shape, flush = True)
 
                     #pop all the extra frames (that got skipped, for example)
                     # delkeylist = [x for x in shared_analyzedVAR.keys() if x < shared_globalindexVAR["curframe"]]
