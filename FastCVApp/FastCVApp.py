@@ -306,6 +306,7 @@ def minValidKey(*args):
 
 def open_media_readframebyframeded(*args):
     '''
+    _readframebyframeded
     I tried to read 1 frame at a time, doesn't work since fps for this is <30, the bottleneck is that updating to 1 shareddict at a time has a throughput of 20 fps, RIP
     '''
     try:
@@ -325,11 +326,18 @@ def open_media_readframebyframeded(*args):
         internal_i = 0
         while True:
             time_og = time.time()
+            # time_og = time.time()
             # metadatakeys = shared_metadata_dict.keys()
-            if "kivy_run_state" in shared_metadata_dict.keys():
-                if shared_metadata_dict["kivy_run_state"] == False:
-                    print("exiting openmedia", flush=True)
-                    break
+            # if "kivy_run_state" in shared_metadata_dict.keys():
+            #     if shared_metadata_dict["kivy_run_state"] == False:
+            #         print("exiting openmedia", flush=True)
+            #         break
+            if [shared_metadata_dict[key]
+                for key in shared_metadata_dict.keys()
+                if key == "kivy_run_state"
+            ] == [False]:
+                print("exiting openmedia", flush=True)
+                break
             # #the list comprehension just checks if a key is in the list then gets the value of the key. useful since keys might not exist in the shared dict yet:
             if "mp_ready" in shared_metadata_dict.keys() and [
                 shared_metadata_dict[key]
@@ -358,6 +366,7 @@ def open_media_readframebyframeded(*args):
                 # speedtestkeysA = shared_speedtestAVAR.keys().copy()
                 # speedtestkeysB = shared_speedtestBVAR.keys().copy()
                 # speedtestkeysC = shared_speedtestCVAR.keys().copy()
+                time_2 = time.time() 
                 if len(shared_speedtestAVAR.keys()) < 20:
                 # if len(shared_speedtestAVAR.keys()) < 10:
                     #replace all and say it
@@ -397,7 +406,6 @@ def open_media_readframebyframeded(*args):
 
                 # check the time
                 internal_i += 1
-                time_2 = time.time() 
 
                 # slotsA = [x for x in shared_speedtestAVAR.keys() if 'key' in x and (shared_speedtestAVAR[x] < current_framenumber or shared_speedtestAVAR[x] == -1)] 
                 # slotsB = [x for x in shared_speedtestBVAR.keys() if 'key' in x and (shared_speedtestBVAR[x] < current_framenumber or shared_speedtestBVAR[x] == -1)]
@@ -528,7 +536,12 @@ def open_media_readframebyframeded(*args):
 
         print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
 
-def open_media_HARDSTUCH9FPS(*args):
+def open_mediaHARDSTUCK9FPS(*args):
+    '''
+    HARDSTUCK9FPS
+    so here I read 3 frames and write to 3 sharedmem, that should mean "total" fps is 30 correct?
+    well I'm stuck at 9 for some reason, I think the act of updating a shareddict is still a blocking op, ideally 
+    '''
     try:
         from imutils.video import FileVideoStream
         shared_metadata_dict = args[0]
