@@ -304,7 +304,10 @@ def minValidKey(*args):
     else:
         return Ans
 
-def open_media(*args):
+def open_media_readframebyframeded(*args):
+    '''
+    I tried to read 1 frame at a time, doesn't work since fps for this is <30, the bottleneck is that updating to 1 shareddict at a time has a throughput of 20 fps, RIP
+    '''
     try:
         from imutils.video import FileVideoStream
         shared_metadata_dict = args[0]
