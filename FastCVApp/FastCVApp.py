@@ -287,6 +287,22 @@ FCVA_screen_manager: #remember to return a root widget
 
     MainApp().run()
 
+def minValidKey(*args):
+    #goal is to find the key of the smallest value (is a number <  current frame or -1)
+    Ans = []
+    print("args why wtf", args, flush = True)
+    dictVAR = args[0][0] #args are these for some reason args why wtf ([<DictProxy object, typeid 'dict' at 0x1a50d8dbd30>, -89],)
+    current_framenumber = args[0][1]
+    validKeys = [x for x in dictVAR.keys() if 'key' in x and (dictVAR[x] < current_framenumber or dictVAR[x] == -1)] 
+    # https://stackoverflow.com/questions/27114738/min-arg-is-an-empty-sequence
+    minval = min([dictVAR[x] for x in validKeys], default="EMPTY") #what happens in init, if minval is -1?
+    #get the key of that value
+    Ans = [x for x in dictVAR.keys() if 'key' in x and dictVAR[x] == minval] #err line, in init can get u frame0 since it has val of -1
+    print("manual debug", validKeys, minval, Ans)
+    if len(Ans) > 0:
+        return Ans[0]
+    else:
+        return Ans
 
 def open_media(*args):
     try:
@@ -358,11 +374,17 @@ def open_media(*args):
                     current_framenumber = int((time.time() - shared_globalindexVAR["starttime"])/(1/frame_rate))
                     print("read media frame#", current_framenumber,  flush = True)
                     #check for key in keyname and if we passed it already
-                    slotsA = [x for x in shared_speedtestAVAR.keys() if 'key' in x and (shared_speedtestAVAR[x] < current_framenumber or shared_speedtestAVAR[x] == -1)] 
-                    slotsB = [x for x in shared_speedtestBVAR.keys() if 'key' in x and (shared_speedtestBVAR[x] < current_framenumber or shared_speedtestBVAR[x] == -1)]
-                    slotsC = [x for x in shared_speedtestCVAR.keys() if 'key' in x and (shared_speedtestCVAR[x] < current_framenumber or shared_speedtestCVAR[x] == -1)]
+                    # just add a 1 line check to get the key with the least value, that way each slot is "evenly" used
+                    
+
+                    # slotsA = [x for x in shared_speedtestAVAR.keys() if 'key' in x and (shared_speedtestAVAR[x] < current_framenumber or shared_speedtestAVAR[x] == -1)] 
+                    # slotsB = [x for x in shared_speedtestBVAR.keys() if 'key' in x and (shared_speedtestBVAR[x] < current_framenumber or shared_speedtestBVAR[x] == -1)]
+                    # slotsC = [x for x in shared_speedtestCVAR.keys() if 'key' in x and (shared_speedtestCVAR[x] < current_framenumber or shared_speedtestCVAR[x] == -1)]
+                    slotsA = minValidKey([shared_speedtestAVAR, current_framenumber])
+                    slotsB = minValidKey([shared_speedtestBVAR, current_framenumber])
+                    slotsC = minValidKey([shared_speedtestCVAR, current_framenumber])
                     slotscheck = [shared_speedtestAVAR[x] for x in shared_speedtestAVAR.keys() if 'key' in x] 
-                    print("check slots?", len(slotsA),current_framenumber, slotscheck, len(slotsB),len(slotsC), flush = True)
+                    print("check slots?", len(slotsA),current_framenumber, slotsA, slotscheck, len(slotsB),len(slotsC), flush = True)
                     #if there are 3 free slots in raw shared dict (one per shared dict), update:
                     if len(slotsA) > 0 and \
                         len(slotsB) > 0 and \
@@ -405,14 +427,14 @@ def open_media(*args):
                             # so key(0-9), ex: key0, key1
                             # then get the number and say frame + number is to replace as well
                             #make sure to update frame before you update key otherwise u get sequencing errors
-                            shared_speedtestAVAR["frame" + slotsA[0].replace("key",'')] = frame1.tobytes()
-                            shared_speedtestAVAR[slotsA[0]] = internal_i
+                            shared_speedtestAVAR["frame" + slotsA.replace("key",'')] = frame1.tobytes()
+                            shared_speedtestAVAR[slotsA] = internal_i
 
-                            shared_speedtestBVAR["frame" + slotsB[0].replace("key",'')] = frame2.tobytes()
-                            shared_speedtestBVAR[slotsB[0]] = internal_i + 1
+                            shared_speedtestBVAR["frame" + slotsB.replace("key",'')] = frame2.tobytes()
+                            shared_speedtestBVAR[slotsB] = internal_i + 1
 
-                            shared_speedtestCVAR["frame" + slotsC[0].replace("key",'')] = frame3.tobytes()
-                            shared_speedtestCVAR[slotsC[0]] = internal_i + 2
+                            shared_speedtestCVAR["frame" + slotsC.replace("key",'')] = frame3.tobytes()
+                            shared_speedtestCVAR[slotsC] = internal_i + 2
                             # time_2 = time.time() #this is still decently fast, 14 fps for 3 frames is 42 fps total....
                             
                             # print("#new format: keyA: frame#, frameA: framedata",shared_speedtestAVAR[slotsA[0]], type(shared_speedtestAVAR["frame" + slotsA[0].replace("key",'')]), [type(shared_speedtestAVAR[x]) for x in shared_speedtestAVAR.keys()], flush=True) #this print statement is slow, gets the read function to 3 fps...
@@ -522,8 +544,8 @@ def open_appliedcv(*args):
                 # keylist[0] in shared_speedtestVAR.keys()
                 # rightframe = [shared_speedtestVAR[x] for x in shared_speedtestVAR.keys() if x == keylist[0]]
                 # if len(rightframe)>0:
-                # print("why is analyze keylist empty?", keylist, analyzedframecounter,[shared_speedtestVAR[x] for x in shared_speedtestVAR.keys() if 'key' in x and shared_speedtestVAR[x] != -1 and analyzedframecounter < shared_speedtestVAR[x]], flush = True)
                 if len(keylist)>0:
+                    print("why is analyze keylist empty?", keylist, analyzedframecounter,[shared_speedtestVAR[x] for x in shared_speedtestVAR.keys() if 'key' in x and shared_speedtestVAR[x] != -1 and analyzedframecounter < shared_speedtestVAR[x]], flush = True)
                     frameref = "frame" + keylist[0].replace("key", '')
                     rightframe = shared_speedtestVAR[frameref]
                     # print("write fast enough?: ", keylist[0] in shared_speedtestVAR.keys(), keylist[0], shared_speedtestVAR.keys(), flush = True)
