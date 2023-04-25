@@ -558,7 +558,7 @@ def open_media(*args):
         prev = time.time()
         internal_i = 0
         while True:
-            # time_og = time.time()
+            time_og = time.time()
             # metadatakeys = shared_metadata_dict.keys()
             # if "kivy_run_state" in shared_metadata_dict.keys():
             #     if shared_metadata_dict["kivy_run_state"] == False:
@@ -601,11 +601,11 @@ def open_media(*args):
                 # speedtestkeysB = shared_speedtestBVAR.keys().copy()
                 # speedtestkeysC = shared_speedtestCVAR.keys().copy()
                 
-                if len(shared_speedtestAVAR.keys()) < 20:
-                # if len(shared_speedtestAVAR.keys()) < 10:
+                # if len(shared_speedtestAVAR.keys()) < 20:
+                if len(shared_speedtestAVAR.keys()) < 10:
                     #replace all and say it
-                    for x in range(10):
-                    # for x in range(5):
+                    # for x in range(10):
+                    for x in range(5):
                         shared_speedtestAVAR["key" + str(x)] = -1
                         shared_speedtestAVAR["frame" + str(x)] = -1
 
@@ -636,7 +636,7 @@ def open_media(*args):
                     len(slotsB) > 0 and \
                     len(slotsC) > 0:
                     # prev = time.time()
-                    time_og = time.time()
+                    # time_og = time.time()
 
                     #       # read the latest frame here and stuff it in the shared memory for open_appliedcv to manipulate
                     # if ret: #for opencv
@@ -686,19 +686,19 @@ def open_media(*args):
                         # frame2 = frame2.tobytes()
                         # frame3 = frame3.tobytes()
                         # shared_speedtestAVAR["frame" + slotsA.replace("key",'')] = frame1.tobytes()
-                        shared_speedtestAVAR["frame" + slotsA[0].replace("key",'')] = cap.read().tobytes()
+                        shared_speedtestAVAR["frame" + slotsA[0].replace("key",'')] = cap.read()
                         shared_speedtestAVAR[slotsA[0]] = internal_i
                         # shared_speedtestAVAR["frame" + slotsA.replace("key",'')] = cap.read().tobytes()
                         # shared_speedtestAVAR[slotsA] = internal_i
 
                         # shared_speedtestBVAR["frame" + slotsB.replace("key",'')] = frame2.tobytes()
-                        shared_speedtestBVAR["frame" + slotsB[0].replace("key",'')] = cap.read().tobytes()
+                        shared_speedtestBVAR["frame" + slotsB[0].replace("key",'')] = cap.read()
                         shared_speedtestBVAR[slotsB[0]] = internal_i + 1
                         # shared_speedtestBVAR["frame" + slotsB.replace("key",'')] = cap.read().tobytes()
                         # shared_speedtestBVAR[slotsB] = internal_i + 1
 
                         # shared_speedtestCVAR["frame" + slotsC.replace("key",'')] = frame3.tobytes()
-                        shared_speedtestCVAR["frame" + slotsC[0].replace("key",'')] = cap.read().tobytes()
+                        shared_speedtestCVAR["frame" + slotsC[0].replace("key",'')] = cap.read()
                         shared_speedtestCVAR[slotsC[0]] = internal_i + 2
                         # shared_speedtestCVAR["frame" + slotsC.replace("key",'')] = cap.read().tobytes()
                         # shared_speedtestCVAR[slotsC] = internal_i + 2
@@ -707,7 +707,7 @@ def open_media(*args):
                         # print("#new format: keyA: frame#, frameA: framedata",shared_speedtestAVAR[slotsA[0]], type(shared_speedtestAVAR["frame" + slotsA[0].replace("key",'')]), [type(shared_speedtestAVAR[x]) for x in shared_speedtestAVAR.keys()], flush=True) #this print statement is slow, gets the read function to 3 fps...
                         #new format: keyA: frame#, frameA: framedata
                         internal_i += 3
-                        time_2 = time.time()
+                        # time_2 = time.time()
                         # time_2 = time.time() 
                 # #delete extra frames:
                 # delkeylist = [x for x in shared_analyzedAVAR.keys() if x < shared_globalindexVAR["curframe"]]
@@ -725,7 +725,7 @@ def open_media(*args):
 
 
                 # time_2 = time.time()
-                # time_2 = time.time()
+                time_2 = time.time()
                 if (time_2 - time_og) > 0:
                     if 1/(time_2 - time_og) <100:
                         # print("metadata keys", shared_metadata_dict.keys(), flush = True)
@@ -782,11 +782,11 @@ def open_appliedcv(*args):
                     break
 
                 #init shared dict if keys < 20:
-                if len(shared_analyzedVAR.keys()) < 20:
-                # if len(shared_analyzedVAR.keys()) < 10:
+                # if len(shared_analyzedVAR.keys()) < 20:
+                if len(shared_analyzedVAR.keys()) < 10:
                     #replace all and say it
-                    for x in range(10):
-                    # for x in range(5):
+                    # for x in range(10):
+                    for x in range(5):
                         shared_analyzedVAR["key" + str(x)] = -1
                         shared_analyzedVAR["frame" + str(x)] = -1
                     print("reset analysis keys!", flush = True)
