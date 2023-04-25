@@ -255,7 +255,7 @@ FCVA_screen_manager: #remember to return a root widget
             self.newt = time.time()
             if hasattr(self, 'newt'):
                 if self.newt - timeog > 0:
-                    print("fps?", 1/(self.newt- timeog))
+                    print("blit fps?", 1/(self.newt- timeog))
 
         def toggleCV(self, *args):
             if "toggleCV" not in self.shared_metadata_dictVAR.keys():
@@ -618,7 +618,7 @@ def open_media(*args):
                 
                 #use shared time info to determine current frame#:
                 current_framenumber = int((time.time() - shared_globalindexVAR["starttime"])/(1/frame_rate))
-                print("read media frame#", current_framenumber,  flush = True)
+                # print("read media frame#", current_framenumber,  flush = True)
                 #check for key in keyname and if we passed it already
                 # just add a 1 line check to get the key with the least value, that way each slot is "evenly" used
                 
@@ -630,7 +630,7 @@ def open_media(*args):
                 # slotsB = minValidKey([shared_speedtestBVAR, current_framenumber])
                 # slotsC = minValidKey([shared_speedtestCVAR, current_framenumber])
                 slotscheck = [shared_speedtestAVAR[x] for x in shared_speedtestAVAR.keys() if 'key' in x] 
-                print("check slots?", len(slotsA),current_framenumber, slotsA, slotscheck, len(slotsB),len(slotsC), flush = True)
+                print("check slots?", len(slotsA),current_framenumber, internal_i, slotsA, slotscheck, len(slotsB),len(slotsC), flush = True)
                 #if there are 3 free slots in raw shared dict (one per shared dict), update:
                 if len(slotsA) > 0 and \
                     len(slotsB) > 0 and \
@@ -776,7 +776,9 @@ def open_appliedcv(*args):
             #     for key in shared_metadata_dict.keys()
             #     if key == "toggleCV"
             # ] == [True]:
+            
             if "kivy_run_state" in shared_metadata_dict.keys():
+                applytimestart = time.time()
                 if shared_metadata_dict["kivy_run_state"] == False:
                     print("exiting open_appliedcv", os.getpid(), flush=True)
                     break
@@ -807,7 +809,7 @@ def open_appliedcv(*args):
                 # speedtestkeys = shared_speedtestVAR.keys()
 
                 keylist = [x for x in shared_speedtestVAR.keys() if 'key' in x and shared_speedtestVAR[x] != -1 and analyzedframecounter < shared_speedtestVAR[x]]
-                applytimestart = time.time()
+                # applytimestart = time.time()
                 # print("keylist?",metakeylist, keylist, flush=True)
                 # keylist[0] in shared_speedtestVAR.keys()
                 # rightframe = [shared_speedtestVAR[x] for x in shared_speedtestVAR.keys() if x == keylist[0]]
@@ -916,11 +918,11 @@ def open_appliedcv(*args):
                 #     #     )
                 if applytimeend - applytimestart > 0:
                     if 1 / (applytimeend - applytimestart) < 500:
-                        print(
-                            "is apply lagging? pid, fps", os.getpid(),
-                            1 / (applytimeend - applytimestart),
-                            flush=True,
-                        )
+                        # print(
+                        #     "is apply lagging? pid, fps", os.getpid(),
+                        #     1 / (applytimeend - applytimestart),
+                        #     flush=True,
+                        # )
                         pass
     except Exception as e:
         print("open_appliedcv died!", e)
