@@ -329,16 +329,22 @@ def open_media(*args):
         while True:
             time_og = time.time()
             # metadatakeys = shared_metadata_dict.keys()
-            # if "kivy_run_state" in shared_metadata_dict.keys():
-            #     if shared_metadata_dict["kivy_run_state"] == False:
-            #         print("exiting openmedia", flush=True)
-            #         break
-            if [shared_metadata_dict[key]
-                for key in shared_metadata_dict.keys()
-                if key == "kivy_run_state"
-            ] == [False]:
-                print("exiting openmedia", flush=True)
-                break
+            if "kivy_run_state" in shared_metadata_dict.keys():
+                if shared_metadata_dict["kivy_run_state"] == False:
+                    print("exiting openmedia", flush=True)
+                    break
+
+            # print("status?", EVcheck([shared_metadata_dict, "kivy_run_state", False]), flush = True)
+            # if EVcheck([shared_metadata_dict, "kivy_run_state", False]):
+            #     print("exiting openmedia", flush=True)
+            #     break
+            
+            # if [shared_metadata_dict[key]
+            #     for key in shared_metadata_dict.keys()
+            #     if key == "kivy_run_state"
+            # ] == [False]:
+            #     print("exiting openmedia", flush=True)
+            #     break
             # #the list comprehension just checks if a key is in the list then gets the value of the key. useful since keys might not exist in the shared dict yet:
             if "mp_ready" in shared_metadata_dict.keys() and [
                 shared_metadata_dict[key]
