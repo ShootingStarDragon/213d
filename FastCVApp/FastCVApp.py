@@ -251,7 +251,7 @@ FCVA_screen_manager: #remember to return a root widget
                 # after blitting delete some key/value pairs if dict has more than 5 frames:
                 # if len(shared_analysis_dict) > 5:
                 #     min_key = min(shared_analysis_dict.keys())
-                #     del shared_analysis_dict[min_key]
+                #     del shared_analysis_dict[min_key] 
             self.newt = time.time()
             if hasattr(self, 'newt'):
                 if self.newt - timeog > 0:
