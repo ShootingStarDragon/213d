@@ -91,13 +91,15 @@ FCVA_screen_manager: #remember to return a root widget
             # sharedmetadatakeys = self.shared_metadata_dictVAR.keys()
             if "toggleCV" in self.shared_metadata_dictVAR.keys() and self.shared_metadata_dictVAR["toggleCV"] == True and self.shared_globalindexVAR["starttime"] != None:
                 self.index = int((time.time() - self.starttime)/spf)
+                print( "indx wtf", self.index, flush = True)
                 if self.index < 0:
                     self.index = 0
                 #manually code this for now:
-                if self.index %3 == 0:
+                if self.index %3 == 0: #can remove the > 0 check later:
                     # print("key vs me", self.shared_speedtestAVAR.keys(), type(self.shared_speedtestAVAR.keys()[0]), self.index, self.index %2, type(self.index%2) )
                     
                     #now u have to search for self.index in shared_analyzedAVAR.keys for the right key:
+                    123
                     # sharedanalyzedkeysA = self.shared_analyzedAVAR.keys()
                     keyref = [x for x in self.shared_analyzedAVAR.keys() if 'key' in x and self.shared_analyzedAVAR[x] == self.index]
                     if keyref == []:
@@ -145,15 +147,15 @@ FCVA_screen_manager: #remember to return a root widget
                 self.newt = time.time()
 
                 #this is def slow...
-                # try: 
-                #     frame
-                # except:
-                #     frame = None
+                try: 
+                    frame
+                except:
+                    frame = None
                 
                 # https://stackoverflow.com/questions/43748991/how-to-check-if-a-variable-is-either-a-python-list-numpy-array-or-pandas-series
                 # if not isinstance(frame,np.ndarray):
-                # if frame is None:
-                if keyref == []:
+                if frame is None:
+                # if keyref == []:
                     # print("frame ded")
                     pass
                 else:
@@ -393,14 +395,14 @@ def open_media(*args):
                             shared_speedtestCVAR["frame" + slotsC[0].replace("key",'')] = cap.read()
                             shared_speedtestCVAR[slotsC[0]] = internal_i + 2
                             '''
-                            shared_speedtestAVAR["frame" + slotsA[0].replace("key",'')] = cap.read()
-                            shared_speedtestAVAR[slotsA[0]] = internal_i
+                            # # shared_speedtestAVAR["frame" + slotsA[0].replace("key",'')] = cap.read()
+                            # # shared_speedtestAVAR[slotsA[0]] = internal_i
                             
-                            shared_speedtestBVAR["frame" + slotsB[0].replace("key",'')] = cap.read()
-                            shared_speedtestBVAR[slotsB[0]] = internal_i + 1
+                            # # shared_speedtestBVAR["frame" + slotsB[0].replace("key",'')] = cap.read()
+                            # # shared_speedtestBVAR[slotsB[0]] = internal_i + 1
 
-                            shared_speedtestCVAR["frame" + slotsC[0].replace("key",'')] = cap.read()
-                            shared_speedtestCVAR[slotsC[0]] = internal_i + 2
+                            # # shared_speedtestCVAR["frame" + slotsC[0].replace("key",'')] = cap.read()
+                            # # shared_speedtestCVAR[slotsC[0]] = internal_i + 2
 
                             # shared_speedtestAVAR["frame" + slotsA[0].replace("key",'')] = dummyframe
                             # shared_speedtestAVAR[slotsA[0]] = internal_i
@@ -432,7 +434,7 @@ def open_media(*args):
                     if (time_2 - time_og) > 0:
                         if 1/(time_2 - time_og) <100:
                             # print("metadata keys", shared_metadata_dict.keys(), flush = True)
-                            print("cv2 .read/write multiple takes long???", "fps:", 1/(time_2 - time_og) , time_2 - time_og, 1./frame_rate, flush= True)
+                            # print("cv2 .read/write multiple takes long???", "fps:", 1/(time_2 - time_og) , time_2 - time_og, 1./frame_rate, flush= True)
                             pass
     except Exception as e:
         print("read function died!", e, flush=True)
