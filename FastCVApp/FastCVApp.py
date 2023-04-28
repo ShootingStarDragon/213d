@@ -81,20 +81,22 @@ FCVA_screen_manager: #remember to return a root widget
         def populate_texture(self, texture, buffervar):
             texture.blit_buffer(buffervar)
         
-        def blit_from_shared_memoryWW(self, *args):
+        def blit_from_shared_memoryww(self, *args):
             # pass # this proves that read only gets slow because blitting is slow, fps is ~15>70 for read when blit does nothing
             #checking if this holds the code across all subprocesses:
             if "toggleCV" in self.shared_metadata_dictVAR:
-                if self.shared_metadata_dictVAR["toggleCV"] and self.shared_globalindexVAR["starttime"] != None:
+                if self.shared_globalindexVAR["starttime"] != None:
                     # time.sleep(1) #dont think this has a hold..
                     #yeah, this is enough to hold up the read subprocess... RIP
+                    frame = self.shared_analyzedCVAR['frame0']
                     pass
 
-        def blit_from_shared_memoryUUU(self, *args):
+        def blit_from_shared_memoryww(self, *args):
+            self.timeog = time.time()
             spf = 1/30
             # if "toggleCV" in self.shared_metadata_dictVAR.keys() and self.shared_metadata_dictVAR["toggleCV"] and self.shared_globalindexVAR["starttime"] != None:
             if "toggleCV" in self.shared_metadata_dictVAR:
-                if self.shared_metadata_dictVAR["toggleCV"] and self.shared_globalindexVAR["starttime"] != None:
+                if self.shared_globalindexVAR["starttime"] != None:
                     pass
                 # if self.shared_globalindexVAR["starttime"] != None:
                     self.index = int((time.time() - self.starttime)/spf)
@@ -103,33 +105,34 @@ FCVA_screen_manager: #remember to return a root widget
                         self.index = 0
                 
                         #maybe reading from dict is still slow...
+                        # frame = self.shared_analyzedAVAR['frame0']
+                        # frame = self.shared_analyzedBVAR['frame0']
                         frame = self.shared_analyzedCVAR['frame0']
                         #time: 0.016
-                        # buf = frame
-                        # frame = np.frombuffer(frame, np.uint8).copy().reshape(1080, 1920, 3)
-                #         self.colorfmtval = "bgr"
-                #         #time: 0.008999
-                #         self.texture1 = Texture.create(
-                #             size=(frame.shape[1], frame.shape[0]), colorfmt=self.colorfmtval
-                #         )
-                #         self.texture1.blit_buffer(
-                #             buf, colorfmt=self.colorfmtval, bufferfmt="ubyte"
-                #         )
-                #         #time: 0.0199
-                #         self.timeog = time.time()
-                #         App.get_running_app().root.get_screen("start_screen_name").ids[
-                #             "image_textureID"
-                #         ].texture = self.texture1
-                #         self.newt = time.time()
-                #         #time: 0.00100 (almost instantaneous)
+                        buf = frame
+                        frame = np.frombuffer(frame, np.uint8).copy().reshape(1080, 1920, 3)
+                        self.colorfmtval = "bgr"
+                        #time: 0.008999
+                        self.texture1 = Texture.create(
+                            size=(frame.shape[1], frame.shape[0]), colorfmt=self.colorfmtval
+                        )
+                        self.texture1.blit_buffer(
+                            buf, colorfmt=self.colorfmtval, bufferfmt="ubyte"
+                        )
+                        #time: 0.0199
+                        App.get_running_app().root.get_screen("start_screen_name").ids[
+                            "image_textureID"
+                        ].texture = self.texture1
+                        #time: 0.00100 (almost instantaneous)
                 pass
 
+            self.newt = time.time()
             if hasattr(self, 'newt') and hasattr(self, 'timeog'):
                 if self.newt - self.timeog > 0 and (1/(self.newt- self.timeog)) < 5000:
-                    # print("blit fps?", 1/(self.newt- self.timeog), (self.newt- self.timeog))
+                    print("blit fps?", 1/(self.newt- self.timeog), (self.newt- self.timeog))
                     pass
 
-        def blit_from_shared_memoryslow(self, *args):
+        def blit_from_shared_memory(self, *args):
             # shared_analysis_dict = self.shared_analysis_dictVAR
             # shared_metadata_dict = self.shared_metadata_dictVAR
             timeog = time.time()
@@ -141,7 +144,7 @@ FCVA_screen_manager: #remember to return a root widget
             #dummytesting
             # if True:
             #     self.starttime = self.shared_globalindexVAR["starttime"]
-            if "toggleCV" in self.shared_metadata_dictVAR and self.shared_metadata_dictVAR["toggleCV"] and self.shared_globalindexVAR["starttime"] != None:
+            if "toggleCV" in self.shared_metadata_dictVAR and self.shared_globalindexVAR["starttime"] != None:
                 self.index = int((time.time() - self.starttime)/spf)
                 if self.index < 0:
                     self.index = 0
@@ -308,9 +311,11 @@ FCVA_screen_manager: #remember to return a root widget
                     self.starttime = time.time() + 1
                     self.shared_globalindexVAR["starttime"] = self.starttime
             else:
-                self.shared_metadata_dictVAR[
-                    "toggleCV"
-                ] = not self.shared_metadata_dictVAR["toggleCV"]
+                # self.shared_metadata_dictVAR[
+                #     "toggleCV"
+                # ] = not self.shared_metadata_dictVAR["toggleCV"]
+                #pop it to remove, that way I can make the time critical stuff faster:
+                self.shared_metadata_dictVAR.pop("toggleCV")
 
     class FCVA_screen_manager(ScreenManager):
         pass
@@ -404,101 +409,100 @@ def open_media(*args):
             # print(shared_metadata_dict.keys() >= ["mp_ready", "toggleCV"], shared_metadata_dict.keys(), flush = True)
             if "mp_ready" in shared_metadata_dict and "toggleCV" in shared_metadata_dict:
             # if shared_metadata_dict.keys() >= ["mp_ready", "toggleCV"]:
-                if shared_metadata_dict["toggleCV"] == True:
                     
-                    #reminder: if u change the length of this, change for open analysis subprocess as well, and u need to change 4 spots: 
-                    # if len < x*2 and (TWICE, here and in subprocess)
-                    # for var in range of x (TWICE, here and in subprocess)
-                    #initate dicts if they're less than size 10:
-                    if len(shared_speedtestAVAR.keys()) < 10:
-                        #replace all and say it
-                        for x in range(5):
-                            shared_speedtestAVAR["key" + str(x)] = -1
-                            shared_speedtestAVAR["frame" + str(x)] = -1
+                #reminder: if u change the length of this, change for open analysis subprocess as well, and u need to change 4 spots: 
+                # if len < x*2 and (TWICE, here and in subprocess)
+                # for var in range of x (TWICE, here and in subprocess)
+                #initate dicts if they're less than size 10:
+                if len(shared_speedtestAVAR.keys()) < 10:
+                    #replace all and say it
+                    for x in range(5):
+                        shared_speedtestAVAR["key" + str(x)] = -1
+                        shared_speedtestAVAR["frame" + str(x)] = -1
 
-                            shared_speedtestBVAR["key" + str(x)] = -1
-                            shared_speedtestBVAR["frame" + str(x)] = -1
+                        shared_speedtestBVAR["key" + str(x)] = -1
+                        shared_speedtestBVAR["frame" + str(x)] = -1
 
-                            shared_speedtestCVAR["key" + str(x)] = -1
-                            shared_speedtestCVAR["frame" + str(x)] = -1
-                        print("reset reading keys!", flush = True)
-                    
-                    #use shared time info to determine current frame#:
-                    current_framenumber = int((time.time() - shared_globalindexVAR["starttime"])/(1/frame_rate))
-                    # print("read media frame#", current_framenumber,  flush = True)
-                    #check for key in keyname and if we passed it already
-                    # just add a 1 line check to get the key with the least value, that way each slot is "evenly" used
-                    
+                        shared_speedtestCVAR["key" + str(x)] = -1
+                        shared_speedtestCVAR["frame" + str(x)] = -1
+                    print("reset reading keys!", flush = True)
+                
+                #use shared time info to determine current frame#:
+                current_framenumber = int((time.time() - shared_globalindexVAR["starttime"])/(1/frame_rate))
+                # print("read media frame#", current_framenumber,  flush = True)
+                #check for key in keyname and if we passed it already
+                # just add a 1 line check to get the key with the least value, that way each slot is "evenly" used
+                
 
-                    slotsA = [x for x in shared_speedtestAVAR.keys() if 'key' in x and (shared_speedtestAVAR[x] < current_framenumber or shared_speedtestAVAR[x] == -1)] 
-                    slotsB = [x for x in shared_speedtestBVAR.keys() if 'key' in x and (shared_speedtestBVAR[x] < current_framenumber or shared_speedtestBVAR[x] == -1)]
-                    slotsC = [x for x in shared_speedtestCVAR.keys() if 'key' in x and (shared_speedtestCVAR[x] < current_framenumber or shared_speedtestCVAR[x] == -1)]
-                    # i think minvalidkey is slow, RIP
-                    # slotsA = [minValidKey([shared_speedtestAVAR, current_framenumber])]
-                    # slotsB = [minValidKey([shared_speedtestBVAR, current_framenumber])]
-                    # slotsC = [minValidKey([shared_speedtestCVAR, current_framenumber])]
-                    # slotscheck = [shared_speedtestAVAR[x] for x in shared_speedtestAVAR.keys() if 'key' in x] 
-                    # print("check slots?", len(slotsA),current_framenumber, internal_i, slotsA, slotscheck, len(slotsB),len(slotsC), flush = True)
-                    #if there are 3 free slots in raw shared dict (one per shared dict), update:
-                    if len(slotsA) > 0 and \
-                        len(slotsB) > 0 and \
-                        len(slotsC) > 0:
+                slotsA = [x for x in shared_speedtestAVAR.keys() if 'key' in x and (shared_speedtestAVAR[x] < current_framenumber or shared_speedtestAVAR[x] == -1)] 
+                slotsB = [x for x in shared_speedtestBVAR.keys() if 'key' in x and (shared_speedtestBVAR[x] < current_framenumber or shared_speedtestBVAR[x] == -1)]
+                slotsC = [x for x in shared_speedtestCVAR.keys() if 'key' in x and (shared_speedtestCVAR[x] < current_framenumber or shared_speedtestCVAR[x] == -1)]
+                # i think minvalidkey is slow, RIP
+                # slotsA = [minValidKey([shared_speedtestAVAR, current_framenumber])]
+                # slotsB = [minValidKey([shared_speedtestBVAR, current_framenumber])]
+                # slotsC = [minValidKey([shared_speedtestCVAR, current_framenumber])]
+                # slotscheck = [shared_speedtestAVAR[x] for x in shared_speedtestAVAR.keys() if 'key' in x] 
+                # print("check slots?", len(slotsA),current_framenumber, internal_i, slotsA, slotscheck, len(slotsB),len(slotsC), flush = True)
+                #if there are 3 free slots in raw shared dict (one per shared dict), update:
+                if len(slotsA) > 0 and \
+                    len(slotsB) > 0 and \
+                    len(slotsC) > 0:
 
-                        # read the latest frame here and stuff it in the shared memory for open_appliedcv to manipulate
-                        if cap.more(): #for FileVideoStream
-                            # for videostream as per: https://stackoverflow.com/questions/63584905/increase-the-capture-and-stream-speed-of-a-video-using-opencv-and-python/63585204#63585204
-                            
-                            ''' #THIS WORKED:
-                            shared_speedtestAVAR["frame" + slotsA[0].replace("key",'')] = cap.read()
-                            shared_speedtestAVAR[slotsA[0]] = internal_i
-                            
-                            shared_speedtestBVAR["frame" + slotsB[0].replace("key",'')] = cap.read()
-                            shared_speedtestBVAR[slotsB[0]] = internal_i + 1
+                    # read the latest frame here and stuff it in the shared memory for open_appliedcv to manipulate
+                    if cap.more(): #for FileVideoStream
+                        # for videostream as per: https://stackoverflow.com/questions/63584905/increase-the-capture-and-stream-speed-of-a-video-using-opencv-and-python/63585204#63585204
+                        
+                        ''' #THIS WORKED:
+                        shared_speedtestAVAR["frame" + slotsA[0].replace("key",'')] = cap.read()
+                        shared_speedtestAVAR[slotsA[0]] = internal_i
+                        
+                        shared_speedtestBVAR["frame" + slotsB[0].replace("key",'')] = cap.read()
+                        shared_speedtestBVAR[slotsB[0]] = internal_i + 1
 
-                            shared_speedtestCVAR["frame" + slotsC[0].replace("key",'')] = cap.read()
-                            shared_speedtestCVAR[slotsC[0]] = internal_i + 2
-                            '''
-                            shared_speedtestAVAR["frame" + slotsA[0].replace("key",'')] = cap.read()
-                            shared_speedtestAVAR[slotsA[0]] = internal_i
-                            
-                            shared_speedtestBVAR["frame" + slotsB[0].replace("key",'')] = cap.read()
-                            shared_speedtestBVAR[slotsB[0]] = internal_i + 1
+                        shared_speedtestCVAR["frame" + slotsC[0].replace("key",'')] = cap.read()
+                        shared_speedtestCVAR[slotsC[0]] = internal_i + 2
+                        '''
+                        shared_speedtestAVAR["frame" + slotsA[0].replace("key",'')] = cap.read()
+                        shared_speedtestAVAR[slotsA[0]] = internal_i
+                        
+                        shared_speedtestBVAR["frame" + slotsB[0].replace("key",'')] = cap.read()
+                        shared_speedtestBVAR[slotsB[0]] = internal_i + 1
 
-                            shared_speedtestCVAR["frame" + slotsC[0].replace("key",'')] = cap.read()
-                            shared_speedtestCVAR[slotsC[0]] = internal_i + 2
+                        shared_speedtestCVAR["frame" + slotsC[0].replace("key",'')] = cap.read()
+                        shared_speedtestCVAR[slotsC[0]] = internal_i + 2
 
-                            # shared_speedtestAVAR["frame" + slotsA[0].replace("key",'')] = dummyframe
-                            # shared_speedtestAVAR[slotsA[0]] = internal_i
-                            
-                            # shared_speedtestBVAR["frame" + slotsB[0].replace("key",'')] = dummyframe
-                            # shared_speedtestBVAR[slotsB[0]] = internal_i + 1
+                        # shared_speedtestAVAR["frame" + slotsA[0].replace("key",'')] = dummyframe
+                        # shared_speedtestAVAR[slotsA[0]] = internal_i
+                        
+                        # shared_speedtestBVAR["frame" + slotsB[0].replace("key",'')] = dummyframe
+                        # shared_speedtestBVAR[slotsB[0]] = internal_i + 1
 
-                            # shared_speedtestCVAR["frame" + slotsC[0].replace("key",'')] = dummyframe
-                            # shared_speedtestCVAR[slotsC[0]] = internal_i + 2
-                            
-                            # shared_speedtestAVAR["frame" + slotsA.replace("key",'')] = frame1.tobytes()
-                            # shared_speedtestAVAR["frame" + slotsA.replace("key",'')] = cap.read().tobytes()
-                            # shared_speedtestAVAR[slotsA] = internal_i
+                        # shared_speedtestCVAR["frame" + slotsC[0].replace("key",'')] = dummyframe
+                        # shared_speedtestCVAR[slotsC[0]] = internal_i + 2
+                        
+                        # shared_speedtestAVAR["frame" + slotsA.replace("key",'')] = frame1.tobytes()
+                        # shared_speedtestAVAR["frame" + slotsA.replace("key",'')] = cap.read().tobytes()
+                        # shared_speedtestAVAR[slotsA] = internal_i
 
-                            # shared_speedtestBVAR["frame" + slotsB.replace("key",'')] = frame2.tobytes()
-                            # shared_speedtestBVAR["frame" + slotsB.replace("key",'')] = cap.read().tobytes()
-                            # shared_speedtestBVAR[slotsB] = internal_i + 1
+                        # shared_speedtestBVAR["frame" + slotsB.replace("key",'')] = frame2.tobytes()
+                        # shared_speedtestBVAR["frame" + slotsB.replace("key",'')] = cap.read().tobytes()
+                        # shared_speedtestBVAR[slotsB] = internal_i + 1
 
-                            # shared_speedtestCVAR["frame" + slotsC.replace("key",'')] = frame3.tobytes()
-                            # shared_speedtestCVAR["frame" + slotsC.replace("key",'')] = cap.read().tobytes()
-                            # shared_speedtestCVAR[slotsC] = internal_i + 2
-                            # time_2 = time.time() #this is still decently fast, 14 fps for 3 frames is 42 fps total....
-                            
-                            # print("#new format: keyA: frame#, frameA: framedata",shared_speedtestAVAR[slotsA[0]], type(shared_speedtestAVAR["frame" + slotsA[0].replace("key",'')]), [type(shared_speedtestAVAR[x]) for x in shared_speedtestAVAR.keys()], flush=True) #this print statement is slow, gets the read function to 3 fps...
-                            #new format: keyA: frame#, frameA: framedata
-                            internal_i += 3
-                            # time_2 = time.time()
-                    time_2 = time.time()
-                    if (time_2 - time_og) > 0:
-                        if 1/(time_2 - time_og) <100:
-                            # print("metadata keys", shared_metadata_dict.keys(), flush = True)
-                            print("cv2 .read/write multiple takes long???", "fps:", 1/(time_2 - time_og) , time_2 - time_og, 1./frame_rate, flush= True)
-                            pass
+                        # shared_speedtestCVAR["frame" + slotsC.replace("key",'')] = frame3.tobytes()
+                        # shared_speedtestCVAR["frame" + slotsC.replace("key",'')] = cap.read().tobytes()
+                        # shared_speedtestCVAR[slotsC] = internal_i + 2
+                        # time_2 = time.time() #this is still decently fast, 14 fps for 3 frames is 42 fps total....
+                        
+                        # print("#new format: keyA: frame#, frameA: framedata",shared_speedtestAVAR[slotsA[0]], type(shared_speedtestAVAR["frame" + slotsA[0].replace("key",'')]), [type(shared_speedtestAVAR[x]) for x in shared_speedtestAVAR.keys()], flush=True) #this print statement is slow, gets the read function to 3 fps...
+                        #new format: keyA: frame#, frameA: framedata
+                        internal_i += 3
+                        # time_2 = time.time()
+                time_2 = time.time()
+                if (time_2 - time_og) > 0:
+                    if 1/(time_2 - time_og) <100:
+                        # print("metadata keys", shared_metadata_dict.keys(), flush = True)
+                        print("cv2 .read/write multiple takes long???", "fps:", 1/(time_2 - time_og) , time_2 - time_og, 1./frame_rate, flush= True)
+                        pass
     except Exception as e:
         print("read function died!", e, flush=True)
         import traceback
@@ -517,7 +521,7 @@ def open_appliedcv(*args):
         analyzedframecounter = 0
 
         while True:
-            if "kivy_run_state" in shared_metadata_dict.keys():
+            if "kivy_run_state" in shared_metadata_dict:
                 applytimestart = time.time()
                 if shared_metadata_dict["kivy_run_state"] == False:
                     print("exiting open_appliedcv", os.getpid(), flush=True)
@@ -525,7 +529,7 @@ def open_appliedcv(*args):
 
                 #init shared dict if keys < 20:
                 # if len(shared_analyzedVAR.keys()) < 20:
-                if len(shared_analyzedVAR.keys()) < 10:
+                if len(shared_analyzedVAR) < 10:
                     #replace all and say it
                     # for x in range(10):
                     for x in range(5):
