@@ -80,19 +80,70 @@ FCVA_screen_manager: #remember to return a root widget
 
         def populate_texture(self, texture, buffervar):
             texture.blit_buffer(buffervar)
+        
+        def blit_from_shared_memoryWW(self, *args):
+            # pass # this proves that read only gets slow because blitting is slow, fps is ~15>70 for read when blit does nothing
+            #checking if this holds the code across all subprocesses:
+            if "toggleCV" in self.shared_metadata_dictVAR:
+                if self.shared_metadata_dictVAR["toggleCV"] and self.shared_globalindexVAR["starttime"] != None:
+                    # time.sleep(1) #dont think this has a hold..
+                    #yeah, this is enough to hold up the read subprocess... RIP
+                    pass
 
         def blit_from_shared_memory(self, *args):
-            shared_analysis_dict = self.shared_analysis_dictVAR
-            shared_metadata_dict = self.shared_metadata_dictVAR
+            spf = 1/30
+            # if "toggleCV" in self.shared_metadata_dictVAR.keys() and self.shared_metadata_dictVAR["toggleCV"] and self.shared_globalindexVAR["starttime"] != None:
+            if "toggleCV" in self.shared_metadata_dictVAR:
+                # if self.shared_metadata_dictVAR["toggleCV"] and self.shared_globalindexVAR["starttime"] != None:
+                if self.shared_globalindexVAR["starttime"] != None:
+                    self.index = int((time.time() - self.starttime)/spf)
+                    #time: 0.012
+                    if self.index > 1:
+                        self.index = 0
+                
+                        #maybe reading from dict is still slow...
+                        frame = self.shared_analyzedCVAR['frame0']
+                        #time: 0.016
+                        buf = frame
+                        frame = np.frombuffer(frame, np.uint8).copy().reshape(1080, 1920, 3)
+                        self.colorfmtval = "bgr"
+                        #time: 0.008999
+                        self.texture1 = Texture.create(
+                            size=(frame.shape[1], frame.shape[0]), colorfmt=self.colorfmtval
+                        )
+                        self.texture1.blit_buffer(
+                            buf, colorfmt=self.colorfmtval, bufferfmt="ubyte"
+                        )
+                        #time: 0.0199
+                        self.timeog = time.time()
+                        App.get_running_app().root.get_screen("start_screen_name").ids[
+                            "image_textureID"
+                        ].texture = self.texture1
+                        self.newt = time.time()
+                        #time: 0.00100 (almost instantaneous)
+
+            if hasattr(self, 'newt') and hasattr(self, 'timeog'):
+                if self.newt - self.timeog > 0 and (1/(self.newt- self.timeog)) < 5000:
+                    # print("blit fps?", 1/(self.newt- self.timeog), (self.newt- self.timeog))
+                    pass
+
+        def blit_from_shared_memorySLOW(self, *args):
+            # shared_analysis_dict = self.shared_analysis_dictVAR
+            # shared_metadata_dict = self.shared_metadata_dictVAR
             timeog = time.time()
             # self.index = self.shared_globalindexVAR["curframe"]
             # print("shared analyzed keys?", self.shared_analyzedAVAR.keys(), flush = True)
             spf = 1/30
             # sharedmetadatakeys = self.shared_metadata_dictVAR.keys()
-            if "toggleCV" in self.shared_metadata_dictVAR.keys() and self.shared_metadata_dictVAR["toggleCV"] == True and self.shared_globalindexVAR["starttime"] != None:
+
+            #dummytesting
+            # if True:
+            #     self.starttime = self.shared_globalindexVAR["starttime"]
+            if "toggleCV" in self.shared_metadata_dictVAR.keys() and self.shared_metadata_dictVAR["toggleCV"] and self.shared_globalindexVAR["starttime"] != None:
                 self.index = int((time.time() - self.starttime)/spf)
                 if self.index < 0:
                     self.index = 0
+                
                 #manually code this for now:
                 if self.index %3 == 0:
                     # print("key vs me", self.shared_speedtestAVAR.keys(), type(self.shared_speedtestAVAR.keys()[0]), self.index, self.index %2, type(self.index%2) )
@@ -142,6 +193,7 @@ FCVA_screen_manager: #remember to return a root widget
                     # self.shared_analyzedCVAR.pop(self.index)
                     # [self.shared_analyzedCVAR.pop(x) for x in self.shared_analyzedCVAR.keys() if x < self.index]
                     # print("why is it getting bigger? C(reading function isn't throttled....)", self.index, self.shared_analyzedCVAR.keys())
+                
                 self.newt = time.time()
 
                 #this is def slow...
@@ -152,6 +204,13 @@ FCVA_screen_manager: #remember to return a root widget
                 
                 # https://stackoverflow.com/questions/43748991/how-to-check-if-a-variable-is-either-a-python-list-numpy-array-or-pandas-series
                 # if not isinstance(frame,np.ndarray):
+
+                # # dummyinfo for speed testing
+                # dummyframe = np.full((1920,1080, 3), [180, 180, 180], dtype=np.uint8)
+                # dummyframe = dummyframe.tobytes()
+                # frame = dummyframe
+                # keyref = [[]]
+                
                 # if frame is None:
                 if keyref == []:
                     # print("frame ded")
@@ -175,17 +234,19 @@ FCVA_screen_manager: #remember to return a root widget
                     '''
                     # buf = frame.tobytes()
                     
-                    # check for existence of colorfmt in shared_metadata_dict, then if so, set colorfmt:
-                    formatoption = [
-                        shared_metadata_dict[x]
-                        for x in shared_metadata_dict.keys()
-                        if x == "colorfmt"
-                    ]
-                    if len(formatoption) != 0:
-                        self.colorfmtval = formatoption[0]
-                    else:
-                        # default to bgr
-                        self.colorfmtval = "bgr"
+                    # # check for existence of colorfmt in shared_metadata_dict, then if so, set colorfmt:
+                    # formatoption = [
+                    #     shared_metadata_dict[x]
+                    #     for x in shared_metadata_dict.keys()
+                    #     if x == "colorfmt"
+                    # ]
+                    # if len(formatoption) != 0:
+                    #     self.colorfmtval = formatoption[0]
+                    # else:
+                    #     # default to bgr
+                    #     self.colorfmtval = "bgr"
+
+                    self.colorfmtval = "bgr"
 
                     # texture documentation: https://github.com/kivy/kivy/blob/master/kivy/graphics/texture.pyx
                     # blit to texture
@@ -235,7 +296,7 @@ FCVA_screen_manager: #remember to return a root widget
             if hasattr(self, 'newt'):
                 if self.newt - timeog > 0 and (1/(self.newt- timeog)) < 200:
                     print("blit fps?", 1/(self.newt- timeog))
-                    # pass
+                    pass
 
         def toggleCV(self, *args):
             if "toggleCV" not in self.shared_metadata_dictVAR.keys():
@@ -311,7 +372,7 @@ def open_media(*args):
         while True:
             time_og = time.time()
             # metadatakeys = shared_metadata_dict.keys()
-            if "kivy_run_state" in shared_metadata_dict.keys():
+            if "kivy_run_state" in shared_metadata_dict:
                 if shared_metadata_dict["kivy_run_state"] == False:
                     print("exiting openmedia", flush=True)
                     break
@@ -337,8 +398,10 @@ def open_media(*args):
             #     for key in shared_metadata_dict.keys()
             #     if key == "toggleCV"
             # ] == [True]:
-                
-            if "mp_ready" in shared_metadata_dict.keys() and "toggleCV" in shared_metadata_dict.keys():
+            
+            # print(shared_metadata_dict.keys() >= ["mp_ready", "toggleCV"], shared_metadata_dict.keys(), flush = True)
+            if "mp_ready" in shared_metadata_dict and "toggleCV" in shared_metadata_dict:
+            # if shared_metadata_dict.keys() >= ["mp_ready", "toggleCV"]:
                 if shared_metadata_dict["toggleCV"] == True:
                     
                     #reminder: if u change the length of this, change for open analysis subprocess as well, and u need to change 4 spots: 
@@ -713,11 +776,16 @@ class FCVA:
             if hasattr(self, "kvstring"):
                 shared_metadata_dict["kvstring"] = self.kvstring
 
+            # shared_globalindex["starttime"] = time.time() + 2
             kivy_subprocess = FCVA_mp.Process(
                 target=open_kivy,
                 args=(shared_analysis_dict, shared_metadata_dict, self.fps, shared_globalindex, shared_analyzedA, shared_analyzedB, shared_analyzedC)
             )
             #old args: args=(shared_analysis_dict, shared_metadata_dict, self.fps, shared_speedtestA,shared_speedtestB,shared_speedtestC, shared_globalindex, shared_analyzedA, shared_analyzedB, shared_analyzedC)
+
+            #dummytesting
+            
+
             kivy_subprocess.start()
 
             # this try except block holds the main process open so the subprocesses aren't cleared when the main process exits early.
