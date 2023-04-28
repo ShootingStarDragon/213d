@@ -90,12 +90,13 @@ FCVA_screen_manager: #remember to return a root widget
                     #yeah, this is enough to hold up the read subprocess... RIP
                     pass
 
-        def blit_from_shared_memory(self, *args):
+        def blit_from_shared_memoryUUU(self, *args):
             spf = 1/30
             # if "toggleCV" in self.shared_metadata_dictVAR.keys() and self.shared_metadata_dictVAR["toggleCV"] and self.shared_globalindexVAR["starttime"] != None:
             if "toggleCV" in self.shared_metadata_dictVAR:
-                # if self.shared_metadata_dictVAR["toggleCV"] and self.shared_globalindexVAR["starttime"] != None:
-                if self.shared_globalindexVAR["starttime"] != None:
+                if self.shared_metadata_dictVAR["toggleCV"] and self.shared_globalindexVAR["starttime"] != None:
+                    pass
+                # if self.shared_globalindexVAR["starttime"] != None:
                     self.index = int((time.time() - self.starttime)/spf)
                     #time: 0.012
                     if self.index > 1:
@@ -104,30 +105,31 @@ FCVA_screen_manager: #remember to return a root widget
                         #maybe reading from dict is still slow...
                         frame = self.shared_analyzedCVAR['frame0']
                         #time: 0.016
-                        buf = frame
-                        frame = np.frombuffer(frame, np.uint8).copy().reshape(1080, 1920, 3)
-                        self.colorfmtval = "bgr"
-                        #time: 0.008999
-                        self.texture1 = Texture.create(
-                            size=(frame.shape[1], frame.shape[0]), colorfmt=self.colorfmtval
-                        )
-                        self.texture1.blit_buffer(
-                            buf, colorfmt=self.colorfmtval, bufferfmt="ubyte"
-                        )
-                        #time: 0.0199
-                        self.timeog = time.time()
-                        App.get_running_app().root.get_screen("start_screen_name").ids[
-                            "image_textureID"
-                        ].texture = self.texture1
-                        self.newt = time.time()
-                        #time: 0.00100 (almost instantaneous)
+                        # buf = frame
+                        # frame = np.frombuffer(frame, np.uint8).copy().reshape(1080, 1920, 3)
+                #         self.colorfmtval = "bgr"
+                #         #time: 0.008999
+                #         self.texture1 = Texture.create(
+                #             size=(frame.shape[1], frame.shape[0]), colorfmt=self.colorfmtval
+                #         )
+                #         self.texture1.blit_buffer(
+                #             buf, colorfmt=self.colorfmtval, bufferfmt="ubyte"
+                #         )
+                #         #time: 0.0199
+                #         self.timeog = time.time()
+                #         App.get_running_app().root.get_screen("start_screen_name").ids[
+                #             "image_textureID"
+                #         ].texture = self.texture1
+                #         self.newt = time.time()
+                #         #time: 0.00100 (almost instantaneous)
+                pass
 
             if hasattr(self, 'newt') and hasattr(self, 'timeog'):
                 if self.newt - self.timeog > 0 and (1/(self.newt- self.timeog)) < 5000:
                     # print("blit fps?", 1/(self.newt- self.timeog), (self.newt- self.timeog))
                     pass
 
-        def blit_from_shared_memorySLOW(self, *args):
+        def blit_from_shared_memoryslow(self, *args):
             # shared_analysis_dict = self.shared_analysis_dictVAR
             # shared_metadata_dict = self.shared_metadata_dictVAR
             timeog = time.time()
@@ -139,7 +141,7 @@ FCVA_screen_manager: #remember to return a root widget
             #dummytesting
             # if True:
             #     self.starttime = self.shared_globalindexVAR["starttime"]
-            if "toggleCV" in self.shared_metadata_dictVAR.keys() and self.shared_metadata_dictVAR["toggleCV"] and self.shared_globalindexVAR["starttime"] != None:
+            if "toggleCV" in self.shared_metadata_dictVAR and self.shared_metadata_dictVAR["toggleCV"] and self.shared_globalindexVAR["starttime"] != None:
                 self.index = int((time.time() - self.starttime)/spf)
                 if self.index < 0:
                     self.index = 0
