@@ -105,7 +105,7 @@ FCVA_screen_manager: #remember to return a root widget
                         pass
                     else:
                         frameref = "frame" + keyref[0].replace("key",'')
-                        print("this diedA", frameref, self.index, self.shared_analyzedAVAR[keyref[0]], self.index == self.shared_analyzedAVAR[keyref[0]], self.shared_analyzedAVAR.keys(), flush = True)
+                        # print("frame passed?A", frameref, self.index, self.shared_analyzedAVAR[keyref[0]], self.index == self.shared_analyzedAVAR[keyref[0]], self.shared_analyzedAVAR.keys(), flush = True)
                         frame = self.shared_analyzedAVAR[frameref]
                     # frame = self.shared_analyzedAVAR[self.index]
                     # self.shared_analyzedAVAR.pop(self.index)
@@ -121,7 +121,7 @@ FCVA_screen_manager: #remember to return a root widget
                         pass
                     else:
                         frameref = "frame" + keyref[0].replace("key",'')
-                        print("this diedB", frameref, self.index, self.shared_analyzedBVAR[keyref[0]], self.index == self.shared_analyzedBVAR[keyref[0]], self.shared_analyzedBVAR.keys(), flush = True)
+                        # print("frame passed?B", frameref, self.index, self.shared_analyzedBVAR[keyref[0]], self.index == self.shared_analyzedBVAR[keyref[0]], self.shared_analyzedBVAR.keys(), flush = True)
                         frame = self.shared_analyzedBVAR[frameref]
                     # frame = self.shared_analyzedBVAR[self.index]
                     # self.shared_analyzedBVAR.pop(self.index)
@@ -136,7 +136,7 @@ FCVA_screen_manager: #remember to return a root widget
                         pass
                     else:
                         frameref = "frame" + keyref[0].replace("key",'')
-                        print("this diedC", frameref, self.index, self.shared_analyzedCVAR[keyref[0]], self.index == self.shared_analyzedCVAR[keyref[0]], self.shared_analyzedCVAR.keys(), flush = True)
+                        # print("frame passed?C", frameref, self.index, self.shared_analyzedCVAR[keyref[0]], self.index == self.shared_analyzedCVAR[keyref[0]], self.shared_analyzedCVAR.keys(), flush = True)
                         frame = self.shared_analyzedCVAR[frameref]
                     # frame = self.shared_analyzedCVAR[self.index]
                     # self.shared_analyzedCVAR.pop(self.index)
