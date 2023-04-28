@@ -36,7 +36,7 @@ def sepia_filter(*args):
         #                                 [0.393, 0.769, 0.189]]))
         # image[np.where(image > 255)] = 255 # normalizing values greater than 255 to 255
         # image = np.array(image, dtype=np.uint8) # converting back to int
-        # print("what does id func get?", type(image))
+        # # print("what does id func get?", type(image))
 
         return cv2.flip(image, 0)
         # return image
