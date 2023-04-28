@@ -1,5 +1,29 @@
 
-def EVcheck(*args):
+def EVcheck(dictVAR, keynameVAR, desiredVAL):
+	'''
+	EVcheck stands for existence value check since it checks if a key exists (so no keyerror) then gets the value
+	
+	I think this is faster since it's a bunch of if checks whereas the list comprehension makes a listvar THEN equivalenece
+	
+	other way:
+    [shared_metadata_dict[key]
+        for key in shared_metadata_dict.keys()
+        if key == "kivy_run_state"
+    ] == [False]
+    '''
+	# print("args", args,flush = True) #looks like this: ([<DictProxy object, typeid 'dict' at 0x1e27e2ce490>, 'kivy_run_state', False],)
+	# dictVAR = args[0][0] #should be a dict
+	# keynameVAR = args[0][1] #should be a string
+	# desiredVAL = args[0][2] #value u are checking for
+	if keynameVAR in dictVAR.keys():
+		if dictVAR[keynameVAR] == desiredVAL:
+			return True
+		else: 
+			return False
+	else:
+		return False
+
+def EVcheckSLOW(*args):
 	'''
 	HEADS UP THIS MIGHT BE SLOW SINCE IT'S ACCESSING LIST ENTRIES?
     '''
@@ -33,6 +57,7 @@ from threading import Thread
 import sys
 import cv2
 import time
+import numpy as np
 
 # import the Queue class from Python 3
 if sys.version_info >= (3, 0):
@@ -94,7 +119,10 @@ class FCVAFileVideoStream:
 				if self.transform:
 					frame = self.transform(frame)
 
-				# add the frame to the queue
+                # #check if it's a numpy array then add
+				# if isinstance(frame,np.ndarray):
+                #     # add the frame to the queue
+				# 	self.Q.put(frame.tobytes())
 				self.Q.put(frame.tobytes())
 			else:
 				time.sleep(0.1)  # Rest for 10ms, we have a full queue
