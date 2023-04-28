@@ -302,6 +302,12 @@ def open_media(*args):
         shared_globalindexVAR = args[6]
 
         internal_i = 0
+        #https://stackoverflow.com/questions/5891410/numpy-array-initialization-fill-with-identical-values
+        
+        dummyframe = np.full((1920,1080, 3), [180, 180, 180], dtype=np.uint8)
+        # dummyframe = cv2.resize(dummyframe, (500, 300))
+        dummyframe = dummyframe.tobytes()
+        
         while True:
             time_og = time.time()
             # metadatakeys = shared_metadata_dict.keys()
@@ -377,21 +383,43 @@ def open_media(*args):
                         if cap.more(): #for FileVideoStream
                             # for videostream as per: https://stackoverflow.com/questions/63584905/increase-the-capture-and-stream-speed-of-a-video-using-opencv-and-python/63585204#63585204
                             
-                            # shared_speedtestAVAR["frame" + slotsA.replace("key",'')] = frame1.tobytes()
+                            ''' #THIS WORKED:
                             shared_speedtestAVAR["frame" + slotsA[0].replace("key",'')] = cap.read()
                             shared_speedtestAVAR[slotsA[0]] = internal_i
+                            
+                            shared_speedtestBVAR["frame" + slotsB[0].replace("key",'')] = cap.read()
+                            shared_speedtestBVAR[slotsB[0]] = internal_i + 1
+
+                            shared_speedtestCVAR["frame" + slotsC[0].replace("key",'')] = cap.read()
+                            shared_speedtestCVAR[slotsC[0]] = internal_i + 2
+                            '''
+                            shared_speedtestAVAR["frame" + slotsA[0].replace("key",'')] = cap.read()
+                            shared_speedtestAVAR[slotsA[0]] = internal_i
+                            
+                            shared_speedtestBVAR["frame" + slotsB[0].replace("key",'')] = cap.read()
+                            shared_speedtestBVAR[slotsB[0]] = internal_i + 1
+
+                            shared_speedtestCVAR["frame" + slotsC[0].replace("key",'')] = cap.read()
+                            shared_speedtestCVAR[slotsC[0]] = internal_i + 2
+
+                            # shared_speedtestAVAR["frame" + slotsA[0].replace("key",'')] = dummyframe
+                            # shared_speedtestAVAR[slotsA[0]] = internal_i
+                            
+                            # shared_speedtestBVAR["frame" + slotsB[0].replace("key",'')] = dummyframe
+                            # shared_speedtestBVAR[slotsB[0]] = internal_i + 1
+
+                            # shared_speedtestCVAR["frame" + slotsC[0].replace("key",'')] = dummyframe
+                            # shared_speedtestCVAR[slotsC[0]] = internal_i + 2
+                            
+                            # shared_speedtestAVAR["frame" + slotsA.replace("key",'')] = frame1.tobytes()
                             # shared_speedtestAVAR["frame" + slotsA.replace("key",'')] = cap.read().tobytes()
                             # shared_speedtestAVAR[slotsA] = internal_i
 
                             # shared_speedtestBVAR["frame" + slotsB.replace("key",'')] = frame2.tobytes()
-                            shared_speedtestBVAR["frame" + slotsB[0].replace("key",'')] = cap.read()
-                            shared_speedtestBVAR[slotsB[0]] = internal_i + 1
                             # shared_speedtestBVAR["frame" + slotsB.replace("key",'')] = cap.read().tobytes()
                             # shared_speedtestBVAR[slotsB] = internal_i + 1
 
                             # shared_speedtestCVAR["frame" + slotsC.replace("key",'')] = frame3.tobytes()
-                            shared_speedtestCVAR["frame" + slotsC[0].replace("key",'')] = cap.read()
-                            shared_speedtestCVAR[slotsC[0]] = internal_i + 2
                             # shared_speedtestCVAR["frame" + slotsC.replace("key",'')] = cap.read().tobytes()
                             # shared_speedtestCVAR[slotsC] = internal_i + 2
                             # time_2 = time.time() #this is still decently fast, 14 fps for 3 frames is 42 fps total....
@@ -454,6 +482,7 @@ def open_appliedcv(*args):
                     
                     #convert from bytes to a numpy array
                     rightframe = np.frombuffer(rightframe, np.uint8).copy().reshape(1080, 1920, 3)
+                    # rightframe = np.frombuffer(rightframe, np.uint8).copy().reshape(300, 500, 3)
 
                     #update frame
                     result = appliedcv(
