@@ -5,8 +5,6 @@ import os, sys
 import numpy as np
 from FCVAutils import EVcheck
 
-#this is the test version, gonna really mess this up testing
-
 def open_kivy(*args):
     # infinite recursion bug when packaging with pyinstaller with no console: https://github.com/kivy/kivy/issues/8074#issuecomment-1364595283
     if sys.__stdout__ is None or sys.__stderr__ is None:
@@ -354,166 +352,6 @@ def minValidKey(*args):
     else:
         return ""
 
-def open_mediaTEST(*args):
-    '''
-    HARDSTUCK9FPS
-    so here I read 3 frames and write to 3 sharedmem, that should mean "total" fps is 30 correct?
-    well I'm stuck at 9 for some reason, I think the act of updating a shareddict is still a blocking op, ideally 
-    '''
-    try:
-        from FCVAutils import FCVAFileVideoStream
-        shared_metadata_dict = args[0]
-        frame_rate = args[1]
-        print("what is framerate?", frame_rate, flush=True)        
-        cap = FCVAFileVideoStream(args[2]).start()
-        shared_speedtestAVAR = args[3]
-        shared_speedtestBVAR = args[4]
-        shared_speedtestCVAR = args[5]
-        shared_globalindexVAR = args[6]
-
-        internal_i = 0
-        #https://stackoverflow.com/questions/5891410/numpy-array-initialization-fill-with-identical-values
-        
-        dummyframe = np.full((1920,1080, 3), [180, 180, 180], dtype=np.uint8)
-        # dummyframe = cv2.resize(dummyframe, (500, 300))
-        dummyframe = dummyframe.tobytes()
-        #give a dummytime
-        shared_globalindexVAR["starttime"] = time.time()
-
-        while True:
-            time_og = time.time()
-            # metadatakeys = shared_metadata_dict.keys()
-            if "kivy_run_state" in shared_metadata_dict:
-                if shared_metadata_dict["kivy_run_state"] == False:
-                    print("exiting openmedia", flush=True)
-                    break
-
-            # print("status?", EVcheck(shared_metadata_dict, "kivy_run_state", False), flush = True)
-            #man, i think even calling a function is too much overhead...
-            # if EVcheck(shared_metadata_dict, "kivy_run_state", False):
-            #     print("exiting openmedia", flush=True)
-            #     break
-            
-            # if [shared_metadata_dict[key]
-            #     for key in shared_metadata_dict.keys()
-            #     if key == "kivy_run_state"
-            # ] == [False]:
-            #     print("exiting openmedia", flush=True)
-            #     break
-            # #the list comprehension just checks if a key is in the list then gets the value of the key. useful since keys might not exist in the shared dict yet:
-            # if "mp_ready" in shared_metadata_dict.keys() and \
-            #     EVcheck(shared_metadata_dict, "toggleCV", True):
-            
-            # if "mp_ready" in shared_metadata_dict.keys() and [
-            #     shared_metadata_dict[key]
-            #     for key in shared_metadata_dict.keys()
-            #     if key == "toggleCV"
-            # ] == [True]:
-            
-            # print(shared_metadata_dict.keys() >= ["mp_ready", "toggleCV"], shared_metadata_dict.keys(), flush = True)
-            # if "mp_ready" in shared_metadata_dict and "toggleCV" in shared_metadata_dict:
-            if True:
-            # if shared_metadata_dict.keys() >= ["mp_ready", "toggleCV"]:
-                    
-                #reminder: if u change the length of this, change for open analysis subprocess as well, and u need to change 4 spots: 
-                # if len < x*2 and (TWICE, here and in subprocess)
-                # for var in range of x (TWICE, here and in subprocess)
-                #initate dicts if they're less than size 10:
-                if len(shared_speedtestAVAR.keys()) < 10:
-                    #replace all and say it
-                    for x in range(5):
-                        shared_speedtestAVAR["key" + str(x)] = -1
-                        shared_speedtestAVAR["frame" + str(x)] = -1
-
-                        shared_speedtestBVAR["key" + str(x)] = -1
-                        shared_speedtestBVAR["frame" + str(x)] = -1
-
-                        shared_speedtestCVAR["key" + str(x)] = -1
-                        shared_speedtestCVAR["frame" + str(x)] = -1
-                    print("reset reading keys!", flush = True)
-                
-                #use shared time info to determine current frame#:
-                current_framenumber = int((time.time() - shared_globalindexVAR["starttime"])/(1/frame_rate))
-                # print("read media frame#", current_framenumber,  flush = True)
-                #check for key in keyname and if we passed it already
-                # just add a 1 line check to get the key with the least value, that way each slot is "evenly" used
-                
-
-                slotsA = [x for x in shared_speedtestAVAR.keys() if 'key' in x and (shared_speedtestAVAR[x] < current_framenumber or shared_speedtestAVAR[x] == -1)] 
-                slotsB = [x for x in shared_speedtestBVAR.keys() if 'key' in x and (shared_speedtestBVAR[x] < current_framenumber or shared_speedtestBVAR[x] == -1)]
-                slotsC = [x for x in shared_speedtestCVAR.keys() if 'key' in x and (shared_speedtestCVAR[x] < current_framenumber or shared_speedtestCVAR[x] == -1)]
-                # i think minvalidkey is slow, RIP
-                # slotsA = [minValidKey([shared_speedtestAVAR, current_framenumber])]
-                # slotsB = [minValidKey([shared_speedtestBVAR, current_framenumber])]
-                # slotsC = [minValidKey([shared_speedtestCVAR, current_framenumber])]
-                # slotscheck = [shared_speedtestAVAR[x] for x in shared_speedtestAVAR.keys() if 'key' in x] 
-                # print("check slots?", len(slotsA),current_framenumber, internal_i, slotsA, slotscheck, len(slotsB),len(slotsC), flush = True)
-                #if there are 3 free slots in raw shared dict (one per shared dict), update:
-                if len(slotsA) > 0 and \
-                    len(slotsB) > 0 and \
-                    len(slotsC) > 0:
-
-                    # read the latest frame here and stuff it in the shared memory for open_appliedcv to manipulate
-                    if cap.more(): #for FileVideoStream
-                        # for videostream as per: https://stackoverflow.com/questions/63584905/increase-the-capture-and-stream-speed-of-a-video-using-opencv-and-python/63585204#63585204
-                        
-                        ''' #THIS WORKED:
-                        shared_speedtestAVAR["frame" + slotsA[0].replace("key",'')] = cap.read()
-                        shared_speedtestAVAR[slotsA[0]] = internal_i
-                        
-                        shared_speedtestBVAR["frame" + slotsB[0].replace("key",'')] = cap.read()
-                        shared_speedtestBVAR[slotsB[0]] = internal_i + 1
-
-                        shared_speedtestCVAR["frame" + slotsC[0].replace("key",'')] = cap.read()
-                        shared_speedtestCVAR[slotsC[0]] = internal_i + 2
-                        '''
-                        shared_speedtestAVAR["frame" + slotsA[0].replace("key",'')] = cap.read()
-                        shared_speedtestAVAR[slotsA[0]] = internal_i
-                        
-                        # shared_speedtestBVAR["frame" + slotsB[0].replace("key",'')] = cap.read()
-                        # shared_speedtestBVAR[slotsB[0]] = internal_i + 1
-
-                        # shared_speedtestCVAR["frame" + slotsC[0].replace("key",'')] = cap.read()
-                        # shared_speedtestCVAR[slotsC[0]] = internal_i + 2
-
-                        # shared_speedtestAVAR["frame" + slotsA[0].replace("key",'')] = dummyframe
-                        # shared_speedtestAVAR[slotsA[0]] = internal_i
-                        
-                        # shared_speedtestBVAR["frame" + slotsB[0].replace("key",'')] = dummyframe
-                        # shared_speedtestBVAR[slotsB[0]] = internal_i + 1
-
-                        # shared_speedtestCVAR["frame" + slotsC[0].replace("key",'')] = dummyframe
-                        # shared_speedtestCVAR[slotsC[0]] = internal_i + 2
-                        
-                        # shared_speedtestAVAR["frame" + slotsA.replace("key",'')] = frame1.tobytes()
-                        # shared_speedtestAVAR["frame" + slotsA.replace("key",'')] = cap.read().tobytes()
-                        # shared_speedtestAVAR[slotsA] = internal_i
-
-                        # shared_speedtestBVAR["frame" + slotsB.replace("key",'')] = frame2.tobytes()
-                        # shared_speedtestBVAR["frame" + slotsB.replace("key",'')] = cap.read().tobytes()
-                        # shared_speedtestBVAR[slotsB] = internal_i + 1
-
-                        # shared_speedtestCVAR["frame" + slotsC.replace("key",'')] = frame3.tobytes()
-                        # shared_speedtestCVAR["frame" + slotsC.replace("key",'')] = cap.read().tobytes()
-                        # shared_speedtestCVAR[slotsC] = internal_i + 2
-                        # time_2 = time.time() #this is still decently fast, 14 fps for 3 frames is 42 fps total....
-                        
-                        # print("#new format: keyA: frame#, frameA: framedata",shared_speedtestAVAR[slotsA[0]], type(shared_speedtestAVAR["frame" + slotsA[0].replace("key",'')]), [type(shared_speedtestAVAR[x]) for x in shared_speedtestAVAR.keys()], flush=True) #this print statement is slow, gets the read function to 3 fps...
-                        #new format: keyA: frame#, frameA: framedata
-                        internal_i += 3
-                        # time_2 = time.time()
-                time_2 = time.time()
-                if (time_2 - time_og) > 0:
-                    if 1/(time_2 - time_og) <100:
-                        # print("metadata keys", shared_metadata_dict.keys(), flush = True)
-                        print("cv2 .read/write multiple takes long???", "fps:", 1/(time_2 - time_og) , time_2 - time_og, flush= True)
-                        pass
-    except Exception as e:
-        print("read function died!", e, flush=True)
-        import traceback
-
-        print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
-
 def open_media(*args):
     '''
     HARDSTUCK9FPS
@@ -671,82 +509,6 @@ def open_media(*args):
 
         print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
 
-def open_appliedcvTEST(*args):
-    try:
-        shared_analysis_dict = args[0]
-        shared_metadata_dict = args[1]
-        appliedcv = args[2]
-        shared_speedtestVAR = args[3]
-        shared_metadata_dict["mp_ready"] = True
-        shared_analyzedVAR = args[4]
-        shared_globalindexVAR = args[5]
-        analyzedframecounter = 0
-
-        while True:
-            if "kivy_run_state" in shared_metadata_dict:
-                applytimestart = time.time()
-                if shared_metadata_dict["kivy_run_state"] == False:
-                    print("exiting open_appliedcv", os.getpid(), flush=True)
-                    break
-
-                #init shared dict if keys < 20:
-                # if len(shared_analyzedVAR.keys()) < 20:
-                if len(shared_analyzedVAR) < 10:
-                    #replace all and say it
-                    # for x in range(10):
-                    for x in range(5):
-                        shared_analyzedVAR["key" + str(x)] = -1
-                        shared_analyzedVAR["frame" + str(x)] = -1
-                    print("reset analysis keys!", flush = True)
-
-                # https://stackoverflow.com/questions/22108488/are-list-comprehensions-and-functional-functions-faster-than-for-loops
-                # As for functional list processing functions: While these are written in C and probably outperform equivalent functions written in Python, they are not necessarily the fastest option. Some speed up is expected if the function is written in C too. But most cases using a lambda (or other Python function), the overhead of repeatedly setting up Python stack frames etc. eats up any savings. Simply doing the same work in-line, without function calls (e.g. a list comprehension instead of map or filter) is often slightly faster.
-                # use map instead? https://wiki.python.org/moin/PythonSpeed/PerformanceTips#Loops
-                # this guy says go to array, ? https://towardsdatascience.com/list-comprehensions-vs-for-loops-it-is-not-what-you-think-34071d4d8207
-                # verdict, just test it out...
-
-                keylist = [x for x in shared_speedtestVAR.keys() if 'key' in x and shared_speedtestVAR[x] != -1 and analyzedframecounter < shared_speedtestVAR[x]]
-                if len(keylist)>0:
-                    # print("why is analyze keylist empty?", keylist, analyzedframecounter,[shared_speedtestVAR[x] for x in shared_speedtestVAR.keys() if 'key' in x and shared_speedtestVAR[x] != -1 and analyzedframecounter < shared_speedtestVAR[x]], flush = True)
-                    frameref = "frame" + keylist[0].replace("key", '')
-                    rightframe = shared_speedtestVAR[frameref]
-                    
-                    #convert from bytes to a numpy array
-                    rightframe = np.frombuffer(rightframe, np.uint8).copy().reshape(1080, 1920, 3)
-                    # rightframe = np.frombuffer(rightframe, np.uint8).copy().reshape(300, 500, 3)
-
-                    #update frame
-                    result = appliedcv(
-                                rightframe,
-                                shared_analysis_dict,
-                                shared_metadata_dict,
-                                shared_globalindexVAR
-                            )
-                    #store bytes again:
-                    shared_analyzedVAR[frameref] = result.tobytes()
-                    #update key:
-                    shared_analyzedVAR[keylist[0]] = shared_speedtestVAR[keylist[0]]
-                    
-                    #update analyzedframecounter so u know if you've analyzed the frame
-                    analyzedframecounter = shared_speedtestVAR[keylist[0]]
-                    # print("updated in sharedanalyze", type(result), type(rightframe), frameref,analyzedframecounter,keylist[0],flush = True)
-                    # print("sharedanalzye shapes", result.shape, rightframe.shape, flush = True)
-
-                    # actually do your cv function here and stuff your resulting numpy frame in shared_analysis_dict shared memory. You might have to flip the image because IIRC opencv is up to down, left to right, while kivy is down to up, left to right. in any case cv2 flip code 0 is what you want most likely since code 0 is vertical flip (and preserves horizontal axis).
-                applytimeend = time.time()
-                if applytimeend - applytimestart > 0:
-                    if 1 / (applytimeend - applytimestart) < 500:
-                        print(
-                            "is apply lagging? pid, fps", os.getpid(),
-                            1 / (applytimeend - applytimestart),
-                            flush=True,
-                        )
-                        pass
-    except Exception as e:
-        print("open_appliedcv died!", e)
-        import traceback
-        print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
-
 def open_appliedcv(*args):
     try:
         shared_analysis_dict = args[0]
@@ -812,11 +574,11 @@ def open_appliedcv(*args):
                 applytimeend = time.time()
                 if applytimeend - applytimestart > 0:
                     if 1 / (applytimeend - applytimestart) < 500:
-                        print(
-                            "is apply lagging? pid, fps", os.getpid(),
-                            1 / (applytimeend - applytimestart),
-                            flush=True,
-                        )
+                        # print(
+                        #     "is apply lagging? pid, fps", os.getpid(),
+                        #     1 / (applytimeend - applytimestart),
+                        #     flush=True,
+                        # )
                         pass
     except Exception as e:
         print("open_appliedcv died!", e)
@@ -954,25 +716,6 @@ class FCVA:
             fps = video.get(cv2.CAP_PROP_FPS)
             # print("args ok?", shared_metadata_dict, fps, self.source, os.path.isfile(self.source))
 
-            read_subprocessTEST = FCVA_mp.Process(
-                target=open_mediaTEST, args=(shared_metadata_dict, fps, self.source, shared_speedtestA, shared_speedtestB, shared_speedtestC, shared_globalindex, shared_analyzedA, shared_analyzedB, shared_analyzedC)
-            )
-            read_subprocessTEST.start()
-
-            cv_subprocess = FCVA_mp.Process(
-                    target=open_appliedcvTEST,
-                    args=(
-                        shared_analysis_dict,
-                        shared_metadata_dict,
-                        self.appliedcv,
-                        shared_speedtestA,
-                        shared_analyzedA,
-                        shared_globalindex
-                    ),
-                )
-            cv_subprocess.start()
-
-            '''#TURN THIS ON
             read_subprocess = FCVA_mp.Process(
                 target=open_media, args=(shared_metadata_dict, fps, self.source, shared_speedtestA, shared_speedtestB, shared_speedtestC, shared_globalindex, shared_analyzedA, shared_analyzedB, shared_analyzedC)
             )
@@ -1050,7 +793,6 @@ class FCVA:
             
 
             kivy_subprocess.start()
-            '''
 
             # this try except block holds the main process open so the subprocesses aren't cleared when the main process exits early.
             while "kivy_run_state" in shared_metadata_dict.keys():
