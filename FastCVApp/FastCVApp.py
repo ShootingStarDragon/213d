@@ -64,8 +64,9 @@ FCVA_screen_manager: #remember to return a root widget
         def on_start(self):
             # start blitting. 1/30 always works because it will always blit the latest image from open_appliedcv subprocess, but kivy itself will be at 30 fps
             self.index = 0
-            # Clock.schedule_interval(self.blit_from_shared_memory, args[2])
-            Clock.schedule_interval(self.blit_from_shared_memory, 1/60)
+            print("fps wtf", self.fps)
+            Clock.schedule_interval(self.blit_from_shared_memory, (1/self.fps))
+            # Clock.schedule_interval(self.blit_from_shared_memory, 1/60)
             self.starttime = None
 
         def on_request_close(self, *args):
@@ -145,14 +146,15 @@ FCVA_screen_manager: #remember to return a root widget
             # self.index = self.shared_globalindexVAR["curframe"]
             # print("ww", flush = True)
             # print("shared analyzed keys?", self.shared_analyzedAVAR.keys(), flush = True)
-            spf = 1/30
+            # spf = 1/30 #(readmedia gets the real fps and this does not since it gets desync)
+            # spf = (1/self.fps)
             # sharedmetadatakeys = self.shared_metadata_dictVAR.keys()
 
             #dummytesting
             # if True:
             #     self.starttime = self.shared_globalindexVAR["starttime"]
             if "toggleCV" in self.shared_metadata_dictVAR and self.shared_globalindexVAR["starttime"] != None:
-                self.index = int((time.time() - self.starttime)/spf)
+                self.index = int((time.time() - self.starttime)/self.spf)
                 if self.index < 0:
                     self.index = 0
                 
@@ -336,6 +338,7 @@ FCVA_screen_manager: #remember to return a root widget
 
     MainApp.shared_analysis_dictVAR = args[0]
     MainApp.shared_metadata_dictVAR = args[1]
+    MainApp.fps = args[2]
     # MainApp.shared_rawAVAR = args[3] #these are actually the raw frames now
     # MainApp.shared_rawBVAR = args[4] #these are actually the raw frames now
     # MainApp.shared_rawCVAR = args[5] #these are actually the raw frames now
@@ -346,6 +349,7 @@ FCVA_screen_manager: #remember to return a root widget
     MainApp.shared_analyzedAKeycountVAR = args[7]
     MainApp.shared_analyzedBKeycountVAR = args[8]
     MainApp.shared_analyzedCKeycountVAR = args[9]
+    MainApp.spf = args[10]
 
     MainApp().run()
 
@@ -998,11 +1002,11 @@ class FCVA:
 
             # read just to get the fps
             video = cv2.VideoCapture(self.source)
-            fps = video.get(cv2.CAP_PROP_FPS)
+            self.fps = video.get(cv2.CAP_PROP_FPS)
             # print("args ok?", shared_metadata_dict, fps, self.source, os.path.isfile(self.source))
 
             read_subprocessTEST = FCVA_mp.Process(
-                target=open_mediaTEST, args=(shared_metadata_dict, fps, self.source, shared_speedtestA, shared_speedtestB, shared_speedtestC, shared_globalindex, shared_analyzedA, shared_analyzedB, shared_analyzedC,shared_speedtestAKeycount,shared_speedtestBKeycount,shared_speedtestCKeycount)
+                target=open_mediaTEST, args=(shared_metadata_dict, self.fps, self.source, shared_speedtestA, shared_speedtestB, shared_speedtestC, shared_globalindex, shared_analyzedA, shared_analyzedB, shared_analyzedC,shared_speedtestAKeycount,shared_speedtestBKeycount,shared_speedtestCKeycount)
             )
             read_subprocessTEST.start()
 
@@ -1068,7 +1072,7 @@ class FCVA:
             # shared_globalindex["starttime"] = time.time() + 2
             kivy_subprocess = FCVA_mp.Process(
                 target=open_kivy,
-                args=(shared_analysis_dict, shared_metadata_dict, self.fps, shared_globalindex, shared_analyzedA, shared_analyzedB, shared_analyzedC,shared_analyzedAKeycount,shared_analyzedBKeycount,shared_analyzedCKeycount)
+                args=(shared_analysis_dict, shared_metadata_dict, self.fps, shared_globalindex, shared_analyzedA, shared_analyzedB, shared_analyzedC,shared_analyzedAKeycount,shared_analyzedBKeycount,shared_analyzedCKeycount, (1/self.fps))
             )
             
             

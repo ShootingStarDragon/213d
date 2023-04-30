@@ -48,7 +48,8 @@ app.appliedcv = sepia_filter
 
 if __name__ == "__main__":
     # / and \ works on windows, only / on mac tho
-    app.source = "examples/creativecommonsmedia/Elephants Dream charstart2.webm"
+    # app.source = "examples/creativecommonsmedia/Elephants Dream charstart2.webm"
+    app.source = "examples/creativecommonsmedia/JoJo-s Bizarre Adventure - S05E25 - DUAL 1080p WEB H.264 -NanDesuKa (NF) (1).1080.mp4"
     app.fps = 1 / 30
     app.title = "Sepia filter example by Pengindoramu"
     app.run()
