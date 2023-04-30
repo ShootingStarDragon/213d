@@ -64,7 +64,8 @@ FCVA_screen_manager: #remember to return a root widget
         def on_start(self):
             # start blitting. 1/30 always works because it will always blit the latest image from open_appliedcv subprocess, but kivy itself will be at 30 fps
             self.index = 0
-            Clock.schedule_interval(self.blit_from_shared_memory, args[2])
+            # Clock.schedule_interval(self.blit_from_shared_memory, args[2])
+            Clock.schedule_interval(self.blit_from_shared_memory, 1/60)
             self.starttime = None
 
         def on_request_close(self, *args):
@@ -142,6 +143,7 @@ FCVA_screen_manager: #remember to return a root widget
             # shared_metadata_dict = self.shared_metadata_dictVAR
             timeog = time.time()
             # self.index = self.shared_globalindexVAR["curframe"]
+            # print("ww", flush = True)
             # print("shared analyzed keys?", self.shared_analyzedAVAR.keys(), flush = True)
             spf = 1/30
             # sharedmetadatakeys = self.shared_metadata_dictVAR.keys()
@@ -349,7 +351,7 @@ FCVA_screen_manager: #remember to return a root widget
 
 def minValidKey(*args):
     #goal is to find the key of the smallest value (is a number <  current frame or -1)
-    Ans = []
+    timer1 = time.time()
     # print("args why wtf", args, flush = True)
     dictVAR = args[0][0] #args are these for some reason args why wtf ([<DictProxy object, typeid 'dict' at 0x1a50d8dbd30>, -89],)
     current_framenumber = args[0][1]
@@ -368,7 +370,12 @@ def minValidKey(*args):
         # Ans = [x for x in dictVAR.keys() if 'key' in x and dictVAR[x] == minval] #err line, in init can get u frame0 since it has val of -1
         # # print("manual debug", validKeys, minval, Ans)
         if len(Ans) > 0:
+            timer2 = time.time()
+            if (timer2 - timer1) > 0:
+                # print("spf?", timer2 - timer1, flush = True)
+                pass
             return Ans[0]
+
     
 def open_mediaTEST(*args):
     '''
