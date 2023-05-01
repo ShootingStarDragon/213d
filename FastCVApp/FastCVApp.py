@@ -389,12 +389,24 @@ def media_schedule(*args):
     indexVAR = args[0]
     # print("mediasched test",indexVAR, flush = True)
     current_framenumberVAR = args[1]
-    capVAR =  args[2]
-    queueVAR2 = args[3]
-    shared_speedtestVAR2 = args[4]
-    shared_speedtestKeycountVAR2 = args[5]
+    queueVAR2 = args[2]
+    shared_speedtestVAR2 = args[3]
+    shared_speedtestKeycountVAR2 = args[4]
     
-    
+    #new plan:
+    #GOAL:
+    #if the queue has more frames, proceed with updating
+    time1 = time.time()
+    if queueVAR2.qsize() > 0:
+        #check for slot:
+        slotVAR = minValidKey([shared_speedtestKeycountVAR2, current_framenumberVAR])
+        slotitems = shared_speedtestKeycountVAR2.values()
+        print("slotscheck", indexVAR, slotVAR, slotitems, flush = True)
+        #update shareddict from queue:
+        if slotVAR != None:
+            shared_speedtestVAR2["frame" + slotVAR.replace("key",'')] = queueVAR2.get()
+            shared_speedtestKeycountVAR2[slotVAR] = indexVAR
+            indexVAR += 1
     #TWO THINGS THAT ARE WRONG:
     # 1 im not updating from queue
     # 2 index might not match the speedtestvars if you miss a frame...
@@ -407,22 +419,23 @@ def media_schedule(*args):
     # if u know the source cap queue is size 30, and each smaller queue is size 30, it's impossible for the smaller queues to be full???, no because source can just keep feeding frames and if this operation is slow it will overflow
 
 
-    #time up to here is super fast
-    if not queueVAR2.full():
-        time1 = time.time()
-        #time from last note to here is super fast
-        frameVAR = capVAR.read()
-        time2 = time.time()
-        slotVAR = minValidKey([shared_speedtestKeycountVAR2, current_framenumberVAR])
-        # print("slotscheck", indexVAR, slotVAR, flush = True)
-        if slotVAR != None:
-            shared_speedtestVAR2["frame" + slotVAR.replace("key",'')] = capVAR.read()
-            shared_speedtestKeycountVAR2[slotVAR] = indexVAR
-            indexVAR += 1
-        else:
-            queueVAR2.put(frameVAR)
+
+
+    # #time up to here is super fast
+    # if not queueVAR2.full():
+    #     #time from last note to here is super fast
+    #     frameVAR = capVAR.read()
+    time2 = time.time()
+    #     slotVAR = minValidKey([shared_speedtestKeycountVAR2, current_framenumberVAR])
+    #     # print("slotscheck", indexVAR, slotVAR, flush = True)
+    #     if slotVAR != None:
+    #         shared_speedtestVAR2["frame" + slotVAR.replace("key",'')] = capVAR.read()
+    #         shared_speedtestKeycountVAR2[slotVAR] = indexVAR
+    #         indexVAR += 1
+    #     else:
+    #         queueVAR2.put(frameVAR)
     if (time2 - time1) > 0:
-        print("spf of media_schedule",time2-time1,flush = True)
+        # print("spf of media_schedule",time2-time1,flush = True)
         pass
     return indexVAR
 
@@ -439,7 +452,10 @@ def open_mediaTEST(*args):
         shared_metadata_dict = args[0]
         frame_rate = args[1]
         print("what is framerate?", frame_rate, flush=True)        
-        cap = FCVAFileVideoStream(args[2]).start()
+        QueueAVAR = Queue(maxsize=10)
+        QueueBVAR = Queue(maxsize=10)
+        QueueCVAR = Queue(maxsize=10)
+        cap = FCVAFileVideoStream(args[2],QueueAVAR,QueueBVAR,QueueCVAR).start()
         shared_speedtestAVAR = args[3]
         shared_speedtestBVAR = args[4]
         shared_speedtestCVAR = args[5]
@@ -448,9 +464,6 @@ def open_mediaTEST(*args):
         shared_speedtestAKeycountVAR = args[10]
         shared_speedtestBKeycountVAR = args[11]
         shared_speedtestCKeycountVAR = args[12]
-        QueueAVAR = Queue(maxsize=30)
-        QueueBVAR = Queue(maxsize=30)
-        QueueCVAR = Queue(maxsize=30)
 
         internal_i = 0
         #https://stackoverflow.com/questions/5891410/numpy-array-initialization-fill-with-identical-values
@@ -537,7 +550,6 @@ def open_mediaTEST(*args):
                 internal_i = media_schedule(
                         internal_i,
                         current_framenumber, 
-                        cap, 
                         QueueAVAR,
                         shared_speedtestAVAR, 
                         shared_speedtestAKeycountVAR)
@@ -545,7 +557,6 @@ def open_mediaTEST(*args):
                 internal_i = media_schedule(
                         internal_i,
                         current_framenumber, 
-                        cap, 
                         QueueBVAR,
                         shared_speedtestBVAR, 
                         shared_speedtestBKeycountVAR)
@@ -553,7 +564,6 @@ def open_mediaTEST(*args):
                 internal_i = media_schedule(
                         internal_i,
                         current_framenumber, 
-                        cap, 
                         QueueCVAR,
                         shared_speedtestCVAR, 
                         shared_speedtestCKeycountVAR)

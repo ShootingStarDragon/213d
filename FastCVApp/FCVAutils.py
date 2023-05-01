@@ -67,7 +67,7 @@ else:
 	from Queue import Queue
 
 class FCVAFileVideoStream:
-	def __init__(self, path, transform=None, queue_size=30):
+	def __init__(self, path, queueA, queueB, queueC, transform=None, queue_size=30):
 		# initialize the file video stream along with the boolean
 		# used to indicate if the thread should be stopped or not
 		self.stream = cv2.VideoCapture(path)
@@ -76,10 +76,14 @@ class FCVAFileVideoStream:
 
 		# initialize the queue used to store frames read from
 		# the video file
-		self.Q = Queue(maxsize=queue_size)
+		# self.Q = Queue(maxsize=queue_size)
 		# intialize thread
 		self.thread = Thread(target=self.update, args=())
 		self.thread.daemon = True
+		self.queueA = queueA
+		self.queueB = queueB
+		self.queueC = queueC
+		self.internalframecount = 0
 
 	def start(self):
 		# start a thread to read frames from the file video stream
@@ -95,15 +99,36 @@ class FCVAFileVideoStream:
 				break
 
 			# otherwise, ensure the queue has room in it
-			if not self.Q.full():
+			if not self.queueA.full() and \
+		        not self.queueB.full() and \
+		        not self.queueC.full():
 				# read the next frame from the file
-				(grabbed, frame) = self.stream.read()
+				(grabbed1, frame1) = self.stream.read()
+				
+				# print("not grabbed?", not grabbed1, flush = True)
+				if not grabbed1:
+					self.stopped = True
+				else:
+					self.queueA.put(frame1.tobytes())
+					self.internalframecount += 1
+				(grabbed2, frame2) = self.stream.read()
+				if not grabbed2:
+					self.stopped = True
+				else:
+					self.queueB.put(frame2.tobytes())
+					self.internalframecount += 1
+				(grabbed3, frame3) = self.stream.read()
+				if not grabbed3:
+					self.stopped = True
+				else:
+					self.queueC.put(frame3.tobytes())
+					self.internalframecount += 1
 
 				# if the `grabbed` boolean is `False`, then we have
 				# reached the end of the video file
-				if not grabbed:
-					self.stopped = True
-				else:
+				# if not grabbed1 or not grabbed2 or not grabbed3:
+				# 	self.stopped = True
+				# else:
                     #add else it dies on last put
 					
                     # if there are transforms to be done, might as well
@@ -118,22 +143,22 @@ class FCVAFileVideoStream:
                     # native threads and overheads of additional
                     # producer/consumer queues since this one was generally
                     # idle grabbing frames.
-					if self.transform:
-						frame = self.transform(frame)
+					# if self.transform:
+					# 	frame = self.transform(frame)
 
                     # #check if it's a numpy array then add
                     # if isinstance(frame,np.ndarray):
                     #     # add the frame to the queue
                     # 	self.Q.put(frame.tobytes())
-					self.Q.put(frame.tobytes())
+					# self.Q.put(frame.tobytes())
 			else:
 				time.sleep(0.1)  # Rest for 10ms, we have a full queue
 
 		self.stream.release()
 
-	def read(self):
-		# return next frame in the queue
-		return self.Q.get()
+	# def read(self):
+	# 	# return next frame in the queue
+	# 	return self.Q.get()
 
 	# Insufficient to have consumer use while(more()) which does
 	# not take into account if the producer has reached end of
