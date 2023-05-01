@@ -381,28 +381,49 @@ def minValidKey(*args):
             return Ans[0]
 
 def media_schedule(*args):
-    print(args, flush = True)
     #check index and make sure the correct queue is not full: (we're already given the correct refs)
 
     # read frame and keep as var
     # if there is a space (SLOT EXISTS),  place in shared dict, otherwise place the queue
     # remember to increment the index in calling func...
     indexVAR = args[0]
+    # print("mediasched test",indexVAR, flush = True)
     current_framenumberVAR = args[1]
     capVAR =  args[2]
     queueVAR2 = args[3]
     shared_speedtestVAR2 = args[4]
     shared_speedtestKeycountVAR2 = args[5]
+    
+    
+    #TWO THINGS THAT ARE WRONG:
+    # 1 im not updating from queue
+    # 2 index might not match the speedtestvars if you miss a frame...
+    # EXAMPLE
+    # let's say the queue is full and index is on 1, then function technically does nothing.
+    # next run will have the old index and have a nonempty queue, then it will read in a frame and +1 the index, but now the index and the shared dicts DONT MATCH
+    # the "bad" idea: read frame an immediately place into queue, this function just writes to shared dict. it's "ok" in the sense that sharing memeory is SUPER fast, however i would like to avoid even writing to a queue in the first place
 
+    #TRICK: make sure it's impossible for the queue to ever be full:
+    # if u know the source cap queue is size 30, and each smaller queue is size 30, it's impossible for the smaller queues to be full???, no because source can just keep feeding frames and if this operation is slow it will overflow
+
+
+    #time up to here is super fast
     if not queueVAR2.full():
+        time1 = time.time()
+        #time from last note to here is super fast
         frameVAR = capVAR.read()
+        time2 = time.time()
         slotVAR = minValidKey([shared_speedtestKeycountVAR2, current_framenumberVAR])
+        # print("slotscheck", indexVAR, slotVAR, flush = True)
         if slotVAR != None:
             shared_speedtestVAR2["frame" + slotVAR.replace("key",'')] = capVAR.read()
             shared_speedtestKeycountVAR2[slotVAR] = indexVAR
             indexVAR += 1
         else:
             queueVAR2.put(frameVAR)
+    if (time2 - time1) > 0:
+        print("spf of media_schedule",time2-time1,flush = True)
+        pass
     return indexVAR
 
     
@@ -512,6 +533,7 @@ def open_mediaTEST(*args):
                     # read frame and keep as var
                     # if there is a space (SLOT EXISTS),  place in shared dict, otherwise place the queue
                     #remember to increment the index in THIS func
+                
                 internal_i = media_schedule(
                         internal_i,
                         current_framenumber, 
