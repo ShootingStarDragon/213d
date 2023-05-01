@@ -65,7 +65,7 @@ FCVA_screen_manager: #remember to return a root widget
             # start blitting. 1/30 always works because it will always blit the latest image from open_appliedcv subprocess, but kivy itself will be at 30 fps
             self.index = 0
             print("fps wtf", self.fps)
-            # Clock.schedule_interval(self.blit_from_shared_memory, (1/self.fps))
+            Clock.schedule_interval(self.blit_from_shared_memory, (1/self.fps))
             # Clock.schedule_interval(self.blit_from_shared_memory, 1/60)
             self.starttime = None
 
@@ -639,11 +639,11 @@ def open_mediaTEST(*args):
                         # internal_i += 1
                         # time_2 = time.time()
                 '''
-            time_2 = time.time()
-            if (time_2 - time_og) > 0:
-                if 1/(time_2 - time_og) <100:
-                    print("cv2 .read/write multiple takes long???", time_2 - time_og,current_framenumber, internal_i, flush= True)
-                    pass
+                time_2 = time.time()
+                if (time_2 - time_og) > 0:
+                    if 1/(time_2 - time_og) <100:
+                        print("cv2 .read/write multiple takes long???", time_2 - time_og,current_framenumber, internal_i, flush= True)
+                        pass
     except Exception as e:
         print("read function died!", e, flush=True)
         import traceback
