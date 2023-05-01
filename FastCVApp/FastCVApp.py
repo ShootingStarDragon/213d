@@ -389,6 +389,7 @@ def open_mediaTEST(*args):
     '''
     try:
         from FCVAutils import FCVAFileVideoStream
+        from queue import Queue
         shared_metadata_dict = args[0]
         frame_rate = args[1]
         print("what is framerate?", frame_rate, flush=True)        
@@ -401,6 +402,7 @@ def open_mediaTEST(*args):
         shared_speedtestAKeycountVAR = args[10]
         shared_speedtestBKeycountVAR = args[11]
         shared_speedtestCKeycountVAR = args[12]
+        QueueVAR = Queue(maxsize=30)
 
         internal_i = 0
         #https://stackoverflow.com/questions/5891410/numpy-array-initialization-fill-with-identical-values
@@ -475,6 +477,15 @@ def open_mediaTEST(*args):
                 # slotsA = [x for x in shared_speedtestAKeycountVAR.keys() if 'key' in x and (shared_speedtestAKeycountVAR[x] < current_framenumber or shared_speedtestAKeycountVAR[x] == -1)] 
                 # slotsB = [x for x in shared_speedtestBKeycountVAR.keys() if 'key' in x and (shared_speedtestBKeycountVAR[x] < current_framenumber or shared_speedtestBKeycountVAR[x] == -1)]
                 # slotsC = [x for x in shared_speedtestCKeycountVAR.keys() if 'key' in x and (shared_speedtestCKeycountVAR[x] < current_framenumber or shared_speedtestCKeycountVAR[x] == -1)]
+                
+                #FLOW: 
+                # make sure queue isn't full
+                # read frame and keep as var
+                # if there is a space (SLOT EXISTS), and if no queuesize,  place in shared dict, otherwise place the queueframe:
+                #????
+                #?????
+
+                
                 # i think minvalidkey is slow, RIP
                 slotA = minValidKey([shared_speedtestAKeycountVAR, current_framenumber])
                 slotB = minValidKey([shared_speedtestBKeycountVAR, current_framenumber])
