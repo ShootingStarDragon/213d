@@ -105,6 +105,7 @@ class FCVAFileVideoStream:
 				# read the next frame from the file
 				(grabbed1, frame1) = self.stream.read()
 				
+				time1 = time.time()
 				# print("not grabbed?", not grabbed1, flush = True)
 				if not grabbed1:
 					self.stopped = True
@@ -123,6 +124,11 @@ class FCVAFileVideoStream:
 				else:
 					self.queueC.put(frame3.tobytes())
 					self.internalframecount += 1
+				time2 = time.time()
+				
+				if (time2 - time1) > 0:
+					# print("spf of thread??",time2-time1, flush = True)
+					pass
 
 				# if the `grabbed` boolean is `False`, then we have
 				# reached the end of the video file

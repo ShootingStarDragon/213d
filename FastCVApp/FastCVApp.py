@@ -65,7 +65,7 @@ FCVA_screen_manager: #remember to return a root widget
             # start blitting. 1/30 always works because it will always blit the latest image from open_appliedcv subprocess, but kivy itself will be at 30 fps
             self.index = 0
             print("fps wtf", self.fps)
-            Clock.schedule_interval(self.blit_from_shared_memory, (1/self.fps))
+            # Clock.schedule_interval(self.blit_from_shared_memory, (1/self.fps))
             # Clock.schedule_interval(self.blit_from_shared_memory, 1/60)
             self.starttime = None
 
@@ -388,25 +388,36 @@ def media_schedule(*args):
     # remember to increment the index in calling func...
     indexVAR = args[0]
     # print("mediasched test",indexVAR, flush = True)
-    current_framenumberVAR = args[1]
-    queueVAR2 = args[2]
-    shared_speedtestVAR2 = args[3]
-    shared_speedtestKeycountVAR2 = args[4]
+    frame_rate = args[2]
+    current_framenumberVAR = int((time.time() -  args[1]["starttime"])/(1/frame_rate))
+    queueVAR2 = args[3]
+    shared_speedtestVAR2 = args[4]
+    shared_speedtestKeycountVAR2 = args[5]
     
     #new plan:
     #GOAL:
     #if the queue has more frames, proceed with updating
-    time1 = time.time()
     if queueVAR2.qsize() > 0:
         #check for slot:
         slotVAR = minValidKey([shared_speedtestKeycountVAR2, current_framenumberVAR])
-        slotitems = shared_speedtestKeycountVAR2.values()
-        print("slotscheck", indexVAR, slotVAR, slotitems, flush = True)
+        # slotitems = shared_speedtestKeycountVAR2.values()
+        # print("slotscheck", indexVAR, slotVAR, slotitems, flush = True)
         #update shareddict from queue:
         if slotVAR != None:
+            time1 = time.time()
             shared_speedtestVAR2["frame" + slotVAR.replace("key",'')] = queueVAR2.get()
             shared_speedtestKeycountVAR2[slotVAR] = indexVAR
             indexVAR += 1
+            if indexVAR % 3 == 0:
+                batch = "A"
+            if indexVAR % 3 == 1:
+                batch = "B"
+            if indexVAR % 3 == 2:
+                batch = "C"
+            time2 = time.time()
+            if (time2 - time1) > 0:
+                print("spf of media_schedule",time2-time1,current_framenumberVAR,indexVAR, batch, flush = True)
+                pass
     #TWO THINGS THAT ARE WRONG:
     # 1 im not updating from queue
     # 2 index might not match the speedtestvars if you miss a frame...
@@ -425,7 +436,6 @@ def media_schedule(*args):
     # if not queueVAR2.full():
     #     #time from last note to here is super fast
     #     frameVAR = capVAR.read()
-    time2 = time.time()
     #     slotVAR = minValidKey([shared_speedtestKeycountVAR2, current_framenumberVAR])
     #     # print("slotscheck", indexVAR, slotVAR, flush = True)
     #     if slotVAR != None:
@@ -434,9 +444,9 @@ def media_schedule(*args):
     #         indexVAR += 1
     #     else:
     #         queueVAR2.put(frameVAR)
-    if (time2 - time1) > 0:
-        # print("spf of media_schedule",time2-time1,flush = True)
-        pass
+    # if (time2 - time1) > 0:
+    #     print("spf of media_schedule",time2-time1,flush = True)
+    #     pass
     return indexVAR
 
     
@@ -549,29 +559,27 @@ def open_mediaTEST(*args):
                 
                 internal_i = media_schedule(
                         internal_i,
-                        current_framenumber, 
+                        shared_globalindexVAR, 
+                        frame_rate,
                         QueueAVAR,
                         shared_speedtestAVAR, 
                         shared_speedtestAKeycountVAR)
                 
                 internal_i = media_schedule(
                         internal_i,
-                        current_framenumber, 
+                        shared_globalindexVAR, 
+                        frame_rate,
                         QueueBVAR,
                         shared_speedtestBVAR, 
                         shared_speedtestBKeycountVAR)
                 
                 internal_i = media_schedule(
                         internal_i,
-                        current_framenumber, 
+                        shared_globalindexVAR, 
+                        frame_rate,
                         QueueCVAR,
                         shared_speedtestCVAR, 
                         shared_speedtestCKeycountVAR)
-                
-                
-                    
-
-
                 '''
                 # i think minvalidkey is slow, RIP
                 slotA = minValidKey([shared_speedtestAKeycountVAR, current_framenumber])
@@ -634,8 +642,7 @@ def open_mediaTEST(*args):
             time_2 = time.time()
             if (time_2 - time_og) > 0:
                 if 1/(time_2 - time_og) <100:
-                    # print("metadata keys", shared_metadata_dict.keys(), flush = True)
-                    # print("cv2 .read/write multiple takes long???", "fps:", 1/(time_2 - time_og) , time_2 - time_og, flush= True)
+                    print("cv2 .read/write multiple takes long???", time_2 - time_og,current_framenumber, internal_i, flush= True)
                     pass
     except Exception as e:
         print("read function died!", e, flush=True)
