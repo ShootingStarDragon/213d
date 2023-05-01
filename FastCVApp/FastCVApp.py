@@ -380,6 +380,31 @@ def minValidKey(*args):
                 pass
             return Ans[0]
 
+def media_schedule(*args):
+    print(args, flush = True)
+    #check index and make sure the correct queue is not full: (we're already given the correct refs)
+
+    # read frame and keep as var
+    # if there is a space (SLOT EXISTS),  place in shared dict, otherwise place the queue
+    # remember to increment the index in calling func...
+    indexVAR = args[0]
+    current_framenumberVAR = args[1]
+    capVAR =  args[2]
+    queueVAR2 = args[3]
+    shared_speedtestVAR2 = args[4]
+    shared_speedtestKeycountVAR2 = args[5]
+
+    if not queueVAR2.full():
+        frameVAR = capVAR.read()
+        slotVAR = minValidKey([shared_speedtestKeycountVAR2, current_framenumberVAR])
+        if slotVAR != None:
+            shared_speedtestVAR2["frame" + slotVAR.replace("key",'')] = capVAR.read()
+            shared_speedtestKeycountVAR2[slotVAR] = indexVAR
+            indexVAR += 1
+        else:
+            queueVAR2.put(frameVAR)
+    return indexVAR
+
     
 def open_mediaTEST(*args):
     '''
@@ -402,7 +427,9 @@ def open_mediaTEST(*args):
         shared_speedtestAKeycountVAR = args[10]
         shared_speedtestBKeycountVAR = args[11]
         shared_speedtestCKeycountVAR = args[12]
-        QueueVAR = Queue(maxsize=30)
+        QueueAVAR = Queue(maxsize=30)
+        QueueBVAR = Queue(maxsize=30)
+        QueueCVAR = Queue(maxsize=30)
 
         internal_i = 0
         #https://stackoverflow.com/questions/5891410/numpy-array-initialization-fill-with-identical-values
@@ -479,13 +506,41 @@ def open_mediaTEST(*args):
                 # slotsC = [x for x in shared_speedtestCKeycountVAR.keys() if 'key' in x and (shared_speedtestCKeycountVAR[x] < current_framenumber or shared_speedtestCKeycountVAR[x] == -1)]
                 
                 #FLOW: 
-                # make sure queue isn't full
-                # read frame and keep as var
-                # if there is a space (SLOT EXISTS), and if no queuesize,  place in shared dict, otherwise place the queueframe:
-                #????
-                #?????
-
+                #problem, u need to keep track of the index properly...
+                # (do it sequentially... read a frame, know where it should go, then do next steps)
+                #check index and make sure the correct queue is not full:
+                    # read frame and keep as var
+                    # if there is a space (SLOT EXISTS),  place in shared dict, otherwise place the queue
+                    #remember to increment the index in THIS func
+                internal_i = media_schedule(
+                        internal_i,
+                        current_framenumber, 
+                        cap, 
+                        QueueAVAR,
+                        shared_speedtestAVAR, 
+                        shared_speedtestAKeycountVAR)
                 
+                internal_i = media_schedule(
+                        internal_i,
+                        current_framenumber, 
+                        cap, 
+                        QueueBVAR,
+                        shared_speedtestBVAR, 
+                        shared_speedtestBKeycountVAR)
+                
+                internal_i = media_schedule(
+                        internal_i,
+                        current_framenumber, 
+                        cap, 
+                        QueueCVAR,
+                        shared_speedtestCVAR, 
+                        shared_speedtestCKeycountVAR)
+                
+                
+                    
+
+
+                '''
                 # i think minvalidkey is slow, RIP
                 slotA = minValidKey([shared_speedtestAKeycountVAR, current_framenumber])
                 slotB = minValidKey([shared_speedtestBKeycountVAR, current_framenumber])
@@ -504,16 +559,6 @@ def open_mediaTEST(*args):
                     if cap.more(): #for FileVideoStream
                         # for videostream as per: https://stackoverflow.com/questions/63584905/increase-the-capture-and-stream-speed-of-a-video-using-opencv-and-python/63585204#63585204
                         
-                        ''' #THIS WORKED:
-                        shared_speedtestAVAR["frame" + slotsA[0].replace("key",'')] = cap.read()
-                        shared_speedtestAVAR[slotsA[0]] = internal_i
-                        
-                        shared_speedtestBVAR["frame" + slotsB[0].replace("key",'')] = cap.read()
-                        shared_speedtestBVAR[slotsB[0]] = internal_i + 1
-
-                        shared_speedtestCVAR["frame" + slotsC[0].replace("key",'')] = cap.read()
-                        shared_speedtestCVAR[slotsC[0]] = internal_i + 2
-                        '''
                         shared_speedtestAVAR["frame" + slotA.replace("key",'')] = cap.read()
                         shared_speedtestAKeycountVAR[slotA] = internal_i
                         
@@ -553,12 +598,13 @@ def open_mediaTEST(*args):
                         # internal_i += 3
                         # internal_i += 1
                         # time_2 = time.time()
-                time_2 = time.time()
-                if (time_2 - time_og) > 0:
-                    if 1/(time_2 - time_og) <100:
-                        # print("metadata keys", shared_metadata_dict.keys(), flush = True)
-                        # print("cv2 .read/write multiple takes long???", "fps:", 1/(time_2 - time_og) , time_2 - time_og, flush= True)
-                        pass
+                '''
+            time_2 = time.time()
+            if (time_2 - time_og) > 0:
+                if 1/(time_2 - time_og) <100:
+                    # print("metadata keys", shared_metadata_dict.keys(), flush = True)
+                    # print("cv2 .read/write multiple takes long???", "fps:", 1/(time_2 - time_og) , time_2 - time_og, flush= True)
+                    pass
     except Exception as e:
         print("read function died!", e, flush=True)
         import traceback
