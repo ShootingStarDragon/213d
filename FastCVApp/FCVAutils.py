@@ -103,27 +103,29 @@ class FCVAFileVideoStream:
 				# reached the end of the video file
 				if not grabbed:
 					self.stopped = True
+				else:
+                    #add else it dies on last put
 					
-				# if there are transforms to be done, might as well
-				# do them on producer thread before handing back to
-				# consumer thread. ie. Usually the producer is so far
-				# ahead of consumer that we have time to spare.
-				#
-				# Python is not parallel but the transform operations
-				# are usually OpenCV native so release the GIL.
-				#
-				# Really just trying to avoid spinning up additional
-				# native threads and overheads of additional
-				# producer/consumer queues since this one was generally
-				# idle grabbing frames.
-				if self.transform:
-					frame = self.transform(frame)
+                    # if there are transforms to be done, might as well
+                    # do them on producer thread before handing back to
+                    # consumer thread. ie. Usually the producer is so far
+                    # ahead of consumer that we have time to spare.
+                    #
+                    # Python is not parallel but the transform operations
+                    # are usually OpenCV native so release the GIL.
+                    #
+                    # Really just trying to avoid spinning up additional
+                    # native threads and overheads of additional
+                    # producer/consumer queues since this one was generally
+                    # idle grabbing frames.
+					if self.transform:
+						frame = self.transform(frame)
 
-                # #check if it's a numpy array then add
-				# if isinstance(frame,np.ndarray):
-                #     # add the frame to the queue
-				# 	self.Q.put(frame.tobytes())
-				self.Q.put(frame.tobytes())
+                    # #check if it's a numpy array then add
+                    # if isinstance(frame,np.ndarray):
+                    #     # add the frame to the queue
+                    # 	self.Q.put(frame.tobytes())
+					self.Q.put(frame.tobytes())
 			else:
 				time.sleep(0.1)  # Rest for 10ms, we have a full queue
 
