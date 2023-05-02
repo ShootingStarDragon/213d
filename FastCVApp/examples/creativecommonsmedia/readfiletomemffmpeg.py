@@ -20,10 +20,39 @@ if time2 - time1 > 0:
 
 args = (ffmpeg
     .input('pipe:')
-    # ... extra processing here
-    .output('pipe:')
-    .get_args()
+    # ... extra processing here "-f mkv", example command here:       ffmpeg -i test.wav -f avi pipe: | cat > test.avi        https://ffmpeg.org/ffmpeg-protocols.html#pipe
+    # Special option names: from https://github.com/kkroening/ffmpeg-python
+    # .output('pipe:', **{'format': 'avi'}) #WORKS BUT TAKES A LONG TIME
+    .output('pipe:', **{'format': 'matroska'}) # mkv should be matroska: https://superuser.com/a/846508
+    .get_args("-f mkv")
 )
+#COMMAND FOR MUXER OPTIONS:  ffmpeg -muxers 
+# FROM _ffmpeg.py:
+
+
+
+#HOLY SHIT AN EXAMPLE: https://github.com/kkroening/ffmpeg-python/issues/741
+
+# ffmpeg -i video1.mp4 -i video2.mp4 -i video3.mp4 -i video4.mp4 -i video5.mp4 -i video6.mp4
+# -map 0 -c:v mpeg4 -q:v 1 -aspect 16:9 video1.avi
+
+# (
+#             ffmpeg
+#                 .input(video)
+#                 .output(f"{video[:-4]}.avi", **{"map": f"{i}", "c:v": "mpeg4", "aspect": "16:9"})
+#                 .run(quiet=False, overwrite_output=False)
+#         )
+    
+
+# https://stackoverflow.com/questions/65656006/ffmpeg-raises-exception-only-when-writing-to-pipe
+# https://stackoverflow.com/a/32242361
+# they're using shell 
+# args = ['ffmpeg', '-i', video_path, '-vf',
+#         'subtitles={}'.format(subtitles_path), outfile_path]]
+# this guy also using ffmpeg directly
+# https://stackoverflow.com/questions/65656006/ffmpeg-raises-exception-only-when-writing-to-pipe
+
+
 p = subprocess.Popen(['ffmpeg'] + args, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 output_data = p.communicate(input=inputbytes)[0]
 

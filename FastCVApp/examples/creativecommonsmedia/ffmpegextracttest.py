@@ -29,7 +29,7 @@ for item in interval_list:
         ffmpeg
         .input(YOUR_FILE, ss=item[1])
         .filter('scale', width, -1)
-        .output('Image' + str(i) + '.jpg', vframes=1)
+        .output('Image' + str(i) + '.png', vframes=1)
         .run()
     )
     i += 1
