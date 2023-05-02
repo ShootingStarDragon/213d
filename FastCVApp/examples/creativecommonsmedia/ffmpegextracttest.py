@@ -1,5 +1,7 @@
 import ffmpeg
 
+#Note that some formats (typically MOV), require the output protocol to be seekable, so they will fail with the pipe output protocol.
+
 YOUR_FILE = "Elephants Dream charstart2FULL.webm"
 probe = ffmpeg.probe(YOUR_FILE)
 # print("probe?", probe['streams'][0]['tags']['DURATION'], flush = True)
