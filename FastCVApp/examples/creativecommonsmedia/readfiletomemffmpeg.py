@@ -55,6 +55,9 @@ args = (ffmpeg
 
 p = subprocess.Popen(['ffmpeg'] + args, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 output_data = p.communicate(input=inputbytes)[0]
+#https://stackoverflow.com/questions/16768290/understanding-popen-communicate
+
+
 
 # https://stackoverflow.com/questions/23687485/ffmpeg-fails-with-unable-to-find-a-suitable-output-format-for-pipe
 # [NULL @ 0000011c10f3a140] Unable to find a suitable output format for 'pipe:'
