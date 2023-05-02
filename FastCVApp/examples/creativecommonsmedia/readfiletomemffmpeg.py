@@ -26,11 +26,18 @@ args = (ffmpeg
     # Special option names: from https://github.com/kkroening/ffmpeg-python
     # .output('pipe:', **{'format': 'avi'}) #WORKS BUT TAKES A LONG TIME
     .output('pipe:', **{'format': 'matroska'}) # mkv should be matroska: https://superuser.com/a/846508
-    .get_args("-f mkv")
+    .get_args()
 )
 #COMMAND FOR MUXER OPTIONS:  ffmpeg -muxers 
 # FROM _ffmpeg.py:
+# Args:
+#         video_bitrate: parameter for ``-b:v``, e.g. ``video_bitrate=1000``.
+#         audio_bitrate: parameter for ``-b:a``, e.g. ``audio_bitrate=200``.
+#         format: alias for ``-f`` parameter, e.g. ``format='mp4'``
+#             (equivalent to ``f='mp4'``).
 
+#     If multiple streams are provided, they are mapped to the same
+#     output.
 
 
 #HOLY SHIT AN EXAMPLE: https://github.com/kkroening/ffmpeg-python/issues/741
