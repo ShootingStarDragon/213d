@@ -94,9 +94,9 @@ while True:
     if cv2.waitKey(25) & 0xFF == ord('q'):
         break
 
+    internal_i += 1
     currentREALframe = int((time.time() - starttime)/(1/fps))
     print("what is current frame vs actualframe?", internal_i, currentREALframe )
-    internal_i += 1
 
 cv2.destroyAllWindows()
 
