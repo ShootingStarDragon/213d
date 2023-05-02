@@ -24,7 +24,7 @@ args = (ffmpeg
     # ... extra processing here "-f mkv", example command here:       ffmpeg -i test.wav -f avi pipe: | cat > test.avi        https://ffmpeg.org/ffmpeg-protocols.html#pipe
     # Special option names: from https://github.com/kkroening/ffmpeg-python
     # .output('pipe:', **{'format': 'avi'}) #WORKS BUT TAKES A LONG TIME
-    .output('pipe:', **{'format': 'rawvideo'}) # mkv should be matroska: https://superuser.com/a/846508
+    .output('pipe:', pix_fmt='bgr24', **{'format': 'rawvideo'}) # mkv should be matroska: https://superuser.com/a/846508
     .get_args()
 )
 
@@ -58,15 +58,15 @@ output_data = p.communicate(input=inputbytes)[0] #im dumb, input here is FROM yo
 
 # Load individual frames in a loop
 # nb_img = H*W*3  # H * W * 3 channels * 1-byte/channel
-print("1")
 # Read decoded video frames from the PIPE until no more frames to read
 
 # https://stackoverflow.com/questions/48259183/how-to-read-stdout-from-python-subprocess-popen-non-blockingly-on-windows
 # It has to do with Python's output buffering (for a child process in your case). Try disabling the buffering and your code should work. You can do it by either running python with -u key, or calling sys.stdout.flush().
 
+print("0")
 while True:
-    print("a")
     # Read decoded video frame (in raw video format) from stdout process.
+    print("a")
     buffer = p.stdout.read(W*H*3)
     print("b")
 
@@ -74,7 +74,7 @@ while True:
     if len(buffer) != W*H*3:
         break
 
-    print("c")
+    print("c do u get to opencv?")
     img = np.frombuffer(buffer, np.uint8).reshape(H, W, 3)
 
     cv2.imshow('img', img)  # Show the image for testing
