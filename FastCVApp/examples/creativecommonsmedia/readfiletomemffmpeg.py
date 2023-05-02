@@ -1,3 +1,5 @@
+# https://github.com/kkroening/ffmpeg-python/issues/49#issuecomment-355677082
+
 import subprocess
 import ffmpeg
 

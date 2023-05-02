@@ -1,3 +1,5 @@
+# https://api.video/blog/tutorials/extract-a-set-of-frames-from-a-video-with-ffmpeg-and-python/
+
 import ffmpeg
 
 #Note that some formats (typically MOV), require the output protocol to be seekable, so they will fail with the pipe output protocol.
