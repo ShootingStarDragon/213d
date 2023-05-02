@@ -809,6 +809,104 @@ def open_media(*args):
 
         print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
 
+def open_cvpipeline(*args):
+    try:
+        '''
+        NEW PLAN:
+        use 3 subprocesses(A,B,C) to use opencv to get frames from 1 file (pray it works)
+        then for each subprocesses, request 10 frames (0-10 > A, 11-20> B, 21-30>C, etc)
+        2 queues, 1 naked frame, 1 analyzed frame that is written to sharedmem for kivy to see
+        originalQUEUE
+        analyzedQUEUE
+        LOOP:
+            if originalqueue is empty: #problem is you can't request too far into the future...
+                request the RIGHT 10 frames (0-10 or 11-20 or 21-30)
+            analyze the 10 frames
+            when ur done with the analyzing all 10 frames:
+                write to sharedmem
+
+            there's 3 things to do:
+            read
+            analyze 
+            write to sharedmem
+            how to write this so I can easily get a 5 sec buffer?
+        '''
+        shared_analysis_dict = args[0]
+        shared_metadata_dict = args[1]
+        appliedcv = args[2]
+        shared_speedtestVAR = args[3]
+        shared_metadata_dict["mp_ready"] = True
+        shared_analyzedVAR = args[4]
+        shared_globalindexVAR = args[5]
+        shared_speedtestKeycountVAR = args[6]
+        shared_analyzedKeycountVAR = args[7]
+        analyzedframecounter = 0
+
+        while True:
+            if "kivy_run_state" in shared_metadata_dict:
+                applytimestart = time.time()
+                if shared_metadata_dict["kivy_run_state"] == False:
+                    print("exiting open_appliedcv", os.getpid(), flush=True)
+                    break
+
+                #init shared dict if keys < 20:
+                # if len(shared_analyzedVAR.keys()) < 20:
+                if len(shared_analyzedVAR) < 5:
+                    #replace all and say it
+                    # for x in range(10):
+                    for x in range(5):
+                        shared_analyzedKeycountVAR["key" + str(x)] = -1
+                        shared_analyzedVAR["frame" + str(x)] = -1
+                    print("reset analysis keys!", flush = True)
+
+                # https://stackoverflow.com/questions/22108488/are-list-comprehensions-and-functional-functions-faster-than-for-loops
+                # As for functional list processing functions: While these are written in C and probably outperform equivalent functions written in Python, they are not necessarily the fastest option. Some speed up is expected if the function is written in C too. But most cases using a lambda (or other Python function), the overhead of repeatedly setting up Python stack frames etc. eats up any savings. Simply doing the same work in-line, without function calls (e.g. a list comprehension instead of map or filter) is often slightly faster.
+                # use map instead? https://wiki.python.org/moin/PythonSpeed/PerformanceTips#Loops
+                # this guy says go to array, ? https://towardsdatascience.com/list-comprehensions-vs-for-loops-it-is-not-what-you-think-34071d4d8207
+                # verdict, just test it out...
+
+                keylist = [x for x in shared_speedtestKeycountVAR.keys() if 'key' in x and shared_speedtestKeycountVAR[x] != -1 and analyzedframecounter < shared_speedtestKeycountVAR[x]]
+                if len(keylist)>0:
+                    # print("why is analyze keylist empty?", keylist, analyzedframecounter,[shared_speedtestKeycountVAR[x] for x in shared_speedtestKeycountVAR.keys() if 'key' in x and shared_speedtestKeycountVAR[x] != -1 and analyzedframecounter < shared_speedtestKeycountVAR[x]], flush = True)
+                    frameref = "frame" + keylist[0].replace("key", '')
+                    # rightframe = shared_speedtestVAR[frameref]
+                    
+                    #convert from bytes to a numpy array
+                    rightframe = np.frombuffer(shared_speedtestVAR[frameref], np.uint8).reshape(1080, 1920, 3)
+                    # rightframe = np.frombuffer(rightframe, np.uint8).copy().reshape(300, 500, 3)
+
+                    #update frame
+                    result = appliedcv(
+                                rightframe,
+                                shared_analysis_dict,
+                                shared_metadata_dict,
+                                shared_globalindexVAR
+                            )
+                    #store bytes again:
+                    shared_analyzedVAR[frameref] = result.tobytes()
+                    #update key:
+                    # print("keyfailed", keylist, keylist[0], shared_analyzedKeycountVAR, shared_speedtestVAR ,flush = True)
+                    shared_analyzedKeycountVAR[keylist[0]] = shared_speedtestKeycountVAR[keylist[0]]
+                    
+                    #update analyzedframecounter so u know if you've analyzed the frame
+                    analyzedframecounter = shared_analyzedKeycountVAR[keylist[0]]
+                    # print("updated in sharedanalyze", type(result), type(rightframe), frameref,analyzedframecounter,keylist[0],flush = True)
+                    # print("sharedanalzye shapes", result.shape, rightframe.shape, flush = True)
+
+                    # actually do your cv function here and stuff your resulting numpy frame in shared_analysis_dict shared memory. You might have to flip the image because IIRC opencv is up to down, left to right, while kivy is down to up, left to right. in any case cv2 flip code 0 is what you want most likely since code 0 is vertical flip (and preserves horizontal axis).
+                applytimeend = time.time()
+                if applytimeend - applytimestart > 0:
+                    if 1 / (applytimeend - applytimestart) < 500:
+                        # print(
+                        #     "is apply lagging? pid, fps", os.getpid(),
+                        #     1 / (applytimeend - applytimestart),
+                        #     flush=True,
+                        # )
+                        pass
+    except Exception as e:
+        print("open_appliedcv died!", e)
+        import traceback
+        print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
 def open_appliedcvTEST(*args):
     try:
         shared_analysis_dict = args[0]
