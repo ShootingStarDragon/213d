@@ -17,8 +17,8 @@ video_path = "Elephants Dream charstart2.webm"  # path to video
 #########################################################################
 
 in_file = open(video_path, "rb") # opening for [r]eading as [b]inary
-in_file.seek(0) #wtf, remember to seek to beginning??
 inputbytes = in_file.read() 
+in_file.seek(0) #wtf, remember to seek to beginning??
 in_file.close()
 
 #HUGE EXAMPLE, capture_stdout = TRUE, https://stackoverflow.com/questions/75224177/ffmpeg-changes-pixel-values-when-reading-and-saving-png-without-modification
