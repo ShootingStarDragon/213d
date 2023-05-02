@@ -9,7 +9,8 @@ import shlex
 # Set GOP size to 20 frames (place key frame every 20 frames - for testing).
 #########################################################################
 W, H = 320, 240 # video dimensions
-video_path = 'video.mp4'  # path to video
+# video_path = 'video.mp4'  # path to video
+video_path = "Elephants Dream charstart2.webm"   # path to video
 sp.run(shlex.split(f'ffmpeg -y -f lavfi -i testsrc=size={W}x{H}:rate=1 -vcodec libx264 -g 20 -crf 17 -pix_fmt yuv420p -t 60 {video_path}'))
 #########################################################################
 
@@ -29,6 +30,12 @@ process = sp.Popen(command, stdout=sp.PIPE, bufsize=10**8)
 # Load individual frames in a loop
 nb_img = H*W*3  # H * W * 3 channels * 1-byte/channel
 
+import time
+starttime = time.time()
+guy1 = cv2.VideoCapture(video_path)
+fps = guy1.get(cv2.CAP_PROP_FPS)
+internal_i = 0
+
 # Read decoded video frames from the PIPE until no more frames to read
 while True:
     # Read decoded video frame (in raw video format) from stdout process.
@@ -42,6 +49,10 @@ while True:
 
     cv2.imshow('img', img)  # Show the image for testing
     cv2.waitKey(1000)
+
+    internal_i += 1
+    currentREALframe = int((time.time() - starttime)/(1/fps))
+    print("what is current frame vs actualframe?", internal_i, currentREALframe )
 
 process.stdout.close()
 process.wait()
