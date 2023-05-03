@@ -809,12 +809,31 @@ def open_media(*args):
 
         print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
 
+def frameblock(*args):
+    '''
+    given partition #, instance, buffersize, tells u the frames to get:
+
+    ex: partitioning frames into A B C blocks (0-9 > A, 10-19> B, 20-39>C, etc) and buffer of 10
+    then you know the partition: A (0)
+    instance: 0
+    then you get (0>9)
+    partition B (1):
+    instance 10 (so the 10th time this is done, index start at 0):
+    110>120
+    '''
+    partitionnumber = args[0]
+    instance = args[1]
+    buffersize = args[2]
+    Ans = [x + partitionnumber*instance for x in range(buffersize)]
+    return Ans
+
+
 def open_cvpipeline(*args):
     try:
         '''
         NEW PLAN:
         use 3 subprocesses(A,B,C) to use opencv to get frames from 1 file (pray it works)
-        then for each subprocesses, request 10 frames (0-10 > A, 11-20> B, 21-30>C, etc)
+        then for each subprocesses, request 10 frames (0-9 > A, 10-19> B, 20-39>C, etc)
         2 queues, 1 naked frame, 1 analyzed frame that is written to sharedmem for kivy to see
         originalQUEUE
         analyzedQUEUE
