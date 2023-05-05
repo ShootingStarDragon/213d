@@ -18,5 +18,5 @@ def frameblock(*args):
     Ans = [x + buffersize*maxpartitions*instance + partitionnumber*buffersize for x in range(buffersize)]
     return Ans
 
-tester = frameblock(2,1,10,3)
+tester = frameblock(1,1,10,3)
 print(tester)
