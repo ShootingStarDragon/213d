@@ -892,6 +892,21 @@ def open_cvpipeline(*args):
                     break
 
                 '''
+                Init shared dict at the beginning instead of checking every while loop
+
+                3 actions: 
+                Read
+                Analyze
+                Write
+
+                Working backwards:
+                Write to shared dict if init OR frames are old
+                Analyze all the time
+                Load frames only if analyze queue is empty (this implicitly checks for time, keeps frames loaded, and stops u from loading too much)
+                this is so much simpler than what I was originally going to do LOL
+
+
+
                 plan:
                 2 dicts:
                 rawqueue
