@@ -809,11 +809,30 @@ def open_media(*args):
 
         print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
 
+# def calcpartition(*args):
+#     '''
+#     idea:
+#     '''
+#     y = (x mod (maxpartition*buf)- x mod buf)/buf
+#     ANS = y -1
+
+# def calcinstance(*arcs):
+#     '''
+#     idea:
+#     '''
+#     instnce = (x - x mod buf - calcpartition(x)*buf)/buf*MAXpartition
+
+# def calcAprime(*args):
+#     '''
+#     idea:
+#     '''
+#     test is A' if instance(x)-instance(test) = 1 AND partition of test and x match
+
 def frameblock(*args):
     '''
     given partition #, instance, buffersize, tells u the frames to get:
 
-    ex: partitioning frames into A B C blocks (0-9 > A, 10-19> B, 20-39>C, etc) and buffer of 10
+    ex: partitioning frames into A B C blocks (0-9 > A, 10-19> B, 20-29>C, etc) and buffer of 10
     then you know the partition: A (0)
     instance: 0
     then you get (0>9)
@@ -824,9 +843,10 @@ def frameblock(*args):
     partitionnumber = args[0]
     instance = args[1]
     buffersize = args[2]
-    Ans = [x + partitionnumber*instance for x in range(buffersize)]
+    maxpartitions = args[3]
+    print("args?", partitionnumber, instance)
+    Ans = [x + buffersize*maxpartitions*instance + partitionnumber*buffersize for x in range(buffersize)]
     return Ans
-
 
 def open_cvpipeline(*args):
     try:
@@ -859,7 +879,10 @@ def open_cvpipeline(*args):
         shared_globalindexVAR = args[5]
         shared_speedtestKeycountVAR = args[6]
         shared_analyzedKeycountVAR = args[7]
+        source = args[8]
         analyzedframecounter = 0
+
+        sourcecap = cv2.VideoCapture(source)
 
         while True:
             if "kivy_run_state" in shared_metadata_dict:
@@ -868,15 +891,35 @@ def open_cvpipeline(*args):
                     print("exiting open_appliedcv", os.getpid(), flush=True)
                     break
 
-                #init shared dict if keys < 20:
-                # if len(shared_analyzedVAR.keys()) < 20:
-                if len(shared_analyzedVAR) < 5:
-                    #replace all and say it
-                    # for x in range(10):
-                    for x in range(5):
-                        shared_analyzedKeycountVAR["key" + str(x)] = -1
-                        shared_analyzedVAR["frame" + str(x)] = -1
-                    print("reset analysis keys!", flush = True)
+                '''
+                plan:
+                2 dicts:
+                rawqueue
+                analyzedqueue
+
+
+                read CORRECT 10 frames and place in raw queue
+                if raw queue > 0:
+                    analyze and get (which also pops from queue)
+                if analyze queue > 0:
+                    write to shareddict and get (which also pops from queue)
+
+                
+                '''
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
                 # https://stackoverflow.com/questions/22108488/are-list-comprehensions-and-functional-functions-faster-than-for-loops
                 # As for functional list processing functions: While these are written in C and probably outperform equivalent functions written in Python, they are not necessarily the fastest option. Some speed up is expected if the function is written in C too. But most cases using a lambda (or other Python function), the overhead of repeatedly setting up Python stack frames etc. eats up any savings. Simply doing the same work in-line, without function calls (e.g. a list comprehension instead of map or filter) is often slightly faster.
@@ -1224,7 +1267,7 @@ class FCVA:
             read_subprocessTEST.start()
 
             cv_subprocess = FCVA_mp.Process(
-                    target=open_appliedcvTEST,
+                    target=open_cvpipeline,
                     args=(
                         shared_analysis_dict,
                         shared_metadata_dict,
@@ -1233,40 +1276,56 @@ class FCVA:
                         shared_analyzedA,
                         shared_globalindex,
                         shared_speedtestAKeycount,
-                        shared_analyzedAKeycount
+                        shared_analyzedAKeycount,
+                        self.source
                     ),
                 )
             cv_subprocess.start()
+            
+            # cv_subprocess = FCVA_mp.Process(
+            #         target=open_appliedcvTEST,
+            #         args=(
+            #             shared_analysis_dict,
+            #             shared_metadata_dict,
+            #             self.appliedcv,
+            #             shared_speedtestA,
+            #             shared_analyzedA,
+            #             shared_globalindex,
+            #             shared_speedtestAKeycount,
+            #             shared_analyzedAKeycount
+            #         ),
+            #     )
+            # cv_subprocess.start()
 
-            cv_subprocessB = FCVA_mp.Process(
-                    target=open_appliedcvTEST,
-                    args=(
-                        shared_analysis_dict,
-                        shared_metadata_dict,
-                        self.appliedcv,
-                        shared_speedtestB,
-                        shared_analyzedB,
-                        shared_globalindex,
-                        shared_speedtestBKeycount,
-                        shared_analyzedBKeycount
-                    ),
-                )
-            cv_subprocessB.start()
+            # cv_subprocessB = FCVA_mp.Process(
+            #         target=open_appliedcvTEST,
+            #         args=(
+            #             shared_analysis_dict,
+            #             shared_metadata_dict,
+            #             self.appliedcv,
+            #             shared_speedtestB,
+            #             shared_analyzedB,
+            #             shared_globalindex,
+            #             shared_speedtestBKeycount,
+            #             shared_analyzedBKeycount
+            #         ),
+            #     )
+            # cv_subprocessB.start()
 
-            cv_subprocessC = FCVA_mp.Process(
-                    target=open_appliedcvTEST,
-                    args=(
-                        shared_analysis_dict,
-                        shared_metadata_dict,
-                        self.appliedcv,
-                        shared_speedtestC,
-                        shared_analyzedC,
-                        shared_globalindex,
-                        shared_speedtestCKeycount,
-                        shared_analyzedCKeycount
-                    ),
-                )
-            cv_subprocessC.start()
+            # cv_subprocessC = FCVA_mp.Process(
+            #         target=open_appliedcvTEST,
+            #         args=(
+            #             shared_analysis_dict,
+            #             shared_metadata_dict,
+            #             self.appliedcv,
+            #             shared_speedtestC,
+            #             shared_analyzedC,
+            #             shared_globalindex,
+            #             shared_speedtestCKeycount,
+            #             shared_analyzedCKeycount
+            #         ),
+            #     )
+            # cv_subprocessC.start()
 
             if not hasattr(self, "fps"):
                 # default to 30fps, else set blit buffer speed to 1/30 sec
