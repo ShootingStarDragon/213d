@@ -857,7 +857,7 @@ def open_cvpipeline(*args):
         shared_speedtestVAR = args[3]
         shared_metadata_dict["mp_ready"] = True
         shared_analyzedVAR = args[4]
-        shared_globalindexVAR = args[5]
+        shared_globalindexVAR = args[5] #self.shared_globalindexVAR["starttime"]
         shared_speedtestKeycountVAR = args[6]
         shared_analyzedKeycountVAR = args[7]
         source = args[8]
@@ -865,6 +865,7 @@ def open_cvpipeline(*args):
         instance = args[10]
         buffersize = args[11]
         maxpartitions = args[12]
+        fps = args[13]
 
         sourcecap = cv2.VideoCapture(source)
         internal_framecount = 0
@@ -904,46 +905,52 @@ def open_cvpipeline(*args):
                 
                 Write to shared dict if init OR frames are old
                 '''
-                #building incrementally:
-                #just load the right 10 frames as time passes:
-                #partition #, instance, buffersize, maxpartitions
+                #make sure things have started:
+                if "starttime" in shared_globalindexVAR:
 
-                fprint("rawqueue size?", raw_queue.qsize())
-                if raw_queue.qsize() == 0:
-                    #get the right framecount:
-                    framelist = frameblock(partitionnumber,instance_count,buffersize,maxpartitions)
-                    
-                    instance_count += 1
-                    for x in range(buffersize*maxpartitions):
-                        (ret, framedata) = sourcecap.read()
-                        #compare internal framecount to see if it's a frame that this subprocess is supposed to analyze
-                        # fprint("why is it passing", ret, internal_framecount, framelist, internal_framecount in framelist, x, raw_queueKEYS.qsize())
-                        if ret and internal_framecount in framelist:
-                            raw_queue.put(framedata)
-                            # fprint("framelist?", framelist, framelist[x % buffersize])
-                            raw_queueKEYS.put(framelist[x % buffersize])
-                        internal_framecount += 1
-                
-                # fprint("why failing?",raw_queue.qsize(), analyzed_queue.qsize(), raw_queue.qsize() > 0 and analyzed_queue.qsize() == 0)
-                if raw_queue.qsize() > 0 and analyzed_queue.qsize() == 0:
-                    #analyze all the frames and write to sharedmem:
-                    for x in range(raw_queue.qsize()):
-                        result = appliedcv(
-                                    raw_queue.get(),
-                                )
-                        # fprint("result ok?", type(result))
-                        analyzed_queue.put(result.tobytes())
-                        analyzed_queueKEYS.put(raw_queueKEYS.get())
-                    
-                #write to sharedmem:
-                # fprint("qsize??", analyzed_queue.qsize())
-                if analyzed_queue.qsize() == buffersize:
-                    for x in range(buffersize):
-                        shared_analyzedVAR['frame'+str(x)] = analyzed_queue.get()
-                        shared_analyzedKeycountVAR['key'+str(x)] = analyzed_queueKEYS.get()
+                    #building incrementally:
+                    #just load the right 10 frames as time passes:
+                    #partition #, instance, buffersize, maxpartitions
 
-                time.sleep(0.5)
-                print("what are analyzed keys?", shared_analyzedKeycountVAR.values(), flush = True)
+                    fprint("rawqueue size?", raw_queue.qsize())
+                    if raw_queue.qsize() == 0:
+                        #get the right framecount:
+                        framelist = frameblock(partitionnumber,instance_count,buffersize,maxpartitions)
+                        
+                        instance_count += 1
+                        for x in range(buffersize*maxpartitions):
+                            (ret, framedata) = sourcecap.read()
+                            #compare internal framecount to see if it's a frame that this subprocess is supposed to analyze
+                            # fprint("why is it passing", ret, internal_framecount, framelist, internal_framecount in framelist, x, raw_queueKEYS.qsize())
+                            if ret and internal_framecount in framelist:
+                                raw_queue.put(framedata)
+                                # fprint("framelist?", framelist, framelist[x % buffersize])
+                                raw_queueKEYS.put(framelist[x % buffersize])
+                            internal_framecount += 1
+                    
+                    # fprint("why failing?",raw_queue.qsize(), analyzed_queue.qsize(), raw_queue.qsize() > 0 and analyzed_queue.qsize() == 0)
+                    if raw_queue.qsize() > 0 and analyzed_queue.qsize() == 0:
+                        #analyze all the frames and write to sharedmem:
+                        for x in range(raw_queue.qsize()):
+                            result = appliedcv(
+                                        raw_queue.get(),
+                                    )
+                            # fprint("result ok?", type(result))
+                            analyzed_queue.put(result.tobytes())
+                            analyzed_queueKEYS.put(raw_queueKEYS.get())
+                        
+                    #write to sharedmem:
+                    # fprint("qsize??", analyzed_queue.qsize())
+
+                    current_framenumber = int((time.time() - shared_globalindexVAR["starttime"])/(1/fps))
+
+                    if analyzed_queue.qsize() == buffersize and max(shared_analyzedKeycountVAR.values()) < current_framenumber:
+                        for x in range(buffersize):
+                            shared_analyzedVAR['frame'+str(x)] = analyzed_queue.get()
+                            shared_analyzedKeycountVAR['key'+str(x)] = analyzed_queueKEYS.get()
+
+                    time.sleep(0.5)
+                    print("what are analyzed keys?", shared_analyzedKeycountVAR.values(), flush = True)
 
 
 
@@ -1326,6 +1333,7 @@ class FCVA:
                         0, #instance of the block of relevant frames
                         buffersize, #buffersize AKA how long the internal queues should be
                         3, #max # of partitions/subprocesses that divide up the video sequence
+                        self.fps,
                     ),
                 )
             cv_subprocess.start()
