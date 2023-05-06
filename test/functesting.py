@@ -1,6 +1,6 @@
 def frameblock(*args):
     '''
-    given partition #, instance, buffersize, tells u the frames to get:
+    given partition #, instance, buffersize, maxpartitions tells u the frames to get:
 
     ex: partitioning frames into A B C blocks (0-9 > A, 10-19> B, 20-29>C, etc) and buffer of 10
     then you know the partition: A (0)
