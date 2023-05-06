@@ -3,7 +3,7 @@ import cv2
 import time
 import os, sys
 import numpy as np
-from FCVAutils import EVcheck
+from FCVAutils import EVcheck, fprint
 
 #this is the test version, gonna really mess this up testing
 
@@ -911,13 +911,15 @@ def open_cvpipeline(*args):
                 if raw_queue.qsize() == 0:
                     #get the right framecount:
                     framelist = frameblock(1,instance_count,10,3)
+                    
                     instance_count += 1
-                    for x in range(buffersize*maxpartitions):
+                    for x in range(buffersize*maxpartitions-1):
                         (ret, framedata) = sourcecap.read()
                         internal_framecount += 1
                         #compare internal framecount to see if it's a frame that this subprocess is supposed to analyze
                         if ret and internal_framecount in framelist:
                             raw_queue.put(framedata)
+                            fprint("framelist?", framelist, x)
                             raw_queueKEYS.put(framelist[x])
                 
                 if raw_queue.qsize() > 0 and analyzed_queue.qsize() == 0:

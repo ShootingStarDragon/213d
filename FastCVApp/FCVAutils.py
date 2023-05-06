@@ -1,4 +1,7 @@
 
+def fprint(*args):
+	print(*args, flush = True)
+
 def EVcheck(dictVAR, keynameVAR, desiredVAL):
 	'''
 	EVcheck stands for existence value check since it checks if a key exists (so no keyerror) then gets the value
