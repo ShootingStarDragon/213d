@@ -915,23 +915,27 @@ def open_cvpipeline(*args):
                     instance_count += 1
                     for x in range(buffersize*maxpartitions-1):
                         (ret, framedata) = sourcecap.read()
-                        internal_framecount += 1
                         #compare internal framecount to see if it's a frame that this subprocess is supposed to analyze
+                        fprint("why is it passing", ret, internal_framecount, framelist, internal_framecount in framelist, x, raw_queueKEYS.qsize())
                         if ret and internal_framecount in framelist:
                             raw_queue.put(framedata)
-                            fprint("framelist?", framelist, x)
-                            raw_queueKEYS.put(framelist[x])
+                            # fprint("framelist?", framelist, framelist[x % buffersize])
+                            raw_queueKEYS.put(framelist[x % buffersize])
+                        internal_framecount += 1
                 
+                fprint("why failing?",raw_queue.qsize(), analyzed_queue.qsize(), raw_queue.qsize() > 0 and analyzed_queue.qsize() == 0)
                 if raw_queue.qsize() > 0 and analyzed_queue.qsize() == 0:
                     #analyze all the frames and write to sharedmem:
                     for x in range(raw_queue.qsize()):
                         result = appliedcv(
                                     raw_queue.get(),
                                 )
-                    analyzed_queue.put(result.tobytes())
-                    analyzed_queueKEYS.put(raw_queueKEYS.get())
+                        fprint("result ok?", type(result))
+                        analyzed_queue.put(result.tobytes())
+                        analyzed_queueKEYS.put(raw_queueKEYS.get())
                     
                 #write to sharedmem:
+                fprint("qsize??", analyzed_queue.qsize())
                 if analyzed_queue.qsize() == buffersize:
                     for x in range(buffersize):
                         shared_analyzedVAR['frame'+str(x)] = analyzed_queue.get()
