@@ -825,7 +825,7 @@ def frameblock(*args):
     instance = args[1]
     buffersize = args[2]
     maxpartitions = args[3]
-    print("args?", partitionnumber, instance)
+    print("frameblock args?", partitionnumber, instance)
     Ans = [x + buffersize*maxpartitions*instance + partitionnumber*buffersize for x in range(buffersize)]
     return Ans
 
@@ -908,34 +908,35 @@ def open_cvpipeline(*args):
                 #just load the right 10 frames as time passes:
                 #partition #, instance, buffersize, maxpartitions
 
+                fprint("rawqueue size?", raw_queue.qsize())
                 if raw_queue.qsize() == 0:
                     #get the right framecount:
-                    framelist = frameblock(1,instance_count,10,3)
+                    framelist = frameblock(partitionnumber,instance_count,buffersize,maxpartitions)
                     
                     instance_count += 1
-                    for x in range(buffersize*maxpartitions-1):
+                    for x in range(buffersize*maxpartitions):
                         (ret, framedata) = sourcecap.read()
                         #compare internal framecount to see if it's a frame that this subprocess is supposed to analyze
-                        fprint("why is it passing", ret, internal_framecount, framelist, internal_framecount in framelist, x, raw_queueKEYS.qsize())
+                        # fprint("why is it passing", ret, internal_framecount, framelist, internal_framecount in framelist, x, raw_queueKEYS.qsize())
                         if ret and internal_framecount in framelist:
                             raw_queue.put(framedata)
                             # fprint("framelist?", framelist, framelist[x % buffersize])
                             raw_queueKEYS.put(framelist[x % buffersize])
                         internal_framecount += 1
                 
-                fprint("why failing?",raw_queue.qsize(), analyzed_queue.qsize(), raw_queue.qsize() > 0 and analyzed_queue.qsize() == 0)
+                # fprint("why failing?",raw_queue.qsize(), analyzed_queue.qsize(), raw_queue.qsize() > 0 and analyzed_queue.qsize() == 0)
                 if raw_queue.qsize() > 0 and analyzed_queue.qsize() == 0:
                     #analyze all the frames and write to sharedmem:
                     for x in range(raw_queue.qsize()):
                         result = appliedcv(
                                     raw_queue.get(),
                                 )
-                        fprint("result ok?", type(result))
+                        # fprint("result ok?", type(result))
                         analyzed_queue.put(result.tobytes())
                         analyzed_queueKEYS.put(raw_queueKEYS.get())
                     
                 #write to sharedmem:
-                fprint("qsize??", analyzed_queue.qsize())
+                # fprint("qsize??", analyzed_queue.qsize())
                 if analyzed_queue.qsize() == buffersize:
                     for x in range(buffersize):
                         shared_analyzedVAR['frame'+str(x)] = analyzed_queue.get()
