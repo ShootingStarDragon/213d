@@ -162,30 +162,31 @@ FCVA_screen_manager: #remember to return a root widget
                     self.index = 0
                 
                 #figure out where 
-                self.index is the current realtime frame btw
+                # self.index is the current realtime frame btw
                 
                 # initialize the framequeue onstart
                 # self.frameQ
                 
                 # load as much as you can:
                 # check if there's enough space for 1 bufferlen
-                if self.frameQ.qsize() < self.bufferlen*(self.cvpartitions - 1) :
-                    #read in only 1 block sequence so there's no stutter
-                    #given self.internal_framecount, what is the next block to read in? -> 0>9... at 9, read 9>19, etc...
-                    if find the next framekeys in the list of all the keys AND framekeys are the entire block (so we know analysis is all done): 
-                        read it in sequence and add to frameQ
-                        +1 on internal read data
-                        self.internal_framecount += 1
+                # if self.frameQ.qsize() < self.bufferlen*(self.cvpartitions - 1) :
+                #     #read in only 1 block sequence so there's no stutter
+                #     #given self.internal_framecount, what is the next block to read in? -> 0>9... at 9, read 9>19, etc...
+                #     if find the next framekeys in the list of all the keys AND framekeys are the entire block (so we know analysis is all done): 
+                #         read it in sequence and add to frameQ
+                #         +1 on internal read data
+                #         self.internal_framecount += 1
+                    
 
 
-                how to load?
-                NOT CORRECT BECAUSE it's a waste of time to read correct block, it's better to read as much as you can and stuff into a queue imo
-                    figure out which sharedmem self index is in
-                    load that block of frames,
-                if possible load the future block of frames as well
+                # how to load?
+                # NOT CORRECT BECAUSE it's a waste of time to read correct block, it's better to read as much as you can and stuff into a queue imo
+                #     figure out which sharedmem self index is in
+                #     load that block of frames,
+                # if possible load the future block of frames as well
 
-                else: pull from queue and display it:
-                if queuesize is empty, say so
+                # else: pull from queue and display it:
+                # if queuesize is empty, say so
 
 
                 #manually code this for now:
@@ -1542,7 +1543,7 @@ class FCVA:
             bufferlen = 10
             cvpartitions = 3
             #init shared dicts:
-            for x in range(buffersize):
+            for x in range(bufferlen):
                 shared_analyzedAKeycount["key" + str(x)] = -1
                 shared_analyzedA["frame" + str(x)] = -1
             
@@ -1561,7 +1562,7 @@ class FCVA:
                         self.source,
                         0, #partition #, starts at 0
                         0, #instance of the block of relevant frames
-                        buffersize, #buffersize AKA how long the internal queues should be
+                        bufferlen, #bufferlen AKA how long the internal queues should be
                         cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
                         self.fps,
                     ),
