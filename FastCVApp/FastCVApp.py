@@ -170,7 +170,7 @@ FCVA_screen_manager: #remember to return a root widget
                 # load as much as you can:
                 # check if there's enough space for 1 bufferlen
                 if self.frameQ.qsize() < self.bufferlen*(self.cvpartitions - 1) :
-                    fprint("checking keys dict values", self.shared_analyzedBKeycountVAR.values(), self.index)
+                    fprint("checking keys dict values", self.shared_analyzedAKeycountVAR.values(), self.shared_analyzedBKeycountVAR.values(), self.shared_analyzedCKeycountVAR.values(), self.index)
                 #     #read in only 1 block sequence so there's no stutter
                 #     #given self.internal_framecount, what is the next block to read in? -> 0>9... at 9, read 9>19, etc...
                 #     if find the next framekeys in the list of all the keys AND framekeys are the entire block (so we know analysis is all done): 
