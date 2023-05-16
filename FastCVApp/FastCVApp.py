@@ -171,6 +171,18 @@ FCVA_screen_manager: #remember to return a root widget
                 # check if there's enough space for 1 bufferlen
                 if self.frameQ.qsize() < self.bufferlen*(self.cvpartitions - 1) :
                     fprint("checking keys dict values", self.shared_analyzedAKeycountVAR.values(), self.shared_analyzedBKeycountVAR.values(), self.shared_analyzedCKeycountVAR.values(), self.index)
+                    #PLAN:
+                    #copy dictionary and time it
+                    #https://www.programiz.com/python-programming/methods/dictionary/copy
+                    # https://stackoverflow.com/questions/2465921/how-to-copy-a-dictionary-and-only-edit-the-copy
+                    timeog1 = time.time()
+                    # newdict = self.shared_analyzedAVAR.copy()
+                    newdict = self.shared_analyzedAVAR[self.shared_analyzedAVAR.keys()[0]]
+                    newdict2 = self.shared_analyzedAVAR[self.shared_analyzedAVAR.keys()[1]]
+                    # fprint("keys???", self.shared_analyzedAVAR.values())
+                    timeog2 = time.time()
+                    fprint("how long to load?", timeog2 - timeog1, sys.getsizeof(newdict))
+                    #then think...
                 #     #read in only 1 block sequence so there's no stutter
                 #     #given self.internal_framecount, what is the next block to read in? -> 0>9... at 9, read 9>19, etc...
                 #     if find the next framekeys in the list of all the keys AND framekeys are the entire block (so we know analysis is all done): 
@@ -268,6 +280,7 @@ FCVA_screen_manager: #remember to return a root widget
                 else:
                     #frame is already in bytes, just reshape it then reset to bytes again
                     buf = frame
+                    # buf = frame.tobytes()
                     frame = np.frombuffer(frame, np.uint8).copy().reshape(1080, 1920, 3)
                     #TURN THIS BACK ON
                     '''
@@ -1168,6 +1181,7 @@ def open_cvpipeline(*args):
                                     )
                             # fprint("result ok?", type(result))
                             analyzed_queue.put(result.tobytes())
+                            # analyzed_queue.put(result)
                             analyzed_queueKEYS.put(raw_queueKEYS.get())
                         
                     #write to sharedmem:
