@@ -169,7 +169,8 @@ FCVA_screen_manager: #remember to return a root widget
                 
                 # load as much as you can:
                 # check if there's enough space for 1 bufferlen
-                # if self.frameQ.qsize() < self.bufferlen*(self.cvpartitions - 1) :
+                if self.frameQ.qsize() < self.bufferlen*(self.cvpartitions - 1) :
+                    fprint("checking keys dict values", self.shared_analyzedBKeycountVAR.values(), self.index)
                 #     #read in only 1 block sequence so there's no stutter
                 #     #given self.internal_framecount, what is the next block to read in? -> 0>9... at 9, read 9>19, etc...
                 #     if find the next framekeys in the list of all the keys AND framekeys are the entire block (so we know analysis is all done): 
@@ -1546,9 +1547,15 @@ class FCVA:
             for x in range(bufferlen):
                 shared_analyzedAKeycount["key" + str(x)] = -1
                 shared_analyzedA["frame" + str(x)] = -1
+
+                shared_analyzedBKeycount["key" + str(x)] = -1
+                shared_analyzedB["frame" + str(x)] = -1
+
+                shared_analyzedCKeycount["key" + str(x)] = -1
+                shared_analyzedC["frame" + str(x)] = -1
             
 
-            cv_subprocess = FCVA_mp.Process(
+            cv_subprocessA = FCVA_mp.Process(
                     target=open_cvpipeline,
                     args=(
                         shared_analysis_dict,
@@ -1567,7 +1574,49 @@ class FCVA:
                         self.fps,
                     ),
                 )
-            cv_subprocess.start()
+            cv_subprocessA.start()
+
+            cv_subprocessB = FCVA_mp.Process(
+                    target=open_cvpipeline,
+                    args=(
+                        shared_analysis_dict,
+                        shared_metadata_dict,
+                        self.appliedcv,
+                        shared_speedtestB,
+                        shared_analyzedB,
+                        shared_globalindex,
+                        shared_speedtestBKeycount,
+                        shared_analyzedBKeycount,
+                        self.source,
+                        1, #partition #, starts at 0
+                        0, #instance of the block of relevant frames
+                        bufferlen, #bufferlen AKA how long the internal queues should be
+                        cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
+                        self.fps,
+                    ),
+                )
+            cv_subprocessB.start()
+
+            cv_subprocessC = FCVA_mp.Process(
+                    target=open_cvpipeline,
+                    args=(
+                        shared_analysis_dict,
+                        shared_metadata_dict,
+                        self.appliedcv,
+                        shared_speedtestC,
+                        shared_analyzedC,
+                        shared_globalindex,
+                        shared_speedtestCKeycount,
+                        shared_analyzedCKeycount,
+                        self.source,
+                        2, #partition #, starts at 0
+                        0, #instance of the block of relevant frames
+                        bufferlen, #bufferlen AKA how long the internal queues should be
+                        cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
+                        self.fps,
+                    ),
+                )
+            cv_subprocessC.start()
             
             # cv_subprocess = FCVA_mp.Process(
             #         target=open_appliedcvTEST,
