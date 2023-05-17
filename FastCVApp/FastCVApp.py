@@ -180,7 +180,8 @@ FCVA_screen_manager: #remember to return a root widget
                     # newdict = self.shared_analyzedAVAR.copy()
                     # newdict = blosc2.unpack(self.shared_analyzedAVAR[self.shared_analyzedAVAR.keys()[0]])
                     newdict = self.shared_analyzedAVAR[self.shared_analyzedAVAR.keys()[0]]
-                    newdict = blosc2.unpack(newdict)
+                    if newdict != -1:
+                        newdict = blosc2.unpack(newdict)
                     # newdict2 = self.shared_analyzedAVAR[self.shared_analyzedAVAR.keys()[1]]
                     # fprint("keys???", self.shared_analyzedAVAR.values())
                     timeog2 = time.time()
