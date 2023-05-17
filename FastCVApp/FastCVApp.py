@@ -170,6 +170,42 @@ FCVA_screen_manager: #remember to return a root widget
                 
                 # load as much as you can:
                 # check if there's enough space for 1 bufferlen
+                
+                fprint("is cv subprocess keeping up?", self.index, self.shared_analyzedAKeycountVAR.values(),self.shared_analyzedBKeycountVAR.values(),self.shared_analyzedCKeycountVAR.values())
+                #cheat for rn, just get current frame:
+                #know the current framenumber
+                #get the right shareddict https://www.geeksforgeeks.org/python-get-key-from-value-in-dictionary/#
+                # https://stackoverflow.com/questions/8023306/get-key-by-value-in-dictionary
+                # fprint("index in values?A",  self.index, self.shared_analyzedAKeycountVAR.values(), self.index in self.shared_analyzedAKeycountVAR.values())
+                if self.index in self.shared_analyzedAKeycountVAR.values():
+                    correctkey = list(self.shared_analyzedAKeycountVAR.keys())[list(self.shared_analyzedAKeycountVAR.values()).index(self.index)]
+                    fprint("correctkey?", correctkey)
+                    # if len(correctkey) > 0:
+                    frameref = "frame" + correctkey.replace("key",'')
+                    frame = self.shared_analyzedAVAR[frameref]
+                
+
+                # fprint("index in values?B",  self.index, self.shared_analyzedBKeycountVAR.values(), self.index in self.shared_analyzedBKeycountVAR.values())
+                if self.index in self.shared_analyzedBKeycountVAR.values():
+                    correctkey = list(self.shared_analyzedBKeycountVAR.keys())[list(self.shared_analyzedBKeycountVAR.values()).index(self.index)]
+                    # fprint("correctkey?", correctkey)
+                    # if len(correctkey) > 0:
+                    frameref = "frame" + correctkey.replace("key",'')
+                    frame = self.shared_analyzedBVAR[frameref]
+
+                # fprint("index in values?C",  self.index, self.shared_analyzedCKeycountVAR.values(), self.index in self.shared_analyzedCKeycountVAR.values())
+                if self.index in self.shared_analyzedCKeycountVAR.values():
+                    correctkey = list(self.shared_analyzedCKeycountVAR.keys())[list(self.shared_analyzedCKeycountVAR.values()).index(self.index)]
+                    # fprint("correctkey?", correctkey)
+                    # if len(correctkey) > 0:
+                    frameref = "frame" + correctkey.replace("key",'')
+                    frame = self.shared_analyzedCVAR[frameref]
+
+
+                #display 
+                # correctkey
+                
+                '''
                 if self.frameQ.qsize() < self.bufferlen*(self.cvpartitions - 1) :
                     fprint("checking keys dict values", self.shared_analyzedAKeycountVAR.values(), self.shared_analyzedBKeycountVAR.values(), self.shared_analyzedCKeycountVAR.values(), self.index)
                     #PLAN:
@@ -186,7 +222,8 @@ FCVA_screen_manager: #remember to return a root widget
                     # fprint("keys???", self.shared_analyzedAVAR.values())
                     timeog2 = time.time()
                     fprint("how long to load?", timeog2 - timeog1, sys.getsizeof(newdict))
-
+                '''
+                
 
                     #then think...
                 #     #read in only 1 block sequence so there's no stutter
@@ -279,88 +316,95 @@ FCVA_screen_manager: #remember to return a root widget
                 # # frame = dummyframe
                 # # keyref = [[]]
                 
-                # # if frame is None:
+                # if frame is None:
                 # if keyref == []:
                 #     # print("frame ded")
                 #     pass
                 # else:
-                #     #frame is already in bytes, just reshape it then reset to bytes again
-                #     buf = frame
-                #     # buf = frame.tobytes()
-                #     frame = np.frombuffer(frame, np.uint8).copy().reshape(1080, 1920, 3)
-                #     #TURN THIS BACK ON
-                #     '''
-                #     # complicated way of safely checking if a value may or may not exist, then get that value:
-                #     existence_check = [
-                #         frame.shape[x] for x in range(0, len(frame.shape)) if x == 2
-                #     ]
-                #     # only valid dimensions are if pixels are 3 (RGB) or 4 (RGBA, but u have to also set the colorfmt)
-                #     if [x for x in existence_check if x == 3 or x == 4] == []:
-                #         raise Exception(
-                #             "check your numpy dimensions! should be height x width x 3/4: like  (1920,1080,3): ",
-                #             frame.shape, frame
-                #         )
-                #     '''
-                #     # buf = frame.tobytes()
+                try:
+                    #frame is already in bytes, just reshape it then reset to bytes again
+                    frame = blosc2.unpack(frame)
+                    buf = frame.tobytes()
+                    # buf = frame.tobytes()
+                    frame = np.frombuffer(frame, np.uint8).copy().reshape(1080, 1920, 3)
+                    #TURN THIS BACK ON
+                    '''
+                    # complicated way of safely checking if a value may or may not exist, then get that value:
+                    existence_check = [
+                        frame.shape[x] for x in range(0, len(frame.shape)) if x == 2
+                    ]
+                    # only valid dimensions are if pixels are 3 (RGB) or 4 (RGBA, but u have to also set the colorfmt)
+                    if [x for x in existence_check if x == 3 or x == 4] == []:
+                        raise Exception(
+                            "check your numpy dimensions! should be height x width x 3/4: like  (1920,1080,3): ",
+                            frame.shape, frame
+                        )
+                    '''
+                    # buf = frame.tobytes()
                     
-                #     # # check for existence of colorfmt in shared_metadata_dict, then if so, set colorfmt:
-                #     # formatoption = [
-                #     #     shared_metadata_dict[x]
-                #     #     for x in shared_metadata_dict.keys()
-                #     #     if x == "colorfmt"
-                #     # ]
-                #     # if len(formatoption) != 0:
-                #     #     self.colorfmtval = formatoption[0]
-                #     # else:
-                #     #     # default to bgr
-                #     #     self.colorfmtval = "bgr"
+                    # # check for existence of colorfmt in shared_metadata_dict, then if so, set colorfmt:
+                    # formatoption = [
+                    #     shared_metadata_dict[x]
+                    #     for x in shared_metadata_dict.keys()
+                    #     if x == "colorfmt"
+                    # ]
+                    # if len(formatoption) != 0:
+                    #     self.colorfmtval = formatoption[0]
+                    # else:
+                    #     # default to bgr
+                    #     self.colorfmtval = "bgr"
 
-                #     self.colorfmtval = "bgr"
+                    self.colorfmtval = "bgr"
 
-                #     # texture documentation: https://github.com/kivy/kivy/blob/master/kivy/graphics/texture.pyx
-                #     # blit to texture
-                #     # blit buffer example: https://stackoverflow.com/questions/61122285/kivy-camera-application-with-opencv-in-android-shows-black-screen
+                    # texture documentation: https://github.com/kivy/kivy/blob/master/kivy/graphics/texture.pyx
+                    # blit to texture
+                    # blit buffer example: https://stackoverflow.com/questions/61122285/kivy-camera-application-with-opencv-in-android-shows-black-screen
 
-                #     # I think creating a new texture is lagging the app, opencv reads the file faster than the video ends
-                #     # reference this, u need a reload observer: https://stackoverflow.com/questions/51546327/in-kivy-is-there-a-way-to-dynamically-change-the-shape-of-a-texture
-                #     # for later, if I need to clear a texture this is the reference: https://stackoverflow.com/questions/55099463/how-to-update-a-texture-from-array-in-kivy
+                    # I think creating a new texture is lagging the app, opencv reads the file faster than the video ends
+                    # reference this, u need a reload observer: https://stackoverflow.com/questions/51546327/in-kivy-is-there-a-way-to-dynamically-change-the-shape-of-a-texture
+                    # for later, if I need to clear a texture this is the reference: https://stackoverflow.com/questions/55099463/how-to-update-a-texture-from-array-in-kivy
 
-                #     # if hasattr(self, "texture1"):
-                #     #     print("texture size?", self.texture1.size[0] != frame.shape[1] and self.texture1.size[1] != frame.shape[0])
-                #     #     if (
-                #     #         self.texture1.size[0] != frame.shape[1]
-                #     #         and self.texture1.size[1] != frame.shape[0]
-                #     #     ):
-                #     #         print("texture size changed!", self.texture1.size)
-                #     #         self.texture1 = Texture.create(
-                #     #             size=(frame.shape[1], frame.shape[0]),
-                #     #             colorfmt=self.colorfmtval,
-                #     #         )
-                #     #         self.texture1.add_reload_observer(self.populate_texture)
-                #     #     else:
-                #     #         print("populating ok texture", flush= True)
-                #     #         self.populate_texture(self.texture1, buf)
-                #     # else:
-                #     #     print("notexture", flush= True)
-                #     #     self.texture1 = Texture.create(
-                #     #         size=(frame.shape[1], frame.shape[0]), colorfmt=self.colorfmtval
-                #     #     )
-                #     #     self.texture1.blit_buffer(
-                #     #         buf, colorfmt=self.colorfmtval, bufferfmt="ubyte"
-                #     #     )
-                #     #     self.texture1.add_reload_observer(self.populate_texture)
+                    # if hasattr(self, "texture1"):
+                    #     print("texture size?", self.texture1.size[0] != frame.shape[1] and self.texture1.size[1] != frame.shape[0])
+                    #     if (
+                    #         self.texture1.size[0] != frame.shape[1]
+                    #         and self.texture1.size[1] != frame.shape[0]
+                    #     ):
+                    #         print("texture size changed!", self.texture1.size)
+                    #         self.texture1 = Texture.create(
+                    #             size=(frame.shape[1], frame.shape[0]),
+                    #             colorfmt=self.colorfmtval,
+                    #         )
+                    #         self.texture1.add_reload_observer(self.populate_texture)
+                    #     else:
+                    #         print("populating ok texture", flush= True)
+                    #         self.populate_texture(self.texture1, buf)
+                    # else:
+                    #     print("notexture", flush= True)
+                    #     self.texture1 = Texture.create(
+                    #         size=(frame.shape[1], frame.shape[0]), colorfmt=self.colorfmtval
+                    #     )
+                    #     self.texture1.blit_buffer(
+                    #         buf, colorfmt=self.colorfmtval, bufferfmt="ubyte"
+                    #     )
+                    #     self.texture1.add_reload_observer(self.populate_texture)
 
-                #     # print("blitting to texture index:", self.index)
+                    # print("blitting to texture index:", self.index)
 
-                #     self.texture1 = Texture.create(
-                #         size=(frame.shape[1], frame.shape[0]), colorfmt=self.colorfmtval
-                #     )
-                #     self.texture1.blit_buffer(
-                #         buf, colorfmt=self.colorfmtval, bufferfmt="ubyte"
-                #     )
-                #     App.get_running_app().root.get_screen("start_screen_name").ids[
-                #         "image_textureID"
-                #     ].texture = self.texture1
+                    self.texture1 = Texture.create(
+                        size=(frame.shape[1], frame.shape[0]), colorfmt=self.colorfmtval
+                    )
+                    self.texture1.blit_buffer(
+                        buf, colorfmt=self.colorfmtval, bufferfmt="ubyte"
+                    )
+                    App.get_running_app().root.get_screen("start_screen_name").ids[
+                        "image_textureID"
+                    ].texture = self.texture1
+                except Exception as e: 
+                    print("blitting died!", e, flush=True)
+                    import traceback
+
+                    print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
             self.newt = time.time()
             if hasattr(self, 'newt'):
                 if self.newt - timeog > 0 and (1/(self.newt- timeog)) < 200:
@@ -1164,6 +1208,7 @@ def open_cvpipeline(*args):
 
                     fprint("rawqueue size?", raw_queue.qsize())
                     if raw_queue.qsize() == 0:
+                        timex = time.time()
                         #get the right framecount:
                         framelist = frameblock(partitionnumber,instance_count,buffersize,maxpartitions)
                         
@@ -1177,8 +1222,11 @@ def open_cvpipeline(*args):
                                 # fprint("framelist?", framelist, framelist[x % buffersize])
                                 raw_queueKEYS.put(framelist[x % buffersize])
                             internal_framecount += 1
+                        timey = time.time()
+                        fprint("how long to take frameblock?", timey - timex)
                     
                     # fprint("why failing?",raw_queue.qsize(), analyzed_queue.qsize(), raw_queue.qsize() > 0 and analyzed_queue.qsize() == 0)
+                    timea = time.time()
                     if raw_queue.qsize() > 0 and analyzed_queue.qsize() == 0:
                         #analyze all the frames and write to sharedmem:
                         for x in range(raw_queue.qsize()):
@@ -1193,7 +1241,8 @@ def open_cvpipeline(*args):
                             analyzed_queue.put(result_compressed)
                             # analyzed_queue.put(result)
                             analyzed_queueKEYS.put(raw_queueKEYS.get())
-                        
+                    timeb = time.time()
+                    # fprint("how long to analyze all frames?", timeb - timea)    
                     #write to sharedmem:
                     # fprint("qsize??", analyzed_queue.qsize())
 
@@ -1204,7 +1253,7 @@ def open_cvpipeline(*args):
                             shared_analyzedVAR['frame'+str(x)] = analyzed_queue.get()
                             shared_analyzedKeycountVAR['key'+str(x)] = analyzed_queueKEYS.get()
 
-                    time.sleep(0.5)
+                    # time.sleep(0.5)
                     print("what are analyzed keys?", shared_analyzedKeycountVAR.values(), flush = True)
 
 
