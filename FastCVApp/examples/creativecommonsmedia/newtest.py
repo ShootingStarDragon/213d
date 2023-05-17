@@ -27,7 +27,7 @@ print("size?", sys.getsizeof(frame))
 import io, time
 filelike = io.BytesIO() #this is still bytes I think?
 time1 = time.time()
-np.savez_compressed(filelike, frame=frame)
+np.savez_compressed(filelike, frame=frame) #numpy takes too long.. filelike size? 3207416 time? 0.13618159294128418
 time2 = time.time()
 filelike.seek(0)
 print("filelike size?", sys.getsizeof(filelike), "time?", time2-time1 )
