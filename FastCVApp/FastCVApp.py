@@ -4,6 +4,7 @@ import time
 import os, sys
 import numpy as np
 from FCVAutils import EVcheck, fprint
+import blosc2
 
 #this is the test version, gonna really mess this up testing
 
