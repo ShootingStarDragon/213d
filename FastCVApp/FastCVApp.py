@@ -1187,6 +1187,7 @@ def open_cvpipeline(*args):
                             #compress the numpy array with blosc so that reading is not as bad of a bottleneck
                             # result_compressed = result.tobytes()
                             result_compressed = blosc2.pack(result)
+                            # fprint("result_compressed type and size?", type(result_compressed), sys.getsizeof(result_compressed))
                             # fprint("result ok?", type(result))
                             analyzed_queue.put(result_compressed)
                             # analyzed_queue.put(result)
