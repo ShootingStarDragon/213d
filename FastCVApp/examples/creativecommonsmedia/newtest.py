@@ -86,7 +86,7 @@ undoneframe = blosc2.unpack(c)
 time2 = time.time()
 
 print("time to undo blosc2?", time2-time1, type(c)) #0.004288196563720703
-
+print("pyversion", sys.version)
 while True:
     cv2.imshow('img', undoneframe)  # Show the image for testing
     # cv2.waitKey(1000)
