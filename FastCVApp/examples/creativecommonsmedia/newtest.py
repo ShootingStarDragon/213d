@@ -87,8 +87,8 @@ time2 = time.time()
 
 print("time to undo blosc2?", time2-time1, type(c)) #0.004288196563720703
 
-# while True:
-#     cv2.imshow('img', undoneframe)  # Show the image for testing
-#     # cv2.waitKey(1000)
-#     if cv2.waitKey(25) & 0xFF == ord('q'):
-#         break
+while True:
+    cv2.imshow('img', undoneframe)  # Show the image for testing
+    # cv2.waitKey(1000)
+    if cv2.waitKey(25) & 0xFF == ord('q'):
+        break
