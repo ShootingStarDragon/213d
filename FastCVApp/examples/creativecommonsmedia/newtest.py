@@ -30,13 +30,13 @@ time1 = time.time()
 np.savez_compressed(filelike, frame=frame) #numpy takes too long.. filelike size? 3207416 time? 0.13618159294128418
 time2 = time.time()
 filelike.seek(0)
-print("filelike size?", sys.getsizeof(filelike), "time?", time2-time1 )
+print("filelike size using savez_compressed?", sys.getsizeof(filelike), "time?", time2-time1 )
 
 # loaded = np.load(filelike.getvalue())
 timea = time.time()
 loaded = np.load(filelike,allow_pickle=True)
 timeb = time.time()
-print("filelike decompress?", sys.getsizeof(loaded), timeb-timea)
+print("filelike decompress using np.load?", sys.getsizeof(loaded), timeb-timea)
 
 # while True:
 #     cv2.imshow('img', loaded['frame'])  # Show the image for testing
@@ -67,15 +67,16 @@ framebytes = frame2.tobytes()
 timeB = time.time()
 
 time1 = time.time()
-blosc2.compress(frame2, typesize=8)
+newguy = blosc2.compress(frame2, typesize=8)
 time2 = time.time()
-print("blosc2 time on my framedata?", time2 - time1, "time to tobytes", timeB - timeA, "framesize", sys.getsizeof(framebytes))
+print("blosc2 time for compress on my framedata?", time2 - time1, "time to tobytes", timeB - timeA, "framesize", sys.getsizeof(framebytes), "size of newguy:", sys.getsizeof(newguy))
 
+ret, frame4 = cap.read()
 time1 = time.time()
 # c = blosc2.pack(frame2.__array_interface__['data'][0], frame2.size, frame2.dtype.itemsize, 9, True)
-c = blosc2.pack(frame2)
+c = blosc2.pack(frame4)
 time2 = time.time()
-print("blosc2 compress pointer time", time2 - time1, "blosc2 array size?", sys.getsizeof(c))
+print("blosc2 pack time", time2 - time1, "blosc2 array size?", sys.getsizeof(c))
 #how to decompress:
 # blosc.unpack(c, a2.__array_interface__['data'][0])
 # https://github.com/Blosc/python-blosc2/blob/main/RELEASE_NOTES.md
@@ -85,10 +86,35 @@ time1 = time.time()
 undoneframe = blosc2.unpack(c)
 time2 = time.time()
 
-print("time to undo blosc2?", time2-time1, type(c)) #0.004288196563720703
-print("pyversion", sys.version)
+print("time for blosc2 unpack?", time2-time1, type(c)) #0.004288196563720703
+# print("pyversion", sys.version)
+
+ret, frame3 = cap.read()
+time1 = time.time()
+pack2test = blosc2.pack_array2(frame3)
+time2 = time.time()
+print("testing blosc2.pack_array2. time compressing?:", time2-time1, "sizes? frame VS blosccompressed", sys.getsizeof(frame3.tobytes()), sys.getsizeof(pack2test))
+
+time1 = time.time()
+unpack2test = blosc2.unpack_array2(pack2test)
+time2 = time.time()
+print("testing blosc2.pack_array2. time decompressing?:", time2-time1, sys.getsizeof(unpack2test))
+
+ret, frame5 = cap.read()
+time1 = time.time()
+packtest = blosc2.pack_array(frame5)
+time2 = time.time()
+print("pack_array test", time2-time1, "sizes?", sys.getsizeof(frame5.tobytes()),  sys.getsizeof(packtest))
+
+time1 = time.time()
+unpacktest = blosc2.unpack_array(packtest)
+time2 = time.time()
+print("unpack_array test", time2- time1, sys.getsizeof(unpacktest))
+print("compressor lists? ", blosc2.compressor_list())
+
+
 while True:
-    cv2.imshow('img', undoneframe)  # Show the image for testing
+    cv2.imshow('img', unpack2test)  # Show the image for testing
     # cv2.waitKey(1000)
     if cv2.waitKey(25) & 0xFF == ord('q'):
         break
