@@ -323,7 +323,8 @@ FCVA_screen_manager: #remember to return a root widget
                 # else:
                 try:
                     #frame is already in bytes, just reshape it then reset to bytes again
-                    frame = blosc2.unpack(frame)
+                    # frame = blosc2.unpack(frame)
+                    frame = blosc2.unpack_array2(frame)
                     buf = frame.tobytes()
                     # buf = frame.tobytes()
                     frame = np.frombuffer(frame, np.uint8).copy().reshape(1080, 1920, 3)
@@ -1235,7 +1236,8 @@ def open_cvpipeline(*args):
                                     )
                             #compress the numpy array with blosc so that reading is not as bad of a bottleneck
                             # result_compressed = result.tobytes()
-                            result_compressed = blosc2.pack(result)
+                            result_compressed = blosc2.pack_array2(result)
+                            # result_compressed = blosc2.pack(result)
                             # fprint("result_compressed type and size?", type(result_compressed), sys.getsizeof(result_compressed))
                             # fprint("result ok?", type(result))
                             analyzed_queue.put(result_compressed)
