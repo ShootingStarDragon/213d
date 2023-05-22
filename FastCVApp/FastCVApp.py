@@ -507,19 +507,11 @@ class FCVA:
             shared_analysis_dict = shared_mem_manager.dict()
             # shared_metadata_dict holds keys about run states so things don't error by reading something that doesn't exist
             shared_metadata_dict = shared_mem_manager.dict()
-            # shared_speedtest = shared_mem_manager.dict() #split off into A, B, C
             
             # shared_poolmeta_dict = shared_mem_manager.dict()
             # analyze_pool_count = 3
             # for x in range(analyze_pool_count):
             #     shared_poolmeta_dict[x] = 
-            
-            shared_speedtestA = shared_mem_manager.dict()
-            shared_speedtestAKeycount = shared_mem_manager.dict()
-            shared_speedtestB = shared_mem_manager.dict()
-            shared_speedtestBKeycount = shared_mem_manager.dict()
-            shared_speedtestC = shared_mem_manager.dict()
-            shared_speedtestCKeycount = shared_mem_manager.dict()
 
             shared_analyzedA = shared_mem_manager.dict()
             shared_analyzedAKeycount = shared_mem_manager.dict()
@@ -625,12 +617,7 @@ class FCVA:
             # read just to get the fps
             video = cv2.VideoCapture(self.source)
             self.fps = video.get(cv2.CAP_PROP_FPS)
-            # print("args ok?", shared_metadata_dict, fps, self.source, os.path.isfile(self.source))
-
-            # read_subprocessTEST = FCVA_mp.Process(
-            #     target=open_mediaTEST, args=(shared_metadata_dict, self.fps, self.source, shared_speedtestA, shared_speedtestB, shared_speedtestC, shared_globalindex, shared_analyzedA, shared_analyzedB, shared_analyzedC,shared_speedtestAKeycount,shared_speedtestBKeycount,shared_speedtestCKeycount)
-            # )
-            # read_subprocessTEST.start()
+            video.release()
 
             bufferlen = 10
             cvpartitions = 3
@@ -645,7 +632,26 @@ class FCVA:
                 shared_analyzedCKeycount["key" + str(x)] = -1
                 shared_analyzedC["frame" + str(x)] = -1
             
-
+            #sanity checks
+            if not hasattr(self, "fps"):
+                # default to 30fps, else set blit buffer speed to 1/30 sec
+                self.fps = 1 / 30
+            if not hasattr(self, "title"):
+                shared_metadata_dict[
+                    "title"
+                ] = "Fast CV App Example v0.1.0 by Pengindoramu"
+            else:
+                shared_metadata_dict["title"] = self.title
+            if hasattr(self, "colorfmt"):
+                shared_metadata_dict["colorfmt"] = self.colorfmt
+            if hasattr(self, "kvstring"):
+                shared_metadata_dict["kvstring"] = self.kvstring
+            if self.appliedcv == None:
+                print(
+                    "FCVA.appliedcv is currently None. Not starting the CV subprocess."
+                )
+            
+            #start the subprocesses
             cv_subprocessA = FCVA_mp.Process(
                     target=open_cvpipeline,
                     args=(
@@ -699,75 +705,21 @@ class FCVA:
                     ),
                 )
             cv_subprocessC.start()
-            if not hasattr(self, "fps"):
-                # default to 30fps, else set blit buffer speed to 1/30 sec
-                self.fps = 1 / 30
-            if not hasattr(self, "title"):
-                shared_metadata_dict[
-                    "title"
-                ] = "Fast CV App Example v0.1.0 by Pengindoramu"
-            else:
-                shared_metadata_dict["title"] = self.title
-            if hasattr(self, "colorfmt"):
-                shared_metadata_dict["colorfmt"] = self.colorfmt
-            if hasattr(self, "kvstring"):
-                shared_metadata_dict["kvstring"] = self.kvstring
 
-            # shared_globalindex["starttime"] = time.time() + 2
             kivy_subprocess = FCVA_mp.Process(
                 target=open_kivy,
                 args=(shared_analysis_dict, shared_metadata_dict, self.fps, shared_globalindex, shared_analyzedA, shared_analyzedB, shared_analyzedC,shared_analyzedAKeycount,shared_analyzedBKeycount,shared_analyzedCKeycount, (1/self.fps), bufferlen,cvpartitions)
             )
-            
-            
             kivy_subprocess.start()
             
-
-
-            '''#TURN THIS ON
-            elif self.appliedcv == None:
-                print(
-                    "FCVA.appliedcv is currently None. Not starting the CV subprocess."
-                )
-            else:
-                print("FCVA.appliedcv block failed")
-
-            if not hasattr(self, "fps"):
-                # default to 30fps, else set blit buffer speed to 1/30 sec
-                self.fps = 1 / 30
-            if not hasattr(self, "title"):
-                shared_metadata_dict[
-                    "title"
-                ] = "Fast CV App Example v0.1.0 by Pengindoramu"
-            else:
-                shared_metadata_dict["title"] = self.title
-            if hasattr(self, "colorfmt"):
-                shared_metadata_dict["colorfmt"] = self.colorfmt
-            if hasattr(self, "kvstring"):
-                shared_metadata_dict["kvstring"] = self.kvstring
-
-            # shared_globalindex["starttime"] = time.time() + 2
-            kivy_subprocess = FCVA_mp.Process(
-                target=open_kivy,
-                args=(shared_analysis_dict, shared_metadata_dict, self.fps, shared_globalindex, shared_analyzedA, shared_analyzedB, shared_analyzedC)
-            )
-            #old args: args=(shared_analysis_dict, shared_metadata_dict, self.fps, shared_speedtestA,shared_speedtestB,shared_speedtestC, shared_globalindex, shared_analyzedA, shared_analyzedB, shared_analyzedC)
-
-            #dummytesting
-            
-
-            kivy_subprocess.start()
-            '''
 
             # this try except block holds the main process open so the subprocesses aren't cleared when the main process exits early.
             while "kivy_run_state" in shared_metadata_dict.keys():
                 if shared_metadata_dict["kivy_run_state"] == False:
                     # when the while block is done, close all the subprocesses using .join to gracefully exit. also make sure opencv releases the video.
-                    read_subprocess.join()
-                    cv_subprocess.join()
+                    cv_subprocessA.join()
                     cv_subprocessB.join()
                     cv_subprocessC.join()
-                    video.release()
                     kivy_subprocess.join()
                     break
                 try:
