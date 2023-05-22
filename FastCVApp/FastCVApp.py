@@ -86,19 +86,7 @@ FCVA_screen_manager: #remember to return a root widget
             texture.blit_buffer(buffervar)
         
         def blit_from_shared_memory(self, *args):
-            # shared_analysis_dict = self.shared_analysis_dictVAR
-            # shared_metadata_dict = self.shared_metadata_dictVAR
             timeog = time.time()
-            # self.index = self.shared_globalindexVAR["curframe"]
-            # print("ww", flush = True)
-            # print("shared analyzed keys?", self.shared_analyzedAVAR.keys(), flush = True)
-            # spf = 1/30 #(readmedia gets the real fps and this does not since it gets desync)
-            # spf = (1/self.fps)
-            # sharedmetadatakeys = self.shared_metadata_dictVAR.keys()
-
-            #dummytesting
-            # if True:
-            #     self.starttime = self.shared_globalindexVAR["starttime"]
             if "toggleCV" in self.shared_metadata_dictVAR and self.shared_globalindexVAR["starttime"] != None:
                 self.index = int((time.time() - self.starttime)/self.spf)
                 if self.index < 0:
@@ -392,29 +380,33 @@ FCVA_screen_manager: #remember to return a root widget
 
 def frameblock(*args):
     '''
-    given partition #, instance, buffersize, maxpartitions tells u the frames to get:
+    given partition #, instance, bufferlen, maxpartitions tells u the frames to get:
 
     ex: partitioning frames into A B C blocks (0-9 > A, 10-19> B, 20-29>C, etc) and buffer of 10
-    then you know the partition: A (0)
-    instance: 0
-    then you get (0>9)
-    partition B (1):
-    instance 10 (so the 10th time this is done, index start at 0):
-    110>120
+    then you know the partition: A (0) and instance: 0
+        then you get (0>9)
+    partition B (1) and instance 10 (so the 10th time this is done, index start at 0):
+        then u get 110>120
+
+    how to calculate the frameblock:
+    know your bufferlen:
+    shift the bufferlen by 2 things: the partition and the partition number
+    partition number just adjusts your starting position by the number of bufferlengths you are from the start (so 0,1,2,3 * bufferlen)
+    instance means how many full maxpartitions*bufferlen has already passed, so with maxpartition of 3 and bufferlen of 10, how many frames of 30 have already passed
     '''
     partitionnumber = args[0]
     instance = args[1]
-    buffersize = args[2]
+    bufferlen = args[2]
     maxpartitions = args[3]
     print("frameblock args?", partitionnumber, instance)
-    Ans = [x + buffersize*maxpartitions*instance + partitionnumber*buffersize for x in range(buffersize)]
+    Ans = [x + bufferlen*maxpartitions*instance + partitionnumber*bufferlen for x in range(bufferlen)]
     return Ans
 
 def open_cvpipeline(*args):
     try:
         '''
         NEW PLAN:
-        use 3 subprocesses(A,B,C) to use opencv to get frames from 1 file (pray it works)
+        use 3 subprocesses(A,B,C) to use opencv to get frames from 1 file simultaneously (pray it works and there's no file hold...)
         then for each subprocesses, request 10 frames (0-9 > A, 10-19> B, 20-39>C, etc)
         2 queues, 1 naked frame, 1 analyzed frame that is written to sharedmem for kivy to see
         originalQUEUE
@@ -444,7 +436,7 @@ def open_cvpipeline(*args):
         source = args[8]
         partitionnumber = args[9]
         instance = args[10]
-        buffersize = args[11]
+        bufferlen = args[11]
         maxpartitions = args[12]
         fps = args[13]
 
@@ -454,10 +446,10 @@ def open_cvpipeline(*args):
         instance_count = 0
 
         from queue import Queue
-        raw_queue = Queue(maxsize=buffersize)
-        raw_queueKEYS = Queue(maxsize=buffersize)
-        analyzed_queue = Queue(maxsize=buffersize)
-        analyzed_queueKEYS = Queue(maxsize=buffersize)
+        raw_queue = Queue(maxsize=bufferlen)
+        raw_queueKEYS = Queue(maxsize=bufferlen)
+        analyzed_queue = Queue(maxsize=bufferlen)
+        analyzed_queueKEYS = Queue(maxsize=bufferlen)
 
         while True:
             if "kivy_run_state" in shared_metadata_dict:
@@ -491,23 +483,23 @@ def open_cvpipeline(*args):
 
                     #building incrementally:
                     #just load the right 10 frames as time passes:
-                    #partition #, instance, buffersize, maxpartitions
+                    #partition #, instance, bufferlen, maxpartitions
 
                     fprint("rawqueue size?", raw_queue.qsize())
                     if raw_queue.qsize() == 0:
                         timex = time.time()
                         #get the right framecount:
-                        framelist = frameblock(partitionnumber,instance_count,buffersize,maxpartitions)
+                        framelist = frameblock(partitionnumber,instance_count,bufferlen,maxpartitions)
                         
                         instance_count += 1
-                        for x in range(buffersize*maxpartitions):
+                        for x in range(bufferlen*maxpartitions):
                             (ret, framedata) = sourcecap.read()
                             #compare internal framecount to see if it's a frame that this subprocess is supposed to analyze
                             # fprint("why is it passing", ret, internal_framecount, framelist, internal_framecount in framelist, x, raw_queueKEYS.qsize())
                             if ret and internal_framecount in framelist:
                                 raw_queue.put(framedata)
-                                # fprint("framelist?", framelist, framelist[x % buffersize])
-                                raw_queueKEYS.put(framelist[x % buffersize])
+                                # fprint("framelist?", framelist, framelist[x % bufferlen])
+                                raw_queueKEYS.put(framelist[x % bufferlen])
                             internal_framecount += 1
                         timey = time.time()
                         fprint("how long to take frameblock?", timey - timex)
@@ -536,8 +528,8 @@ def open_cvpipeline(*args):
 
                     current_framenumber = int((time.time() - shared_globalindexVAR["starttime"])/(1/fps))
 
-                    if analyzed_queue.qsize() == buffersize and max(shared_analyzedKeycountVAR.values()) < current_framenumber:
-                        for x in range(buffersize):
+                    if analyzed_queue.qsize() == bufferlen and max(shared_analyzedKeycountVAR.values()) < current_framenumber:
+                        for x in range(bufferlen):
                             shared_analyzedVAR['frame'+str(x)] = analyzed_queue.get()
                             shared_analyzedKeycountVAR['key'+str(x)] = analyzed_queueKEYS.get()
 
@@ -601,82 +593,6 @@ def open_cvpipeline(*args):
                 #         #     flush=True,
                 #         # )
                 #         pass
-    except Exception as e:
-        print("open_appliedcv died!", e)
-        import traceback
-        print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
-
-def open_appliedcv(*args):
-    try:
-        shared_analysis_dict = args[0]
-        shared_metadata_dict = args[1]
-        appliedcv = args[2]
-        shared_speedtestVAR = args[3]
-        shared_metadata_dict["mp_ready"] = True
-        shared_analyzedVAR = args[4]
-        shared_globalindexVAR = args[5]
-        analyzedframecounter = 0
-
-        while True:
-            if "kivy_run_state" in shared_metadata_dict:
-                applytimestart = time.time()
-                if shared_metadata_dict["kivy_run_state"] == False:
-                    print("exiting open_appliedcv", os.getpid(), flush=True)
-                    break
-
-                #init shared dict if keys < 20:
-                # if len(shared_analyzedVAR.keys()) < 20:
-                if len(shared_analyzedVAR) < 10:
-                    #replace all and say it
-                    # for x in range(10):
-                    for x in range(5):
-                        shared_analyzedVAR["key" + str(x)] = -1
-                        shared_analyzedVAR["frame" + str(x)] = -1
-                    print("reset analysis keys!", flush = True)
-
-                # https://stackoverflow.com/questions/22108488/are-list-comprehensions-and-functional-functions-faster-than-for-loops
-                # As for functional list processing functions: While these are written in C and probably outperform equivalent functions written in Python, they are not necessarily the fastest option. Some speed up is expected if the function is written in C too. But most cases using a lambda (or other Python function), the overhead of repeatedly setting up Python stack frames etc. eats up any savings. Simply doing the same work in-line, without function calls (e.g. a list comprehension instead of map or filter) is often slightly faster.
-                # use map instead? https://wiki.python.org/moin/PythonSpeed/PerformanceTips#Loops
-                # this guy says go to array, ? https://towardsdatascience.com/list-comprehensions-vs-for-loops-it-is-not-what-you-think-34071d4d8207
-                # verdict, just test it out...
-
-                keylist = [x for x in shared_speedtestVAR.keys() if 'key' in x and shared_speedtestVAR[x] != -1 and analyzedframecounter < shared_speedtestVAR[x]]
-                if len(keylist)>0:
-                    # print("why is analyze keylist empty?", keylist, analyzedframecounter,[shared_speedtestVAR[x] for x in shared_speedtestVAR.keys() if 'key' in x and shared_speedtestVAR[x] != -1 and analyzedframecounter < shared_speedtestVAR[x]], flush = True)
-                    frameref = "frame" + keylist[0].replace("key", '')
-                    rightframe = shared_speedtestVAR[frameref].copy()
-                    
-                    #convert from bytes to a numpy array
-                    rightframe = np.frombuffer(rightframe, np.uint8).copy().reshape(1080, 1920, 3)
-                    # rightframe = np.frombuffer(rightframe, np.uint8).copy().reshape(300, 500, 3)
-
-                    #update frame
-                    result = appliedcv(
-                                rightframe,
-                                shared_analysis_dict,
-                                shared_metadata_dict,
-                                shared_globalindexVAR
-                            )
-                    #store bytes again:
-                    shared_analyzedVAR[frameref] = result.tobytes()
-                    #update key:
-                    shared_analyzedVAR[keylist[0]] = shared_speedtestVAR[keylist[0]]
-                    
-                    #update analyzedframecounter so u know if you've analyzed the frame
-                    analyzedframecounter = shared_speedtestVAR[keylist[0]]
-                    # print("updated in sharedanalyze", type(result), type(rightframe), frameref,analyzedframecounter,keylist[0],flush = True)
-                    # print("sharedanalzye shapes", result.shape, rightframe.shape, flush = True)
-
-                    # actually do your cv function here and stuff your resulting numpy frame in shared_analysis_dict shared memory. You might have to flip the image because IIRC opencv is up to down, left to right, while kivy is down to up, left to right. in any case cv2 flip code 0 is what you want most likely since code 0 is vertical flip (and preserves horizontal axis).
-                applytimeend = time.time()
-                if applytimeend - applytimestart > 0:
-                    if 1 / (applytimeend - applytimestart) < 500:
-                        print(
-                            "is apply lagging? pid, fps", os.getpid(),
-                            1 / (applytimeend - applytimestart),
-                            flush=True,
-                        )
-                        pass
     except Exception as e:
         print("open_appliedcv died!", e)
         import traceback
@@ -920,60 +836,11 @@ class FCVA:
             )
             
             
-            
-            # #dummytesting
-            # shared_globalindex["starttime"] = time.time() +2
             kivy_subprocess.start()
-            #old args: args=(shared_analysis_dict, shared_metadata_dict, self.fps, shared_speedtestA,shared_speedtestB,shared_speedtestC, shared_globalindex, shared_analyzedA, shared_analyzedB, shared_analyzedC)
-
+            
 
 
             '''#TURN THIS ON
-            read_subprocess = FCVA_mp.Process(
-                target=open_media, args=(shared_metadata_dict, fps, self.source, shared_speedtestA, shared_speedtestB, shared_speedtestC, shared_globalindex, shared_analyzedA, shared_analyzedB, shared_analyzedC)
-            )
-            read_subprocess.start()
-
-            if self.appliedcv != None:
-                cv_subprocess = FCVA_mp.Process(
-                    target=open_appliedcv,
-                    args=(
-                        shared_analysis_dict,
-                        shared_metadata_dict,
-                        self.appliedcv,
-                        shared_speedtestA,
-                        shared_analyzedA,
-                        shared_globalindex
-                    ),
-                )
-                cv_subprocess.start()
-
-                cv_subprocessB = FCVA_mp.Process(
-                    target=open_appliedcv,
-                    args=(
-                        shared_analysis_dict,
-                        shared_metadata_dict,
-                        self.appliedcv,
-                        shared_speedtestB,
-                        shared_analyzedB,
-                        shared_globalindex
-                    ),
-                )
-                cv_subprocessB.start()
-
-                cv_subprocessC = FCVA_mp.Process(
-                    target=open_appliedcv,
-                    args=(
-                        shared_analysis_dict,
-                        shared_metadata_dict,
-                        self.appliedcv,
-                        shared_speedtestC,
-                        shared_analyzedC,
-                        shared_globalindex
-                    ),
-                )
-                cv_subprocessC.start()
-
             elif self.appliedcv == None:
                 print(
                     "FCVA.appliedcv is currently None. Not starting the CV subprocess."
