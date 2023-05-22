@@ -404,26 +404,6 @@ def frameblock(*args):
 
 def open_cvpipeline(*args):
     try:
-        '''
-        NEW PLAN:
-        use 3 subprocesses(A,B,C) to use opencv to get frames from 1 file simultaneously (pray it works and there's no file hold...)
-        then for each subprocesses, request 10 frames (0-9 > A, 10-19> B, 20-39>C, etc)
-        2 queues, 1 naked frame, 1 analyzed frame that is written to sharedmem for kivy to see
-        originalQUEUE
-        analyzedQUEUE
-        LOOP:
-            if originalqueue is empty: #problem is you can't request too far into the future...
-                request the RIGHT 10 frames (0-10 or 11-20 or 21-30)
-            analyze the 10 frames
-            when ur done with the analyzing all 10 frames:
-                write to sharedmem
-
-            there's 3 things to do:
-            read
-            analyze 
-            write to sharedmem
-            how to write this so I can easily get a 5 sec buffer?
-        '''
         shared_metadata_dict = args[0]
         appliedcv = args[1]
         shared_metadata_dict["mp_ready"] = True
@@ -450,59 +430,44 @@ def open_cvpipeline(*args):
 
         while True:
             if "kivy_run_state" in shared_metadata_dict:
-                applytimestart = time.time()
                 if shared_metadata_dict["kivy_run_state"] == False:
                     print("exiting open_appliedcv", os.getpid(), flush=True)
                     break
-
                 '''
+                NEW PLAN:
                 Init shared dicts at the beginning instead of checking every while loop
+                
+                use 3 subprocesses(A,B,C) to use opencv to get frames from 1 file simultaneously (pray it works and there's no file hold...)
+                then for each subprocesses, request 10 frames (0-9 > A, 10-19> B, 20-39>C, etc)
+                2 queues, 1 naked frame, 1 analyzed frame that is written to sharedmem for kivy to see
                 2 dicts:
                 rawqueue
                 analyzedqueue
 
-                newer plan:
-                3 actions: 
-                Read
-                Analyze
-                Write
-
-                PLAN:
-                Load raw frames only if analyze queue is empty (this implicitly checks for time, keeps frames loaded, and stops u from loading too much)
-                    request the RIGHT 10 frames (0-10 or 11-20 or 21-30)
-                
-                Analyze all the time (if analyze queue is empty and there is a framequeue)
-                
-                Write to shared dict if init OR frames are old
+                LOOP:
+                    3 actions: 
+                    Read
+                        request the RIGHT 10 frames (0-10 or 11-20 or 21-30)
+                        Load raw frames only if analyze queue is empty (this implicitly checks for time, keeps frames loaded, and stops u from loading too much)
+                    Analyze
+                        Analyze all the time (if analyze queue is empty and there is a framequeue)
+                    Write
+                        Write to shared dict if init OR frames are old
                 '''
                 #make sure things have started:
                 if "starttime" in shared_globalindexVAR:
-
-                    #building incrementally:
-                    #just load the right 10 frames as time passes:
-                    #partition #, instance, bufferlen, maxpartitions
-
-                    fprint("rawqueue size?", raw_queue.qsize())
                     if raw_queue.qsize() == 0:
-                        timex = time.time()
                         #get the right framecount:
                         framelist = frameblock(partitionnumber,instance_count,bufferlen,maxpartitions)
-                        
                         instance_count += 1
                         for x in range(bufferlen*maxpartitions):
                             (ret, framedata) = sourcecap.read()
                             #compare internal framecount to see if it's a frame that this subprocess is supposed to analyze
-                            # fprint("why is it passing", ret, internal_framecount, framelist, internal_framecount in framelist, x, raw_queueKEYS.qsize())
                             if ret and internal_framecount in framelist:
                                 raw_queue.put(framedata)
-                                # fprint("framelist?", framelist, framelist[x % bufferlen])
                                 raw_queueKEYS.put(framelist[x % bufferlen])
                             internal_framecount += 1
-                        timey = time.time()
-                        fprint("how long to take frameblock?", timey - timex)
                     
-                    # fprint("why failing?",raw_queue.qsize(), analyzed_queue.qsize(), raw_queue.qsize() > 0 and analyzed_queue.qsize() == 0)
-                    timea = time.time()
                     if raw_queue.qsize() > 0 and analyzed_queue.qsize() == 0:
                         #analyze all the frames and write to sharedmem:
                         for x in range(raw_queue.qsize()):
@@ -510,86 +475,17 @@ def open_cvpipeline(*args):
                                         raw_queue.get(),
                                     )
                             #compress the numpy array with blosc so that reading is not as bad of a bottleneck
-                            # result_compressed = result.tobytes()
                             result_compressed = blosc2.pack_array2(result)
-                            # result_compressed = blosc2.pack(result)
-                            # fprint("result_compressed type and size?", type(result_compressed), sys.getsizeof(result_compressed))
-                            # fprint("result ok?", type(result))
                             analyzed_queue.put(result_compressed)
-                            # analyzed_queue.put(result)
                             analyzed_queueKEYS.put(raw_queueKEYS.get())
-                    timeb = time.time()
-                    # fprint("how long to analyze all frames?", timeb - timea)    
-                    #write to sharedmem:
-                    # fprint("qsize??", analyzed_queue.qsize())
-
+                    
                     current_framenumber = int((time.time() - shared_globalindexVAR["starttime"])/(1/fps))
-
                     if analyzed_queue.qsize() == bufferlen and max(shared_analyzedKeycountVAR.values()) < current_framenumber:
                         for x in range(bufferlen):
                             shared_analyzedVAR['frame'+str(x)] = analyzed_queue.get()
                             shared_analyzedKeycountVAR['key'+str(x)] = analyzed_queueKEYS.get()
 
-                    # time.sleep(0.5)
-                    print("what are analyzed keys?", shared_analyzedKeycountVAR.values(), flush = True)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                # # https://stackoverflow.com/questions/22108488/are-list-comprehensions-and-functional-functions-faster-than-for-loops
-                # # As for functional list processing functions: While these are written in C and probably outperform equivalent functions written in Python, they are not necessarily the fastest option. Some speed up is expected if the function is written in C too. But most cases using a lambda (or other Python function), the overhead of repeatedly setting up Python stack frames etc. eats up any savings. Simply doing the same work in-line, without function calls (e.g. a list comprehension instead of map or filter) is often slightly faster.
-                # # use map instead? https://wiki.python.org/moin/PythonSpeed/PerformanceTips#Loops
-                # # this guy says go to array, ? https://towardsdatascience.com/list-comprehensions-vs-for-loops-it-is-not-what-you-think-34071d4d8207
-                # # verdict, just test it out...
-
-                # keylist = [x for x in shared_speedtestKeycountVAR.keys() if 'key' in x and shared_speedtestKeycountVAR[x] != -1 and analyzedframecounter < shared_speedtestKeycountVAR[x]]
-                # if len(keylist)>0:
-                #     # print("why is analyze keylist empty?", keylist, analyzedframecounter,[shared_speedtestKeycountVAR[x] for x in shared_speedtestKeycountVAR.keys() if 'key' in x and shared_speedtestKeycountVAR[x] != -1 and analyzedframecounter < shared_speedtestKeycountVAR[x]], flush = True)
-                #     frameref = "frame" + keylist[0].replace("key", '')
-                #     # rightframe = shared_speedtestVAR[frameref]
-                    
-                #     #convert from bytes to a numpy array
-                #     rightframe = np.frombuffer(shared_speedtestVAR[frameref], np.uint8).reshape(1080, 1920, 3)
-                #     # rightframe = np.frombuffer(rightframe, np.uint8).copy().reshape(300, 500, 3)
-
-                #     #update frame
-                #     result = appliedcv(
-                #                 rightframe,
-                #                 shared_analysis_dict,
-                #                 shared_metadata_dict,
-                #                 shared_globalindexVAR
-                #             )
-                #     #store bytes again:
-                #     shared_analyzedVAR[frameref] = result.tobytes()
-                #     #update key:
-                #     # print("keyfailed", keylist, keylist[0], shared_analyzedKeycountVAR, shared_speedtestVAR ,flush = True)
-                #     shared_analyzedKeycountVAR[keylist[0]] = shared_speedtestKeycountVAR[keylist[0]]
-                    
-                #     #update analyzedframecounter so u know if you've analyzed the frame
-                #     analyzedframecounter = shared_analyzedKeycountVAR[keylist[0]]
-                #     # print("updated in sharedanalyze", type(result), type(rightframe), frameref,analyzedframecounter,keylist[0],flush = True)
-                #     # print("sharedanalzye shapes", result.shape, rightframe.shape, flush = True)
-
-                #     # actually do your cv function here and stuff your resulting numpy frame in shared_analysis_dict shared memory. You might have to flip the image because IIRC opencv is up to down, left to right, while kivy is down to up, left to right. in any case cv2 flip code 0 is what you want most likely since code 0 is vertical flip (and preserves horizontal axis).
-                # applytimeend = time.time()
-                # if applytimeend - applytimestart > 0:
-                #     if 1 / (applytimeend - applytimestart) < 500:
-                #         # print(
-                #         #     "is apply lagging? pid, fps", os.getpid(),
-                #         #     1 / (applytimeend - applytimestart),
-                #         #     flush=True,
-                #         # )
-                #         pass
+                    # print("what are analyzed keys?", shared_analyzedKeycountVAR.values(), flush = True)
     except Exception as e:
         print("open_appliedcv died!", e)
         import traceback
