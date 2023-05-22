@@ -424,21 +424,18 @@ def open_cvpipeline(*args):
             write to sharedmem
             how to write this so I can easily get a 5 sec buffer?
         '''
-        shared_analysis_dict = args[0]
-        shared_metadata_dict = args[1]
-        appliedcv = args[2]
-        shared_speedtestVAR = args[3]
+        shared_metadata_dict = args[0]
+        appliedcv = args[1]
         shared_metadata_dict["mp_ready"] = True
-        shared_analyzedVAR = args[4]
-        shared_globalindexVAR = args[5] #self.shared_globalindexVAR["starttime"]
-        shared_speedtestKeycountVAR = args[6]
-        shared_analyzedKeycountVAR = args[7]
-        source = args[8]
-        partitionnumber = args[9]
-        instance = args[10]
-        bufferlen = args[11]
-        maxpartitions = args[12]
-        fps = args[13]
+        shared_analyzedVAR = args[2]
+        shared_globalindexVAR = args[3] #self.shared_globalindexVAR["starttime"]
+        shared_analyzedKeycountVAR = args[4]
+        source = args[5]
+        partitionnumber = args[6]
+        instance = args[7]
+        bufferlen = args[8]
+        maxpartitions = args[9]
+        fps = args[10]
 
         sourcecap = cv2.VideoCapture(source)
         internal_framecount = 0
@@ -756,13 +753,10 @@ class FCVA:
             cv_subprocessA = FCVA_mp.Process(
                     target=open_cvpipeline,
                     args=(
-                        shared_analysis_dict,
                         shared_metadata_dict,
                         self.appliedcv,
-                        shared_speedtestA,
                         shared_analyzedA,
                         shared_globalindex,
-                        shared_speedtestAKeycount,
                         shared_analyzedAKeycount,
                         self.source,
                         0, #partition #, starts at 0
@@ -777,13 +771,10 @@ class FCVA:
             cv_subprocessB = FCVA_mp.Process(
                     target=open_cvpipeline,
                     args=(
-                        shared_analysis_dict,
                         shared_metadata_dict,
                         self.appliedcv,
-                        shared_speedtestB,
                         shared_analyzedB,
                         shared_globalindex,
-                        shared_speedtestBKeycount,
                         shared_analyzedBKeycount,
                         self.source,
                         1, #partition #, starts at 0
@@ -798,13 +789,10 @@ class FCVA:
             cv_subprocessC = FCVA_mp.Process(
                     target=open_cvpipeline,
                     args=(
-                        shared_analysis_dict,
                         shared_metadata_dict,
                         self.appliedcv,
-                        shared_speedtestC,
                         shared_analyzedC,
                         shared_globalindex,
-                        shared_speedtestCKeycount,
                         shared_analyzedCKeycount,
                         self.source,
                         2, #partition #, starts at 0
