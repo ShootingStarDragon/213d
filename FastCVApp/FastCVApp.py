@@ -64,7 +64,6 @@ FCVA_screen_manager: #remember to return a root widget
             self.frameQ = Queue(maxsize=self.bufferlen*self.cvpartitions)
             self.internal_framecount = 0
             Clock.schedule_interval(self.blit_from_shared_memory, (1/self.fps))
-            # Clock.schedule_interval(self.blit_from_shared_memory, 1/60)
             self.starttime = None
 
         def on_request_close(self, *args):
@@ -258,19 +257,18 @@ FCVA_screen_manager: #remember to return a root widget
                     buf = frame.tobytes()
                     # buf = frame.tobytes()
                     frame = np.frombuffer(frame, np.uint8).copy().reshape(1080, 1920, 3)
-                    #TURN THIS BACK ON
-                    '''
+                    
                     # complicated way of safely checking if a value may or may not exist, then get that value:
+                    #quickly checked this, time is 0...
                     existence_check = [
                         frame.shape[x] for x in range(0, len(frame.shape)) if x == 2
                     ]
                     # only valid dimensions are if pixels are 3 (RGB) or 4 (RGBA, but u have to also set the colorfmt)
                     if [x for x in existence_check if x == 3 or x == 4] == []:
                         raise Exception(
-                            "check your numpy dimensions! should be height x width x 3/4: like  (1920,1080,3): ",
+                            "check your numpy dimensions! should be (height, width, 3 for RGB/ 4 for RGBA): like  (1920,1080,3): ",
                             frame.shape, frame
                         )
-                    '''
                     # buf = frame.tobytes()
                     
                     # # check for existence of colorfmt in shared_metadata_dict, then if so, set colorfmt:
