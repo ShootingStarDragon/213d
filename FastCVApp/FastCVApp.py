@@ -107,7 +107,7 @@ FCVA_screen_manager: #remember to return a root widget
         
         def blit_from_shared_memory(self, *args):
             timeog = time.time()
-            if "toggleCV" in self.shared_metadata_dictVAR and self.shared_globalindexVAR["starttime"] != None:
+            if "toggleCV" in self.shared_metadata_dictVAR and self.shared_globalindex_dictVAR["starttime"] != None:
                 self.index = int((time.time() - self.starttime)/self.spf)
                 if self.index < 0:
                     self.index = 0
@@ -240,16 +240,31 @@ FCVA_screen_manager: #remember to return a root widget
             fprint("widgettext is?", widgettext)
             if "Play" in widgettext:
                 App.get_running_app().root.get_screen('start_screen_name').ids['StartScreenButtonID'].text = "Pause"
-                fprint("set to pause?", "Pause")
+                
+                #check if you have been paused already:
+                if "pausedtime" in self.shared_globalindex_dictVAR.keys() and isinstance(self.shared_globalindex_dictVAR["pausedtime"], float):
+                    #start all subprocesses (hope it's fast enough):
+                    subprocess_list = [x for x in self.shared_globalindex_dictVAR.keys() if "subprocess" in x]
+                    for x in subprocess_list:
+                        self.shared_globalindex_dictVAR[x] = True
+                    #clear pausedtime and adjust starttime by elapsed time from last pause:
+                    self.shared_globalindex_dictVAR["starttime"] = self.shared_globalindex_dictVAR["starttime"] + (time.time() - self.shared_globalindex_dictVAR["pausedtime"])
+                    self.shared_globalindex_dictVAR["pausedtime"] = False
             else:
                 App.get_running_app().root.get_screen('start_screen_name').ids['StartScreenButtonID'].text = "Play"
-                fprint("set to play?", "Play")
+                
+                self.shared_globalindex_dictVAR["pausedtime"] = time.time()
+                fprint("#pause all subprocesses (hope it's fast enough):")
+                subprocess_list = [x for x in self.shared_globalindex_dictVAR.keys() if "subprocess" in x]
+                for x in subprocess_list:
+                    self.shared_globalindex_dictVAR[x] = False
+                
             if "toggleCV" not in self.shared_metadata_dictVAR.keys():
                 self.shared_metadata_dictVAR["toggleCV"] = True
                 if self.starttime == None:
                     #init starttime:
                     self.starttime = time.time() + 1
-                    self.shared_globalindexVAR["starttime"] = self.starttime
+                    self.shared_globalindex_dictVAR["starttime"] = self.starttime
             else:
                 # self.shared_metadata_dictVAR[
                 #     "toggleCV"
@@ -266,7 +281,7 @@ FCVA_screen_manager: #remember to return a root widget
     MainApp.shared_analysis_dictVAR = args[0]
     MainApp.shared_metadata_dictVAR = args[1]
     MainApp.fps = args[2]
-    MainApp.shared_globalindexVAR = args[3]
+    MainApp.shared_globalindex_dictVAR = args[3]
     MainApp.shared_analyzedAVAR = args[4]
     MainApp.shared_analyzedBVAR = args[5]
     MainApp.shared_analyzedCVAR = args[6]
@@ -310,7 +325,7 @@ def open_cvpipeline(*args):
         appliedcv = args[1]
         shared_metadata_dict["mp_ready"] = True
         shared_analyzedVAR = args[2]
-        shared_globalindexVAR = args[3] #self.shared_globalindexVAR["starttime"]
+        shared_globalindex_dictVAR = args[3] #self.shared_globalindex_dictVAR["starttime"]
         shared_analyzedKeycountVAR = args[4]
         source = args[5]
         partitionnumber = args[6]
@@ -325,7 +340,7 @@ def open_cvpipeline(*args):
         instance_count = 0
         
         pid = os.getpid()
-        shared_globalindexVAR["subprocess" + str(pid)] = True
+        shared_globalindex_dictVAR["subprocess" + str(pid)] = True
 
         from queue import Queue
         raw_queue = Queue(maxsize=bufferlen)
@@ -360,10 +375,11 @@ def open_cvpipeline(*args):
                         Write to shared dict if init OR frames are old
                 '''
                 #make sure things have started AND this processess is not stopped:
-                if "starttime" in shared_globalindexVAR and shared_globalindexVAR["subprocess" + str(pid)]:
+                if "starttime" in shared_globalindex_dictVAR and shared_globalindex_dictVAR["subprocess" + str(pid)]:
                     if raw_queue.qsize() == 0:
                         #get the right framecount:
                         framelist = frameblock(partitionnumber,instance_count,bufferlen,maxpartitions)
+                        fprint("says true for some reason?", shared_globalindex_dictVAR["subprocess" + str(pid)])
                         instance_count += 1
                         for x in range(bufferlen*maxpartitions):
                             (ret, framedata) = sourcecap.read()
@@ -373,9 +389,9 @@ def open_cvpipeline(*args):
                                 raw_queueKEYS.put(framelist[x % bufferlen])
                             internal_framecount += 1
                             # fprint("ret, queue, keys, internal",ret, type(framedata), framelist[x % bufferlen], internal_framecount)
-                            current_framenumber = int((time.time() - shared_globalindexVAR["starttime"])/(1/fps))
+                            current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
                             if not ret and current_framenumber > internal_framecount+fps: #if ret is false, and we passed EOS (add 1 second (fps amount of frames) from internal_framecount AKA current_framenumber > internal_framecount + fps)
-                                shared_globalindexVAR["subprocess" + str(pid)] = ret #say so in PID and wait for another process to reset it
+                                shared_globalindex_dictVAR["subprocess" + str(pid)] = ret #say so in PID and wait for another process to reset it
                                 fprint("PID STOPPED", pid, internal_framecount)
                     
                     if raw_queue.qsize() > 0 and analyzed_queue.qsize() == 0:
@@ -389,7 +405,7 @@ def open_cvpipeline(*args):
                             analyzed_queue.put(result_compressed)
                             analyzed_queueKEYS.put(raw_queueKEYS.get())
                     
-                    current_framenumber = int((time.time() - shared_globalindexVAR["starttime"])/(1/fps))
+                    current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
                     if analyzed_queue.qsize() == bufferlen and max(shared_analyzedKeycountVAR.values()) < current_framenumber:
                         for x in range(bufferlen):
                             shared_analyzedVAR['frame'+str(x)] = analyzed_queue.get()
@@ -418,9 +434,9 @@ class FCVA:
             # shared_metadata_dict holds keys about run states so things don't error by reading something that doesn't exist
             shared_metadata_dict = shared_mem_manager.dict()
             # FEAR OF USING SHARED METADATA DICT TOO MUCH: too many processes lock up the memory too much....
-            # 2nd shared metadata dict: shared global index
-            shared_globalindex = shared_mem_manager.dict()
-            shared_globalindex["curframe"] = 0
+            # 2nd shared metadata dict: shared global index, knows: current frame, paused time, idk what else...
+            shared_globalindex_dict = shared_mem_manager.dict()
+            shared_globalindex_dict["curframe"] = 0
 
 
             # shared_poolmeta_dict = shared_mem_manager.dict()
@@ -580,7 +596,7 @@ class FCVA:
                         shared_metadata_dict,
                         self.appliedcv,
                         shared_analyzedA,
-                        shared_globalindex,
+                        shared_globalindex_dict,
                         shared_analyzedAKeycount,
                         self.source,
                         0, #partition #, starts at 0
@@ -598,7 +614,7 @@ class FCVA:
                         shared_metadata_dict,
                         self.appliedcv,
                         shared_analyzedB,
-                        shared_globalindex,
+                        shared_globalindex_dict,
                         shared_analyzedBKeycount,
                         self.source,
                         1, #partition #, starts at 0
@@ -616,7 +632,7 @@ class FCVA:
                         shared_metadata_dict,
                         self.appliedcv,
                         shared_analyzedC,
-                        shared_globalindex,
+                        shared_globalindex_dict,
                         shared_analyzedCKeycount,
                         self.source,
                         2, #partition #, starts at 0
@@ -630,7 +646,7 @@ class FCVA:
 
             kivy_subprocess = FCVA_mp.Process(
                 target=open_kivy,
-                args=(shared_analysis_dict, shared_metadata_dict, self.fps, shared_globalindex, shared_analyzedA, shared_analyzedB, shared_analyzedC,shared_analyzedAKeycount,shared_analyzedBKeycount, shared_analyzedCKeycount, (1/self.fps), bufferlen,cvpartitions, self.length)
+                args=(shared_analysis_dict, shared_metadata_dict, self.fps, shared_globalindex_dict, shared_analyzedA, shared_analyzedB, shared_analyzedC,shared_analyzedAKeycount,shared_analyzedBKeycount, shared_analyzedCKeycount, (1/self.fps), bufferlen,cvpartitions, self.length)
             )
             kivy_subprocess.start()
 
