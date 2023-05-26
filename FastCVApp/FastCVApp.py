@@ -29,7 +29,7 @@ def open_kivy(*args):
                 self.KV_string = kvstring_check[0]
             else:
                 # remember that the KV string IS THE ACTUAL FILE AND MUST BE INDENTED PROPERLY TO THE LEFT!
-                self.KV_string = """
+                self.KV_string = f"""
 #:import kivy.app kivy.app
 <FCVA_screen_manager>:
     id: FCVA_screen_managerID
@@ -44,9 +44,21 @@ def open_kivy(*args):
         orientation: 'vertical'
         Image:
             id: image_textureID
+        Slider:
+            id: vidslider
+            min: 0
+            max: {self.framelength} #should be 30*total_seconds
+            step: 1
+            value_track: True
+            value_track_color: 1, 0, 0, 1
+            size_hint: (1, 0.1)
+            orientation: 'horizontal'
+        Label:
+            text: str(vidslider.value) #convert slider label to a time
+            size_hint: (1, 0.1)
         Button:
             id: StartScreenButton
-            text: "Start analyzing!"
+            text: "Start analyzing! (Play/Pause)"
             on_release: kivy.app.App.get_running_app().toggleCV()
 
 FCVA_screen_manager: #remember to return a root widget
@@ -90,22 +102,13 @@ FCVA_screen_manager: #remember to return a root widget
                 self.index = int((time.time() - self.starttime)/self.spf)
                 if self.index < 0:
                     self.index = 0
-                
-                #figure out where 
-                # self.index is the current realtime frame btw
-                
-                # initialize the framequeue onstart
-                # self.frameQ
-                
-                # load as much as you can:
-                # check if there's enough space for 1 bufferlen
-                
                 fprint("is cv subprocess keeping up?", self.index, self.shared_analyzedAKeycountVAR.values(),self.shared_analyzedBKeycountVAR.values(),self.shared_analyzedCKeycountVAR.values())
                 #cheat for rn, just get current frame:
                 #know the current framenumber
                 #get the right shareddict https://www.geeksforgeeks.org/python-get-key-from-value-in-dictionary/#
                 # https://stackoverflow.com/questions/8023306/get-key-by-value-in-dictionary
                 # fprint("index in values?A",  self.index, self.shared_analyzedAKeycountVAR.values(), self.index in self.shared_analyzedAKeycountVAR.values())
+                frame = None
                 if self.index in self.shared_analyzedAKeycountVAR.values():
                     correctkey = list(self.shared_analyzedAKeycountVAR.keys())[list(self.shared_analyzedAKeycountVAR.values()).index(self.index)]
                     fprint("correctkey?", correctkey)
@@ -113,7 +116,6 @@ FCVA_screen_manager: #remember to return a root widget
                     frameref = "frame" + correctkey.replace("key",'')
                     frame = self.shared_analyzedAVAR[frameref]
                 
-
                 # fprint("index in values?B",  self.index, self.shared_analyzedBKeycountVAR.values(), self.index in self.shared_analyzedBKeycountVAR.values())
                 if self.index in self.shared_analyzedBKeycountVAR.values():
                     correctkey = list(self.shared_analyzedBKeycountVAR.keys())[list(self.shared_analyzedBKeycountVAR.values()).index(self.index)]
@@ -130,205 +132,87 @@ FCVA_screen_manager: #remember to return a root widget
                     frameref = "frame" + correctkey.replace("key",'')
                     frame = self.shared_analyzedCVAR[frameref]
 
-
-                #display 
-                # correctkey
-                
-                '''
-                if self.frameQ.qsize() < self.bufferlen*(self.cvpartitions - 1) :
-                    fprint("checking keys dict values", self.shared_analyzedAKeycountVAR.values(), self.shared_analyzedBKeycountVAR.values(), self.shared_analyzedCKeycountVAR.values(), self.index)
-                    #PLAN:
-                    #copy dictionary and time it
-                    #https://www.programiz.com/python-programming/methods/dictionary/copy
-                    # https://stackoverflow.com/questions/2465921/how-to-copy-a-dictionary-and-only-edit-the-copy
-                    timeog1 = time.time()
-                    # newdict = self.shared_analyzedAVAR.copy()
-                    # newdict = blosc2.unpack(self.shared_analyzedAVAR[self.shared_analyzedAVAR.keys()[0]])
-                    newdict = self.shared_analyzedAVAR[self.shared_analyzedAVAR.keys()[0]]
-                    if newdict != -1:
-                        newdict = blosc2.unpack(newdict)
-                    # newdict2 = self.shared_analyzedAVAR[self.shared_analyzedAVAR.keys()[1]]
-                    # fprint("keys???", self.shared_analyzedAVAR.values())
-                    timeog2 = time.time()
-                    fprint("how long to load?", timeog2 - timeog1, sys.getsizeof(newdict))
-                '''
-                
-
-                    #then think...
-                #     #read in only 1 block sequence so there's no stutter
-                #     #given self.internal_framecount, what is the next block to read in? -> 0>9... at 9, read 9>19, etc...
-                #     if find the next framekeys in the list of all the keys AND framekeys are the entire block (so we know analysis is all done): 
-                #         read it in sequence and add to frameQ
-                #         +1 on internal read data
-                #         self.internal_framecount += 1
-                    
-
-
-                # how to load?
-                # NOT CORRECT BECAUSE it's a waste of time to read correct block, it's better to read as much as you can and stuff into a queue imo
-                #     figure out which sharedmem self index is in
-                #     load that block of frames,
-                # if possible load the future block of frames as well
-
-                # else: pull from queue and display it:
-                # if queuesize is empty, say so
-
-
-                #manually code this for now:
-                # # if self.index %3 == 0 or self.index %3 == 1 or self.index %3 == 2:
-                # if self.index %3 == 0:
-                #     # print("key vs me", self.shared_speedtestAVAR.keys(), type(self.shared_speedtestAVAR.keys()[0]), self.index, self.index %2, type(self.index%2) )
-                    
-                #     #now u have to search for self.index in shared_analyzedAVAR.keys for the right key:
-                #     # sharedanalyzedkeysA = self.shared_analyzedAVAR.keys()
-                #     keyref = [x for x in self.shared_analyzedAKeycountVAR.keys() if 'key' in x and self.shared_analyzedAKeycountVAR[x] == self.index]
-                #     if keyref == []:
-                #         print("keyfauiledA", self.index, [self.shared_analyzedAKeycountVAR[x] for x in self.shared_analyzedAKeycountVAR.keys() if 'key' in x] , flush = True)
-                #         # print("keyref fail! A,",self.index, keyref, self.shared_analyzedAVAR.keys(),[self.shared_analyzedAVAR[x] for x in self.shared_analyzedAVAR.keys() if isinstance(self.shared_analyzedAVAR[x],int)],  flush = True)
-                #         pass
-                #     else:
-                #         frameref = "frame" + keyref[0].replace("key",'')
-                #         # print("frame passed?A", frameref, self.index, self.shared_analyzedAVAR[keyref[0]], self.index == self.shared_analyzedAVAR[keyref[0]], self.shared_analyzedAVAR.keys(), flush = True)
-                #         frame = self.shared_analyzedAVAR[frameref]
-                #     # frame = self.shared_analyzedAVAR[self.index]
-                #     # self.shared_analyzedAVAR.pop(self.index)
-                #     # #delete all the keys < our index:
-                #     # [self.shared_analyzedAVAR.pop(x) for x in self.shared_analyzedAVAR.keys() if x < self.index]
-                #     # print("why is it getting bigger? A(reading function isn't throttled....)", self.index, self.shared_analyzedAVAR.keys())
-                # if self.index %3 == 1:
-                #     # print("key vs me", self.shared_speedtestBVAR.keys(), type(self.shared_speedtestBVAR.keys()[0]), self.index, self.index %2, type(self.index%2) )
-                #     # sharedanalyzedB = self.shared_analyzedBVAR.keys()
-                #     keyref = [x for x in self.shared_analyzedBKeycountVAR.keys() if 'key' in x and self.shared_analyzedBKeycountVAR[x] == self.index]
-                #     if keyref == []:
-                #         # print("keyref fail! B,",self.index, keyref, self.shared_analyzedBVAR.keys(),[self.shared_analyzedBVAR[x] for x in self.shared_analyzedBVAR.keys() if isinstance(self.shared_analyzedBVAR[x],int)], flush = True)
-                #         # print("keyfauiledB", self.index, [self.shared_analyzedBVAR[x] for x in self.shared_analyzedBVAR.keys() if 'key' in x] , flush = True)
-                #         pass
-                #     else:
-                #         frameref = "frame" + keyref[0].replace("key",'')
-                #         # print("frame passed?B", frameref, self.index, self.shared_analyzedBVAR[keyref[0]], self.index == self.shared_analyzedBVAR[keyref[0]], self.shared_analyzedBVAR.keys(), flush = True)
-                #         frame = self.shared_analyzedBVAR[frameref]
-                #     # frame = self.shared_analyzedBVAR[self.index]
-                #     # self.shared_analyzedBVAR.pop(self.index)
-                #     # [self.shared_analyzedBVAR.pop(x) for x in self.shared_analyzedBVAR.keys() if x < self.index]
-                #     # print("why is it getting bigger? B(reading function isn't throttled....)", self.index, self.shared_analyzedBVAR.keys())
-                # if self.index %3 == 2:
-                #     # print("key vs me", self.shared_speedtestCVAR.keys(), type(self.shared_speedtestCVAR.keys()[0]), self.index, self.index %2, type(self.index%2) )
-                #     # sharedanalyzedkeysC = self.shared_analyzedCVAR.keys()
-                #     keyref = [x for x in self.shared_analyzedCKeycountVAR.keys() if 'key' in x and self.shared_analyzedCKeycountVAR[x] == self.index]
-                #     if keyref == []:
-                #         # print("keyref fail! C,",self.index, keyref, self.shared_analyzedCVAR.keys(),[self.shared_analyzedCVAR[x] for x in self.shared_analyzedCVAR.keys() if isinstance(self.shared_analyzedAVAR[x],int)],flush = True)
-                #         # print("keyfauiledC", self.index, [self.shared_analyzedCVAR[x] for x in self.shared_analyzedCVAR.keys() if 'key' in x] , flush = True)
-                #         pass
-                #     else:
-                #         frameref = "frame" + keyref[0].replace("key",'')
-                #         # print("frame passed?C", frameref, self.index, self.shared_analyzedCVAR[keyref[0]], self.index == self.shared_analyzedCVAR[keyref[0]], self.shared_analyzedCVAR.keys(), flush = True)
-                #         frame = self.shared_analyzedCVAR[frameref]
-                #     # frame = self.shared_analyzedCVAR[self.index]
-                #     # self.shared_analyzedCVAR.pop(self.index)
-                #     # [self.shared_analyzedCVAR.pop(x) for x in self.shared_analyzedCVAR.keys() if x < self.index]
-                #     # print("why is it getting bigger? C(reading function isn't throttled....)", self.index, self.shared_analyzedCVAR.keys())
-                
-                # self.newt = time.time()
-
-                # #this is def slow...
-                # # try: 
-                # #     frame
-                # # except:
-                # #     frame = None
-                
-                # # https://stackoverflow.com/questions/43748991/how-to-check-if-a-variable-is-either-a-python-list-numpy-array-or-pandas-series
-                # # if not isinstance(frame,np.ndarray):
-
-                # # # dummyinfo for speed testing
-                # # dummyframe = np.full((1920,1080, 3), [180, 180, 180], dtype=np.uint8)
-                # # dummyframe = dummyframe.tobytes()
-                # # frame = dummyframe
-                # # keyref = [[]]
-                
-                # if frame is None:
-                # if keyref == []:
-                #     # print("frame ded")
-                #     pass
-                # else:
+                # https://stackoverflow.com/questions/43748991/how-to-check-if-a-variable-is-either-a-python-list-numpy-array-or-pandas-series
                 try:
-                    #frame is already in bytes, just reshape it then reset to bytes again
-                    # frame = blosc2.unpack(frame)
-                    frame = blosc2.unpack_array2(frame)
-                    buf = frame.tobytes()
-                    # buf = frame.tobytes()
-                    frame = np.frombuffer(frame, np.uint8).copy().reshape(1080, 1920, 3)
-                    
-                    # complicated way of safely checking if a value may or may not exist, then get that value:
-                    #quickly checked this, time is 0...
-                    existence_check = [
-                        frame.shape[x] for x in range(0, len(frame.shape)) if x == 2
-                    ]
-                    # only valid dimensions are if pixels are 3 (RGB) or 4 (RGBA, but u have to also set the colorfmt)
-                    if [x for x in existence_check if x == 3 or x == 4] == []:
-                        raise Exception(
-                            "check your numpy dimensions! should be (height, width, 3 for RGB/ 4 for RGBA): like  (1920,1080,3): ",
-                            frame.shape, frame
-                        )
-                    # buf = frame.tobytes()
-                    
-                    # # check for existence of colorfmt in shared_metadata_dict, then if so, set colorfmt:
-                    # formatoption = [
-                    #     shared_metadata_dict[x]
-                    #     for x in shared_metadata_dict.keys()
-                    #     if x == "colorfmt"
-                    # ]
-                    # if len(formatoption) != 0:
-                    #     self.colorfmtval = formatoption[0]
-                    # else:
-                    #     # default to bgr
-                    #     self.colorfmtval = "bgr"
+                    if frame != None:
+                        frame = blosc2.unpack_array2(frame)
+                        if isinstance(frame,np.ndarray):
+                            buf = frame.tobytes()
+                            frame = np.frombuffer(frame, np.uint8).copy().reshape(1080, 1920, 3)
+                            
+                            # complicated way of safely checking if a value may or may not exist, then get that value:
+                            #quickly checked this, time is 0...
+                            existence_check = [
+                                frame.shape[x] for x in range(0, len(frame.shape)) if x == 2
+                            ]
+                            # only valid dimensions are if pixels are 3 (RGB) or 4 (RGBA, but u have to also set the colorfmt)
+                            if [x for x in existence_check if x == 3 or x == 4] == []:
+                                raise Exception(
+                                    "check your numpy dimensions! should be (height, width, 3 for RGB/ 4 for RGBA): like  (1920,1080,3): ",
+                                    frame.shape, frame
+                                )
+                            
+                            # # check for existence of colorfmt in shared_metadata_dict, then if so, set colorfmt:
+                            # formatoption = [
+                            #     shared_metadata_dict[x]
+                            #     for x in shared_metadata_dict.keys()
+                            #     if x == "colorfmt"
+                            # ]
+                            # if len(formatoption) != 0:
+                            #     self.colorfmtval = formatoption[0]
+                            # else:
+                            #     # default to bgr
+                            #     self.colorfmtval = "bgr"
 
-                    self.colorfmtval = "bgr"
+                            self.colorfmtval = "bgr"
 
-                    # texture documentation: https://github.com/kivy/kivy/blob/master/kivy/graphics/texture.pyx
-                    # blit to texture
-                    # blit buffer example: https://stackoverflow.com/questions/61122285/kivy-camera-application-with-opencv-in-android-shows-black-screen
+                            # texture documentation: https://github.com/kivy/kivy/blob/master/kivy/graphics/texture.pyx
+                            # blit to texture
+                            # blit buffer example: https://stackoverflow.com/questions/61122285/kivy-camera-application-with-opencv-in-android-shows-black-screen
 
-                    # I think creating a new texture is lagging the app, opencv reads the file faster than the video ends
-                    # reference this, u need a reload observer: https://stackoverflow.com/questions/51546327/in-kivy-is-there-a-way-to-dynamically-change-the-shape-of-a-texture
-                    # for later, if I need to clear a texture this is the reference: https://stackoverflow.com/questions/55099463/how-to-update-a-texture-from-array-in-kivy
+                            # I think creating a new texture is lagging the app, opencv reads the file faster than the video ends
+                            # reference this, u need a reload observer: https://stackoverflow.com/questions/51546327/in-kivy-is-there-a-way-to-dynamically-change-the-shape-of-a-texture
+                            # for later, if I need to clear a texture this is the reference: https://stackoverflow.com/questions/55099463/how-to-update-a-texture-from-array-in-kivy
 
-                    # if hasattr(self, "texture1"):
-                    #     print("texture size?", self.texture1.size[0] != frame.shape[1] and self.texture1.size[1] != frame.shape[0])
-                    #     if (
-                    #         self.texture1.size[0] != frame.shape[1]
-                    #         and self.texture1.size[1] != frame.shape[0]
-                    #     ):
-                    #         print("texture size changed!", self.texture1.size)
-                    #         self.texture1 = Texture.create(
-                    #             size=(frame.shape[1], frame.shape[0]),
-                    #             colorfmt=self.colorfmtval,
-                    #         )
-                    #         self.texture1.add_reload_observer(self.populate_texture)
-                    #     else:
-                    #         print("populating ok texture", flush= True)
-                    #         self.populate_texture(self.texture1, buf)
-                    # else:
-                    #     print("notexture", flush= True)
-                    #     self.texture1 = Texture.create(
-                    #         size=(frame.shape[1], frame.shape[0]), colorfmt=self.colorfmtval
-                    #     )
-                    #     self.texture1.blit_buffer(
-                    #         buf, colorfmt=self.colorfmtval, bufferfmt="ubyte"
-                    #     )
-                    #     self.texture1.add_reload_observer(self.populate_texture)
+                            # if hasattr(self, "texture1"):
+                            #     print("texture size?", self.texture1.size[0] != frame.shape[1] and self.texture1.size[1] != frame.shape[0])
+                            #     if (
+                            #         self.texture1.size[0] != frame.shape[1]
+                            #         and self.texture1.size[1] != frame.shape[0]
+                            #     ):
+                            #         print("texture size changed!", self.texture1.size)
+                            #         self.texture1 = Texture.create(
+                            #             size=(frame.shape[1], frame.shape[0]),
+                            #             colorfmt=self.colorfmtval,
+                            #         )
+                            #         self.texture1.add_reload_observer(self.populate_texture)
+                            #     else:
+                            #         print("populating ok texture", flush= True)
+                            #         self.populate_texture(self.texture1, buf)
+                            # else:
+                            #     print("notexture", flush= True)
+                            #     self.texture1 = Texture.create(
+                            #         size=(frame.shape[1], frame.shape[0]), colorfmt=self.colorfmtval
+                            #     )
+                            #     self.texture1.blit_buffer(
+                            #         buf, colorfmt=self.colorfmtval, bufferfmt="ubyte"
+                            #     )
+                            #     self.texture1.add_reload_observer(self.populate_texture)
 
-                    # print("blitting to texture index:", self.index)
+                            # print("blitting to texture index:", self.index)
 
-                    self.texture1 = Texture.create(
-                        size=(frame.shape[1], frame.shape[0]), colorfmt=self.colorfmtval
-                    )
-                    self.texture1.blit_buffer(
-                        buf, colorfmt=self.colorfmtval, bufferfmt="ubyte"
-                    )
-                    App.get_running_app().root.get_screen("start_screen_name").ids[
-                        "image_textureID"
-                    ].texture = self.texture1
+                            self.texture1 = Texture.create(
+                                size=(frame.shape[1], frame.shape[0]), colorfmt=self.colorfmtval
+                            )
+                            self.texture1.blit_buffer(
+                                buf, colorfmt=self.colorfmtval, bufferfmt="ubyte"
+                            )
+                            App.get_running_app().root.get_screen("start_screen_name").ids[
+                                "image_textureID"
+                            ].texture = self.texture1
+                    else:
+                        if self.index != 0:
+                            fprint("missed frame#", self.index)
                 except Exception as e: 
                     print("blitting died!", e, flush=True)
                     import traceback
@@ -373,6 +257,7 @@ FCVA_screen_manager: #remember to return a root widget
     MainApp.spf = args[10]
     MainApp.bufferlen = args[11]
     MainApp.cvpartitions = args[12]
+    MainApp.framelength = args[13]
 
     MainApp().run()
 
@@ -419,6 +304,9 @@ def open_cvpipeline(*args):
         internal_framecount = 0
         analyzedframecounter = 0
         instance_count = 0
+        
+        pid = os.getpid()
+        shared_globalindexVAR["subprocess" + str(pid)] = True
 
         from queue import Queue
         raw_queue = Queue(maxsize=bufferlen)
@@ -452,8 +340,8 @@ def open_cvpipeline(*args):
                     Write
                         Write to shared dict if init OR frames are old
                 '''
-                #make sure things have started:
-                if "starttime" in shared_globalindexVAR:
+                #make sure things have started AND this processess is not stopped:
+                if "starttime" in shared_globalindexVAR and shared_globalindexVAR["subprocess" + str(pid)]:
                     if raw_queue.qsize() == 0:
                         #get the right framecount:
                         framelist = frameblock(partitionnumber,instance_count,bufferlen,maxpartitions)
@@ -465,6 +353,11 @@ def open_cvpipeline(*args):
                                 raw_queue.put(framedata)
                                 raw_queueKEYS.put(framelist[x % bufferlen])
                             internal_framecount += 1
+                            fprint("ret, queue, keys, internal",ret, type(framedata), framelist[x % bufferlen], internal_framecount)
+                            current_framenumber = int((time.time() - shared_globalindexVAR["starttime"])/(1/fps))
+                            if not ret and current_framenumber > internal_framecount+fps: #if ret is false, and we passed EOS (add 1 second (fps amount of frames) from internal_framecount AKA current_framenumber > internal_framecount + fps)
+                                shared_globalindexVAR["subprocess" + str(pid)] = ret #say so in PID and wait for another process to reset it
+                                fprint("PID STOPPED", pid, internal_framecount)
                     
                     if raw_queue.qsize() > 0 and analyzed_queue.qsize() == 0:
                         #analyze all the frames and write to sharedmem:
@@ -505,7 +398,12 @@ class FCVA:
             shared_analysis_dict = shared_mem_manager.dict()
             # shared_metadata_dict holds keys about run states so things don't error by reading something that doesn't exist
             shared_metadata_dict = shared_mem_manager.dict()
-            
+            # FEAR OF USING SHARED METADATA DICT TOO MUCH: too many processes lock up the memory too much....
+            # 2nd shared metadata dict: shared global index
+            shared_globalindex = shared_mem_manager.dict()
+            shared_globalindex["curframe"] = 0
+
+
             # shared_poolmeta_dict = shared_mem_manager.dict()
             # analyze_pool_count = 3
             # for x in range(analyze_pool_count):
@@ -518,8 +416,6 @@ class FCVA:
             shared_analyzedC = shared_mem_manager.dict()
             shared_analyzedCKeycount = shared_mem_manager.dict()
             
-            shared_globalindex = shared_mem_manager.dict()
-            shared_globalindex["curframe"] = 0
 
             # set metadata kivy_run_state to true so cv subprocess will run and not get an error by reading uninstantiated shared memory.
             shared_metadata_dict["kivy_run_state"] = True
@@ -615,6 +511,15 @@ class FCVA:
             # read just to get the fps
             video = cv2.VideoCapture(self.source)
             self.fps = video.get(cv2.CAP_PROP_FPS)
+            #opencv is accurately guessing, read through everything for accuracy:
+            # https://stackoverflow.com/questions/31472155/python-opencv-cv2-cv-cv-cap-prop-frame-count-get-wrong-numbers
+            # self.length = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
+            self.length = 0
+            while True: 
+                ret, framevar = video.read()
+                if not ret:
+                    break
+                self.length += 1
             video.release()
 
             bufferlen = 10
@@ -706,10 +611,9 @@ class FCVA:
 
             kivy_subprocess = FCVA_mp.Process(
                 target=open_kivy,
-                args=(shared_analysis_dict, shared_metadata_dict, self.fps, shared_globalindex, shared_analyzedA, shared_analyzedB, shared_analyzedC,shared_analyzedAKeycount,shared_analyzedBKeycount,shared_analyzedCKeycount, (1/self.fps), bufferlen,cvpartitions)
+                args=(shared_analysis_dict, shared_metadata_dict, self.fps, shared_globalindex, shared_analyzedA, shared_analyzedB, shared_analyzedC,shared_analyzedAKeycount,shared_analyzedBKeycount, shared_analyzedCKeycount, (1/self.fps), bufferlen,cvpartitions, self.length)
             )
             kivy_subprocess.start()
-            
 
             # this try except block holds the main process open so the subprocesses aren't cleared when the main process exits early.
             while "kivy_run_state" in shared_metadata_dict.keys():
