@@ -50,8 +50,8 @@ if __name__ == "__main__":
     # / and \ works on windows, only / on mac tho 
     # C:\Personalize\CODING\FastCVApp\fastcvapp\examples\creativecommonsmedia\Elephants Dream charstart2FULL.webm
     # C:\Personalize\CODING\FastCVApp\FastCVApp\examples\creativecommonsmedia\Elephants Dream charstart2.webm
-    # app.source = "examples\creativecommonsmedia\Elephants Dream charstart2.webm"
-    app.source = "examples\creativecommonsmedia\Elephants Dream 2s.webm"
+    app.source = "examples\creativecommonsmedia\Elephants Dream charstart2.webm"
+    # app.source = "examples\creativecommonsmedia\Elephants Dream 2s.webm"
     # app.source = "examples/creativecommonsmedia/Elephants Dream charstart2FULL.webm"
     # app.source = "examples/creativecommonsmedia/Elephants Dream charstart2.webm"
     # app.source = "examples/creativecommonsmedia/JoJo-s Bizarre Adventure - S05E25 - DUAL 1080p WEB H.264 -NanDesuKa (NF) (1).1080.mp4"
