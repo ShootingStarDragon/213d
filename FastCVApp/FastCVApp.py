@@ -15,6 +15,9 @@ def open_kivy(*args):
     from kivy.uix.screenmanager import ScreenManager, Screen
     from kivy.graphics.texture import Texture
     from kivy.clock import Clock
+    from kivy.modules import inspector
+    from kivy.core.window import Window
+    from kivy.uix.button import Button
 
     class MainApp(App):
         def __init__(self, *args, **kwargs):
@@ -53,19 +56,23 @@ def open_kivy(*args):
             value_track_color: 1, 0, 0, 1
             size_hint: (1, 0.1)
             orientation: 'horizontal'
-        Label:
-            text: str(vidslider.value) #convert slider label to a time
+        BoxLayout:
+            orientation: 'horizontal'
             size_hint: (1, 0.1)
-        Button:
-            id: StartScreenButton
-            text: "Start analyzing! (Play/Pause)"
-            on_release: kivy.app.App.get_running_app().toggleCV()
+            Button:
+                id: StartScreenButton
+                text: "Start analyzing! (Play/Pause)"
+                on_release: kivy.app.App.get_running_app().toggleCV()
+            Label:
+                text: str(vidslider.value) #convert slider label to a time
 
 FCVA_screen_manager: #remember to return a root widget
 """
         def build(self):
             self.title = self.shared_metadata_dictVAR["title"]
             build_app_from_kv = Builder.load_string(self.KV_string)
+            button = Button(text="Test")
+            inspector.create_inspector(Window, button)
             return build_app_from_kv
 
         def on_start(self):
