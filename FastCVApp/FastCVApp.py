@@ -45,10 +45,11 @@ def open_kivy(*args):
     id: start_screen_id
     BoxLayout:
         orientation: 'vertical'
+        id: mainBoxLayoutID
         Image:
             id: image_textureID
         Slider:
-            id: vidslider
+            id: vidsliderID
             min: 0
             max: {self.framelength} #should be 30*total_seconds
             step: 1
@@ -57,14 +58,15 @@ def open_kivy(*args):
             size_hint: (1, 0.1)
             orientation: 'horizontal'
         BoxLayout:
+            id: subBoxLayoutID1
             orientation: 'horizontal'
             size_hint: (1, 0.1)
             Button:
-                id: StartScreenButton
-                text: "Start analyzing! (Play/Pause)"
+                id: StartScreenButtonID
+                text: "Play"
                 on_release: kivy.app.App.get_running_app().toggleCV()
             Label:
-                text: str(vidslider.value) #convert slider label to a time
+                text: str(vidsliderID.value) #convert slider label to a time
 
 FCVA_screen_manager: #remember to return a root widget
 """
@@ -232,6 +234,16 @@ FCVA_screen_manager: #remember to return a root widget
                     pass
         
         def toggleCV(self, *args):
+            # fprint("what are args, do I have widget?, nope, do the search strat", args)
+            # fprint("id searching", )
+            widgettext = App.get_running_app().root.get_screen('start_screen_name').ids['StartScreenButtonID'].text
+            fprint("widgettext is?", widgettext)
+            if "Play" in widgettext:
+                App.get_running_app().root.get_screen('start_screen_name').ids['StartScreenButtonID'].text = "Pause"
+                fprint("set to pause?", "Pause")
+            else:
+                App.get_running_app().root.get_screen('start_screen_name').ids['StartScreenButtonID'].text = "Play"
+                fprint("set to play?", "Play")
             if "toggleCV" not in self.shared_metadata_dictVAR.keys():
                 self.shared_metadata_dictVAR["toggleCV"] = True
                 if self.starttime == None:
@@ -360,7 +372,7 @@ def open_cvpipeline(*args):
                                 raw_queue.put(framedata)
                                 raw_queueKEYS.put(framelist[x % bufferlen])
                             internal_framecount += 1
-                            fprint("ret, queue, keys, internal",ret, type(framedata), framelist[x % bufferlen], internal_framecount)
+                            # fprint("ret, queue, keys, internal",ret, type(framedata), framelist[x % bufferlen], internal_framecount)
                             current_framenumber = int((time.time() - shared_globalindexVAR["starttime"])/(1/fps))
                             if not ret and current_framenumber > internal_framecount+fps: #if ret is false, and we passed EOS (add 1 second (fps amount of frames) from internal_framecount AKA current_framenumber > internal_framecount + fps)
                                 shared_globalindexVAR["subprocess" + str(pid)] = ret #say so in PID and wait for another process to reset it
