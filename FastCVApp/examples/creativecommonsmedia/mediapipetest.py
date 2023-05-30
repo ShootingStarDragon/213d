@@ -169,6 +169,9 @@ with mp.tasks.vision.PoseLandmarker.create_from_options(options) as landmarker:
     print("time???", time2-time1)
     if cv2.waitKey(10) & 0xFF == ord('q'): # This puts you out of the loop above if you hit q
         break
+    '''
+    the approach is 
+    '''
 
 
 
