@@ -104,8 +104,31 @@ holistic = mp.solutions.holistic.Holistic(min_detection_confidence=0.5, min_trac
 
 import time
 
+class mediapipeThread:
+    def start():
+        ..
+
+    def update():
+        #the thread looks at an input queue and spits out the output queue
+
 def sepia_filter(*args):
     try:
+        raw_queueVAR = args[0]
+        shared_globalindex_dictVAR2 = args[1]
+        #init mediapipe with/while loop as a thread
+            #don't start too many
+            # how to store data?, you have to start in subprocess btw, screw it just pass the shared dict info
+        #check for thread:
+        if "mediapipeThread" + str(os.getpid()) not in shared_globalindex_dictVAR2.keys():
+            #start the thread
+            mediapipeThread.start()
+            shared_globalindex_dictVAR2["mediapipeThread" + str(os.getpid())] = True
+        #transfer queue items: raw_queueVAR > new queue
+        
+        
+        
+        
+        
         # image = args[0]
         time1 = time.time()
         
