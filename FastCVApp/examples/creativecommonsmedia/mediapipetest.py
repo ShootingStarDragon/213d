@@ -195,15 +195,15 @@ with mp.tasks.vision.PoseLandmarker.create_from_options(options) as landmarker:
 
 # # #no with: yo it actually deletes memory, NICE
 # landmarker = mp.tasks.vision.PoseLandmarker.create_from_options(options)
-# # The landmarker is initialized. Use it here.
-# # ...
-# ret = True #init ret
-# # ibid = 0q
+# ret = True
 # while ret:
 #   # print("rotations?",ibid, flush=True)
 #   ret, image = cap.read()
 #   time1 = time.time()
-#   ogimage = image
+  
+#   ogimage = image.copy()
+#   image = cv2.resize(image, (1280, 720)) #interpolation = cv2.INTER_AREA makes mediapipe detect nothing...
+#   # print("image shape?", image.shape)
 
 #   # Recolor Feed
 #   # image.flags.writeable = False  # I have read that writable false/true this makes things faster for mediapipe holistic
@@ -218,7 +218,10 @@ with mp.tasks.vision.PoseLandmarker.create_from_options(options) as landmarker:
 #   # Recolor image back to BGR for rendering
 #   # image.flags.writeable = True
 #   # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-#   fixed_image = draw_landmarks_on_image(image.numpy_view(), results)
+#   # fixed_image = draw_landmarks_on_image(image.numpy_view(), results)
+#   #now draw on original image: 
+#   fixed_image = draw_landmarks_on_image(ogimage, results)
+#   #YOOO IT'S ALREADY NORMALIZED, NO NEED TO DO ANYTHING POGGERSSSSSSSS AND IT KEEPS THE SPEED HOLY
   
 #   # WORKS BUT IS STUCK 
 #   # fixed_image = draw_landmarks_on_image(mp.Image(image_format=mp.ImageFormat.SRGB, data=image).numpy_view(), detection_result)
@@ -227,7 +230,7 @@ with mp.tasks.vision.PoseLandmarker.create_from_options(options) as landmarker:
 #   # ibid+= 1
   
 #   cv2.imshow("shower window", fixed_image)
-#   cv2.imshow("og window", cv2.flip(ogimage, 0))
+#   # cv2.imshow("og window", cv2.flip(ogimage, 0))
 #   time2 = time.time()
 #   print("time???", time2-time1)
 #   if cv2.waitKey(10) & 0xFF == ord('q'): # This puts you out of the loop above if you hit q
