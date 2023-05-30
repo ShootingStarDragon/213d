@@ -395,15 +395,25 @@ def open_cvpipeline(*args):
                                 fprint("PID STOPPED", pid, internal_framecount)
                     
                     if raw_queue.qsize() > 0 and analyzed_queue.qsize() == 0:
-                        #analyze all the frames and write to sharedmem:
-                        for x in range(raw_queue.qsize()):
-                            result = appliedcv(
-                                        raw_queue.get(),
-                                    )
-                            #compress the numpy array with blosc so that reading is not as bad of a bottleneck
-                            result_compressed = blosc2.pack_array2(result)
+                        #give the queue to the cv func
+                        #cv func returns a queue of frames
+                        #then get from the analyzed queue and apply blosc2
+                        resultlist = appliedcv(raw_queue, shared_globalindex_dictVAR)
+                        for x in resultlist:
+                            result_compressed = blosc2.pack_array2(x)
                             analyzed_queue.put(result_compressed)
                             analyzed_queueKEYS.put(raw_queueKEYS.get())
+
+
+                        # #analyze all the frames and write to sharedmem:
+                        # for x in range(raw_queue.qsize()):
+                        #     result = appliedcv(
+                        #                 raw_queue.get(),
+                        #             )
+                        #     #compress the numpy array with blosc so that reading is not as bad of a bottleneck
+                        #     result_compressed = blosc2.pack_array2(result)
+                        #     analyzed_queue.put(result_compressed)
+                        #     analyzed_queueKEYS.put(raw_queueKEYS.get())
                     
                     current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
                     if analyzed_queue.qsize() == bufferlen and max(shared_analyzedKeycountVAR.values()) < current_framenumber:
