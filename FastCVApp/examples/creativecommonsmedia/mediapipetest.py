@@ -12,6 +12,9 @@ no segmentation mask, 1080p, cvtcolor to bgr then feed bgr to mediapipe, 0.08487
 
 segmentation mask ON, 1080p, 0.10410904884338379
 
+
+#try resizing to 720p for SPEED, it worked WITH SEGMASK, 720p is 0.049523353576660156 sec... that's VERY doable
+#720p, no SEGMASK, speed is 0.05>0.09
 '''
 
 import cv2
@@ -57,26 +60,32 @@ import numpy as np
 
 
 def draw_landmarks_on_image(rgb_image, detection_result):
-  pose_landmarks_list = detection_result.pose_landmarks
-  annotated_image = np.copy(rgb_image)
-  annotated_image = cv2.cvtColor(annotated_image, cv2.COLOR_BGR2RGB)
+  try:
+    pose_landmarks_list = detection_result.pose_landmarks
+    annotated_image = np.copy(rgb_image)
+    annotated_image = cv2.cvtColor(annotated_image, cv2.COLOR_BGR2RGB)
 
-  # Loop through the detected poses to visualize.
-  for idx in range(len(pose_landmarks_list)):
-    pose_landmarks = pose_landmarks_list[idx]
+    # Loop through the detected poses to visualize.
+    for idx in range(len(pose_landmarks_list)):
+      pose_landmarks = pose_landmarks_list[idx]
 
-    # Draw the pose landmarks.
-    pose_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
-    pose_landmarks_proto.landmark.extend([
-      landmark_pb2.NormalizedLandmark(x=landmark.x, y=landmark.y, z=landmark.z) for landmark in pose_landmarks
-    ])
-    solutions.drawing_utils.draw_landmarks(
-      annotated_image,
-      pose_landmarks_proto,
-      solutions.pose.POSE_CONNECTIONS,
-      solutions.drawing_styles.get_default_pose_landmarks_style())
-#   print("return typoe?", type(annotated_image))
-  return annotated_image
+      # Draw the pose landmarks.
+      pose_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
+      pose_landmarks_proto.landmark.extend([
+        landmark_pb2.NormalizedLandmark(x=landmark.x, y=landmark.y, z=landmark.z) for landmark in pose_landmarks
+      ])
+      solutions.drawing_utils.draw_landmarks(
+        annotated_image,
+        pose_landmarks_proto,
+        solutions.pose.POSE_CONNECTIONS,
+        solutions.drawing_styles.get_default_pose_landmarks_style())
+    # print("return typoe?", type(annotated_image), len(detection_result.pose_landmarks))
+    return annotated_image
+  except Exception as e:
+    print("open_appliedcv died!", e)
+    import traceback
+    print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
+  
 
 # STEP 1: Import the necessary modules.
 import mediapipe as mp
@@ -128,9 +137,12 @@ VisionRunningMode = mp.tasks.vision.RunningMode
 options = vision.PoseLandmarkerOptions(
     base_options=base_options,
     running_mode=VisionRunningMode.VIDEO,
-    output_segmentation_masks=True) #idk how to add a video running_mode=VisionRunningMode.VIDEO,output_segmentation_masks=True
+    ) #idk how to add a video running_mode=VisionRunningMode.VIDEO,output_segmentation_masks=True
 detector = vision.PoseLandmarker.create_from_options(options)
 
+#average speed of mediapipe is 0.06 sec, with spikes to 0.14 sec.... > mediapipe is still 16 fps... try resizing?
+#using with keyword, way better as in SUPER AGGRESSIVE memory management, holds at ~380MB straight up. 
+#try this and run mediapipe as a thread, i don't think it's that much extra
 with mp.tasks.vision.PoseLandmarker.create_from_options(options) as landmarker:
   # The landmarker is initialized. Use it here.
   # ...
@@ -140,7 +152,10 @@ with mp.tasks.vision.PoseLandmarker.create_from_options(options) as landmarker:
     # print("rotations?",ibid, flush=True)
     ret, image = cap.read()
     time1 = time.time()
-    ogimage = image
+    
+    ogimage = image.copy()
+    image = cv2.resize(image, (1280, 720)) #interpolation = cv2.INTER_AREA makes mediapipe detect nothing...
+    # print("image shape?", image.shape)
 
     # Recolor Feed
     # image.flags.writeable = False  # I have read that writable false/true this makes things faster for mediapipe holistic
@@ -155,7 +170,10 @@ with mp.tasks.vision.PoseLandmarker.create_from_options(options) as landmarker:
     # Recolor image back to BGR for rendering
     # image.flags.writeable = True
     # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    fixed_image = draw_landmarks_on_image(image.numpy_view(), results)
+    # fixed_image = draw_landmarks_on_image(image.numpy_view(), results)
+    #now draw on original image: 
+    fixed_image = draw_landmarks_on_image(ogimage, results)
+    #YOOO IT'S ALREADY NORMALIZED, NO NEED TO DO ANYTHING POGGERSSSSSSSS AND IT KEEPS THE SPEED HOLY
     
     # WORKS BUT IS STUCK 
     # fixed_image = draw_landmarks_on_image(mp.Image(image_format=mp.ImageFormat.SRGB, data=image).numpy_view(), detection_result)
@@ -164,7 +182,7 @@ with mp.tasks.vision.PoseLandmarker.create_from_options(options) as landmarker:
     # ibid+= 1
     
     cv2.imshow("shower window", fixed_image)
-    cv2.imshow("og window", cv2.flip(ogimage, 0))
+    # cv2.imshow("og window", cv2.flip(ogimage, 0))
     time2 = time.time()
     print("time???", time2-time1)
     if cv2.waitKey(10) & 0xFF == ord('q'): # This puts you out of the loop above if you hit q
@@ -172,6 +190,51 @@ with mp.tasks.vision.PoseLandmarker.create_from_options(options) as landmarker:
     '''
     the approach is 
     '''
+
+
+
+# # #no with: yo it actually deletes memory, NICE
+# landmarker = mp.tasks.vision.PoseLandmarker.create_from_options(options)
+# # The landmarker is initialized. Use it here.
+# # ...
+# ret = True #init ret
+# # ibid = 0q
+# while ret:
+#   # print("rotations?",ibid, flush=True)
+#   ret, image = cap.read()
+#   time1 = time.time()
+#   ogimage = image
+
+#   # Recolor Feed
+#   # image.flags.writeable = False  # I have read that writable false/true this makes things faster for mediapipe holistic
+#   image = mp.Image(image_format=mp.ImageFormat.SRGB, data=image)
+#   # Make Detections
+#   # results = detector.detect(image)
+#   results = landmarker.detect_for_video(image, int(cap.get(cv2.CAP_PROP_POS_MSEC)))
+  
+#   # WORKS BUT IS STUCK 
+#   # results = detector.detect(mp.Image(image_format=mp.ImageFormat.SRGB, data=image))
+  
+#   # Recolor image back to BGR for rendering
+#   # image.flags.writeable = True
+#   # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+#   fixed_image = draw_landmarks_on_image(image.numpy_view(), results)
+  
+#   # WORKS BUT IS STUCK 
+#   # fixed_image = draw_landmarks_on_image(mp.Image(image_format=mp.ImageFormat.SRGB, data=image).numpy_view(), detection_result)
+  
+#   fixed_image = cv2.cvtColor(fixed_image, cv2.COLOR_RGB2BGR)
+#   # ibid+= 1
+  
+#   cv2.imshow("shower window", fixed_image)
+#   cv2.imshow("og window", cv2.flip(ogimage, 0))
+#   time2 = time.time()
+#   print("time???", time2-time1)
+#   if cv2.waitKey(10) & 0xFF == ord('q'): # This puts you out of the loop above if you hit q
+#       break
+#   '''
+#   the approach is 
+#   '''
 
 
 
