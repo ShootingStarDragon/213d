@@ -162,6 +162,7 @@ with mp.tasks.vision.PoseLandmarker.create_from_options(options) as landmarker:
     image = mp.Image(image_format=mp.ImageFormat.SRGB, data=image)
     # Make Detections
     # results = detector.detect(image)
+    print("msec?", int(cap.get(cv2.CAP_PROP_POS_MSEC)))
     results = landmarker.detect_for_video(image, int(cap.get(cv2.CAP_PROP_POS_MSEC)))
     
     # WORKS BUT IS STUCK 
