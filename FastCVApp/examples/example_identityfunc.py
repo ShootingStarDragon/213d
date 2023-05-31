@@ -17,6 +17,8 @@ else:
         # assume they're in main folder trying `python examples/example_backgroundsubtraction.py`
         sys.path.append("../FastCVApp")  # when running from main folder
 
+
+
 import FastCVApp
 
 app = FastCVApp.FCVA()
@@ -102,94 +104,211 @@ holistic = mp.solutions.holistic.Holistic(min_detection_confidence=0.5, min_trac
 # Remember that contexts __exit__ method are used for managing errors within the context, so most of them have a signature of __exit__(exception_type, exception_value, traceback), if you dont need to handle it for the tests, just give it some None values:
 # mp.solutions.holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5).__exit__(None,None,None)
 
+from mediapipe import solutions
+from mediapipe.framework.formats import landmark_pb2
+import numpy as np
+def draw_landmarks_on_image(rgb_image, detection_result):
+    try:
+        pose_landmarks_list = detection_result.pose_landmarks
+        annotated_image = np.copy(rgb_image)
+        annotated_image = cv2.cvtColor(annotated_image, cv2.COLOR_BGR2RGB)
+
+        # Loop through the detected poses to visualize.
+        for idx in range(len(pose_landmarks_list)):
+            pose_landmarks = pose_landmarks_list[idx]
+
+            # Draw the pose landmarks.
+            pose_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
+            pose_landmarks_proto.landmark.extend([
+                landmark_pb2.NormalizedLandmark(x=landmark.x, y=landmark.y, z=landmark.z) for landmark in pose_landmarks
+            ])
+            solutions.drawing_utils.draw_landmarks(
+                annotated_image,
+                pose_landmarks_proto,
+                solutions.pose.POSE_CONNECTIONS,
+                solutions.drawing_styles.get_default_pose_landmarks_style())
+        # print("return typoe?", type(annotated_image), len(detection_result.pose_landmarks))
+        return annotated_image
+    except Exception as e:
+        print("open_appliedcv died!", e)
+        import traceback
+        print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
+    
+
+
 import time
-
+from threading import Thread
 class mediapipeThread:
-    def start():
-        ..
+    def start(self, helperclass, metadata_dict):
+        try:
+            self.helperclassVAR = helperclass
+            self.thread = Thread(target=self.update, args=())
+            self.thread.daemon = True
+            self.thread.start()
+            self.shared_metadata_dictVAR3 = metadata_dict
+            print("DID THIS RUN???", flush = True)
+        except Exception as e:
+            print("open_mediapipe start died!", e, flush=True)
+            import traceback
+            print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
+        
+    def update(self):
+        try:
+            #references: 
+            # https://github.com/googlesamples/mediapipe/blob/main/examples/pose_landmarker/python/%5BMediaPipe_Python_Tasks%5D_Pose_Landmarker.ipynb
+            # https://developers.google.com/mediapipe/solutions/vision/pose_landmarker/python#video_1
+            # https://github.com/ShootingStarDragon/FastCVApp/blob/windows/%23119/FastCVApp/examples/creativecommonsmedia/mediapipetest.py
+            print("update worked?", flush = True)
+            from mediapipe.tasks import python
+            from mediapipe.tasks.python import vision
+            # 'I:\CODING\FastCVApp\FastCVApp\examples\creativecommonsmedia\pose_landmarker_full.task'
+            #set the cwd to reset it maybe?
+            # sys.path.remove('C:\\Users\\RaptorPatrolCore\\AppData\\Local\\pypoetry\\Cache\\virtualenvs\\fastcvapp-xQQQOsUa-py3.9\\lib\\site-packages')
+            print("check sys path after removing site-packages", sys.path, flush = True)
+            os.chdir('I:\CODING\FastCVApp\FastCVApp\examples\creativecommonsmedia')
+            base_options = python.BaseOptions(model_asset_path='pose_landmarker_full.task')
+            VisionRunningMode = mp.tasks.vision.RunningMode
+            options = vision.PoseLandmarkerOptions(
+                base_options=base_options,
+                running_mode=VisionRunningMode.VIDEO,
+                )
 
-    def update():
-        #the thread looks at an input queue and spits out the output queue
+            #init mediapipe while loop
+            #the thread looks at an input queue and spits out the output queue
+            with mp.tasks.vision.PoseLandmarker.create_from_options(options) as landmarker:
+                while True:
+                    print("update should be here","kivy_run_state" in self.shared_metadata_dictVAR3 and self.helperclassVAR.raw_queueVAR2.qsize() > 0,"kivy_run_state" in self.shared_metadata_dictVAR3 , self.helperclassVAR.raw_queueVAR2.qsize() > 0,flush =True)
+                    if "kivy_run_state" in self.shared_metadata_dictVAR3 and self.helperclassVAR.raw_queueVAR2.qsize() > 0:
+                        image = self.helperclassVAR.raw_queueVAR2.get()
+                        print("did i get?",type(image), flush=True)
+                        time1 = time.time()
+                        
+                        ogimage = image.copy()
+                        image = cv2.resize(image, (1280, 720)) #interpolation = cv2.INTER_AREA makes mediapipe detect nothing...
+                        # print("image shape?", image.shape)
 
+                        # Recolor Feed
+                        # image.flags.writeable = False  # I have read that writable false/true this makes things faster for mediapipe holistic
+                        image = mp.Image(image_format=mp.ImageFormat.SRGB, data=image)
+                        # Make Detections
+                        # results = detector.detect(image)
+                        # results = landmarker.detect_for_video(image, int(cap.get(cv2.CAP_PROP_POS_MSEC)))
+                        results = landmarker.detect_for_video(image)
+                        
+                        # WORKS BUT IS STUCK 
+                        # results = detector.detect(mp.Image(image_format=mp.ImageFormat.SRGB, data=image))
+                        
+                        # Recolor image back to BGR for rendering
+                        # image.flags.writeable = True
+                        # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                        # fixed_image = draw_landmarks_on_image(image.numpy_view(), results)
+                        #now draw on original image: 
+                        fixed_image = draw_landmarks_on_image(ogimage, results)
+                        #YOOO IT'S ALREADY NORMALIZED, NO NEED TO DO ANYTHING POGGERSSSSSSSS AND IT KEEPS THE SPEED HOLY
+                        
+                        # WORKS BUT IS STUCK 
+                        # fixed_image = draw_landmarks_on_image(mp.Image(image_format=mp.ImageFormat.SRGB, data=image).numpy_view(), detection_result)
+                        
+                        fixed_image = cv2.cvtColor(fixed_image, cv2.COLOR_RGB2BGR)
+                        self.helperclassVAR.resultsq.put(fixed_image)
+                        time2 = time.time()
+                        print("time???", time2-time1,os.getpid())
+        except Exception as e:
+            print("mediapipe update thread died!", e, flush=True)
+            import traceback
+            print("full exception", "".join(traceback.format_exception(*sys.exc_info())))    
 def sepia_filter(*args):
     try:
-        raw_queueVAR = args[0]
-        shared_globalindex_dictVAR2 = args[1]
+        open_cvpipeline_helper_instanceVAR = args[0]
+        raw_queueVAR = args[1]
+        shared_globalindex_dictVAR2 = args[2]
+        shared_metadata_dictVAR2 = args[3]
+        #add the queue to the helper instance that mediapipe thread will check:
+        open_cvpipeline_helper_instanceVAR.raw_queueVAR2 = raw_queueVAR
+
+
+
         #init mediapipe with/while loop as a thread
             #don't start too many
             # how to store data?, you have to start in subprocess btw, screw it just pass the shared dict info
         #check for thread:
         if "mediapipeThread" + str(os.getpid()) not in shared_globalindex_dictVAR2.keys():
-            #start the thread
-            mediapipeThread.start()
+            print("#start the thread", flush = True)
+            mediapipeThread().start(open_cvpipeline_helper_instanceVAR, shared_metadata_dictVAR2)
             shared_globalindex_dictVAR2["mediapipeThread" + str(os.getpid())] = True
+        
         #transfer queue items: raw_queueVAR > new queue
-        
-        
-        
-        
-        
-        # image = args[0]
-        time1 = time.time()
-        
-        frame = args[0]
-        frame = image_resize(frame, width = 1280, height = 720)
-        
-        # print("how long to read frame?", timef2 - timef1)# first frame takes a while and subsequent frames are fast: 0.9233419895172119 -> 0.006009101867675781
+        #what's the return? need to make sure i know the length of the original queue, then if return queue is that size, return it, NAH just make sure input is 0 and output is nonzero
+        while True:
+            # print("not exiting", open_cvpipeline_helper_instanceVAR.raw_queueVAR2.qsize(), open_cvpipeline_helper_instanceVAR.resultsq.qsize())
+            if open_cvpipeline_helper_instanceVAR.raw_queueVAR2.qsize() == 0 and open_cvpipeline_helper_instanceVAR.resultsq.qsize() > 0:
+                return open_cvpipeline_helper_instanceVAR.resultsq
 
-        # Recolor Feed
-        image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        image.flags.writeable = False  # I have read that writable false/true this makes things faster for mediapipe holistic as per https://github.com/google/mediapipe/blob/master/docs/solutions/pose.md
+        
+        
+        
+        
+        # # image = args[0]
+        # time1 = time.time()
+        
+        # frame = args[0]
+        # frame = image_resize(frame, width = 1280, height = 720)
+        
+        # # print("how long to read frame?", timef2 - timef1)# first frame takes a while and subsequent frames are fast: 0.9233419895172119 -> 0.006009101867675781
 
-        # Make Detections
-        results = holistic.process(image)
+        # # Recolor Feed
+        # image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        # image.flags.writeable = False  # I have read that writable false/true this makes things faster for mediapipe holistic as per https://github.com/google/mediapipe/blob/master/docs/solutions/pose.md
 
-        # # Recolor image back to BGR for rendering
-        # image.flags.writeable = True
-        # image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        # # Make Detections
+        # results = holistic.process(image)
 
-        # # 2. Right hand
-        # mp_drawing.draw_landmarks(
-        #     image,
-        #     results.right_hand_landmarks,
-        #     mp_holistic.HAND_CONNECTIONS,
-        #     mp_drawing.DrawingSpec(
-        #         color=(80, 22, 10), thickness=2, circle_radius=4
-        #     ),
-        #     mp_drawing.DrawingSpec(
-        #         color=(80, 44, 121), thickness=2, circle_radius=2
-        #     ),
-        # )
+        # # # Recolor image back to BGR for rendering
+        # # image.flags.writeable = True
+        # # image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
-        # # 3. Left Hand
-        # mp_drawing.draw_landmarks(
-        #     image,
-        #     results.left_hand_landmarks,
-        #     mp_holistic.HAND_CONNECTIONS,
-        #     mp_drawing.DrawingSpec(
-        #         color=(121, 22, 76), thickness=2, circle_radius=4
-        #     ),
-        #     mp_drawing.DrawingSpec(
-        #         color=(121, 44, 250), thickness=2, circle_radius=2
-        #     ),
-        # )
+        # # # 2. Right hand
+        # # mp_drawing.draw_landmarks(
+        # #     image,
+        # #     results.right_hand_landmarks,
+        # #     mp_holistic.HAND_CONNECTIONS,
+        # #     mp_drawing.DrawingSpec(
+        # #         color=(80, 22, 10), thickness=2, circle_radius=4
+        # #     ),
+        # #     mp_drawing.DrawingSpec(
+        # #         color=(80, 44, 121), thickness=2, circle_radius=2
+        # #     ),
+        # # )
 
-        # # 4. Pose Detections6
-        # mp_drawing.draw_landmarks(
-        #     image,
-        #     results.pose_landmarks,
-        #     mp_holistic.POSE_CONNECTIONS,
-        #     mp_drawing.DrawingSpec(
-        #         color=(245, 117, 66), thickness=2, circle_radius=4
-        #     ),
-        #     mp_drawing.DrawingSpec(
-        #         color=(245, 66, 230), thickness=2, circle_radius=2
-        #     ),
-        # )
-        time2 = time.time()
-        print("time??? oh shit", time2 - time1, flush= True)
-        image = image_resize(image, width = 1920, height = 1080)
-        return cv2.flip(image, 0)
+        # # # 3. Left Hand
+        # # mp_drawing.draw_landmarks(
+        # #     image,
+        # #     results.left_hand_landmarks,
+        # #     mp_holistic.HAND_CONNECTIONS,
+        # #     mp_drawing.DrawingSpec(
+        # #         color=(121, 22, 76), thickness=2, circle_radius=4
+        # #     ),
+        # #     mp_drawing.DrawingSpec(
+        # #         color=(121, 44, 250), thickness=2, circle_radius=2
+        # #     ),
+        # # )
+
+        # # # 4. Pose Detections6
+        # # mp_drawing.draw_landmarks(
+        # #     image,
+        # #     results.pose_landmarks,
+        # #     mp_holistic.POSE_CONNECTIONS,
+        # #     mp_drawing.DrawingSpec(
+        # #         color=(245, 117, 66), thickness=2, circle_radius=4
+        # #     ),
+        # #     mp_drawing.DrawingSpec(
+        # #         color=(245, 66, 230), thickness=2, circle_radius=2
+        # #     ),
+        # # )
+        # time2 = time.time()
+        # print("time??? oh shit", time2 - time1, flush= True)
+        # image = image_resize(image, width = 1920, height = 1080)
+        # return cv2.flip(image, 0)
 
         
         
@@ -258,6 +377,8 @@ def sepia_filter(*args):
 
     except Exception as e:
         print("open_mediapipe died!", e, flush=True)
+        import traceback
+        print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
 app.appliedcv = sepia_filter
 
 if __name__ == "__main__":
