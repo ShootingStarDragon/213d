@@ -111,7 +111,7 @@ FCVA_screen_manager: #remember to return a root widget
                 self.index = int((time.time() - self.starttime)/self.spf)
                 if self.index < 0:
                     self.index = 0
-                fprint("is cv subprocess keeping up?", self.index, self.shared_analyzedAKeycountVAR.values(),self.shared_analyzedBKeycountVAR.values(),self.shared_analyzedCKeycountVAR.values())
+                # fprint("is cv subprocess keeping up?", self.index, self.shared_analyzedAKeycountVAR.values(),self.shared_analyzedBKeycountVAR.values(),self.shared_analyzedCKeycountVAR.values())
                 #cheat for rn, just get current frame:
                 #know the current framenumber
                 #get the right shareddict https://www.geeksforgeeks.org/python-get-key-from-value-in-dictionary/#
@@ -225,7 +225,6 @@ FCVA_screen_manager: #remember to return a root widget
                 except Exception as e: 
                     print("blitting died!", e, flush=True)
                     import traceback
-
                     print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
             self.newt = time.time()
             if hasattr(self, 'newt'):
@@ -319,6 +318,9 @@ def frameblock(*args):
     Ans = [x + bufferlen*maxpartitions*instance + partitionnumber*bufferlen for x in range(bufferlen)]
     return Ans
 
+class open_cvpipeline_helper:
+    pass
+
 def open_cvpipeline(*args):
     try:
         shared_metadata_dict = args[0]
@@ -347,6 +349,9 @@ def open_cvpipeline(*args):
         raw_queueKEYS = Queue(maxsize=bufferlen)
         analyzed_queue = Queue(maxsize=bufferlen)
         analyzed_queueKEYS = Queue(maxsize=bufferlen)
+        
+        open_cvpipeline_helper_instance = open_cvpipeline_helper()
+        open_cvpipeline_helper_instance.resultsq = Queue(maxsize=bufferlen)
 
         while True:
             if "kivy_run_state" in shared_metadata_dict:
@@ -397,12 +402,13 @@ def open_cvpipeline(*args):
                     if raw_queue.qsize() > 0 and analyzed_queue.qsize() == 0:
                         #give the queue to the cv func
                         #cv func returns a queue of frames
-                        #then get from the analyzed queue and apply blosc2
-                        resultlist = appliedcv(raw_queue, shared_globalindex_dictVAR)
-                        for x in resultlist:
-                            result_compressed = blosc2.pack_array2(x)
+                        resultqueue = appliedcv(open_cvpipeline_helper_instance, raw_queue, shared_globalindex_dictVAR, shared_metadata_dict)
+                        fprint("#then get from the analyzed queue and apply blosc2", resultqueue.qsize())
+                        for x in range(len(resultqueue.qsize())):
+                            result_compressed = blosc2.pack_array2(resultqueue.get())
                             analyzed_queue.put(result_compressed)
                             analyzed_queueKEYS.put(raw_queueKEYS.get())
+                            fprint("x in range?", x)
 
 
                         # #analyze all the frames and write to sharedmem:
