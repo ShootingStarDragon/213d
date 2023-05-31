@@ -91,12 +91,12 @@ def image_resize(image, width = None, height = None, inter = cv2.INTER_AREA):
     return resized
 
 # importing here means it's available to the subprocess as well. You can probably cut loading time by only loading mediapipe for the right subprocess.
-import mediapipe as mp
+# import mediapipe as mp
 
-mp_drawing = mp.solutions.drawing_utils  # Drawing helpers
-mp_holistic = mp.solutions.holistic  # Mediapipe Solutions
+# mp_drawing = mp.solutions.drawing_utils  # Drawing helpers
+# mp_holistic = mp.solutions.holistic  # Mediapipe Solutions
 
-holistic = mp.solutions.holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5, static_image_mode=True).__enter__()
+# holistic = mp.solutions.holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5, static_image_mode=True).__enter__()
 #, static_image_mode=True
 
 
@@ -159,15 +159,22 @@ class mediapipeThread:
             # https://developers.google.com/mediapipe/solutions/vision/pose_landmarker/python#video_1
             # https://github.com/ShootingStarDragon/FastCVApp/blob/windows/%23119/FastCVApp/examples/creativecommonsmedia/mediapipetest.py
             print("update worked?", flush = True)
-            from mediapipe.tasks import python
-            from mediapipe.tasks.python import vision
             # 'I:\CODING\FastCVApp\FastCVApp\examples\creativecommonsmedia\pose_landmarker_full.task'
             #set the cwd to reset it maybe?
             # sys.path.remove('C:\\Users\\RaptorPatrolCore\\AppData\\Local\\pypoetry\\Cache\\virtualenvs\\fastcvapp-xQQQOsUa-py3.9\\lib\\site-packages')
-            print("check sys path after removing site-packages", sys.path, flush = True)
-            os.chdir('I:\CODING\FastCVApp\FastCVApp\examples\creativecommonsmedia')
-            base_options = python.BaseOptions(model_asset_path='pose_landmarker_full.task')
+            import mediapipe as mp
+            from mediapipe.tasks import python
+            from mediapipe.tasks.python import vision
+            
+            # print("check sys path after removing site-packages", sys.path, flush = True)
+            # os.chdir('I:\CODING\FastCVApp\FastCVApp\examples\creativecommonsmedia')
+            with open('I:\CODING\FastCVApp\FastCVApp\examples\creativecommonsmedia\pose_landmarker_full.task', 'rb') as f:
+                modelbytes = f.read()
+            # base_options = python.BaseOptions(model_asset_path='pose_landmarker_full.task')
+            base_options = python.BaseOptions(model_asset_buffer=modelbytes)
             VisionRunningMode = mp.tasks.vision.RunningMode
+            #mediapipe looks at the wrong file, known bug, said to be fixed in later version. fix is to load model and feed in as bytes
+            #https://github.com/google/mediapipe/issues/4272#issuecomment-1505321204
             options = vision.PoseLandmarkerOptions(
                 base_options=base_options,
                 running_mode=VisionRunningMode.VIDEO,
@@ -193,7 +200,9 @@ class mediapipeThread:
                         # Make Detections
                         # results = detector.detect(image)
                         # results = landmarker.detect_for_video(image, int(cap.get(cv2.CAP_PROP_POS_MSEC)))
-                        results = landmarker.detect_for_video(image)
+                        #time has this many digits: 1685543338.9065359
+                        
+                        results = landmarker.detect_for_video(image, str(time.time())[-10:] ) #time.time() should TECHNICALLY work since these are fed in sequence anyways
                         
                         # WORKS BUT IS STUCK 
                         # results = detector.detect(mp.Image(image_format=mp.ImageFormat.SRGB, data=image))
