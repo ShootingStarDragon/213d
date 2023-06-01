@@ -16,9 +16,6 @@ else:
     else:
         # assume they're in main folder trying `python examples/example_backgroundsubtraction.py`
         sys.path.append("../FastCVApp")  # when running from main folder
-
-
-
 import FastCVApp
 
 app = FastCVApp.FCVA()
@@ -106,7 +103,7 @@ def image_resize(image, width = None, height = None, inter = cv2.INTER_AREA):
 
 from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
-import numpy as np
+# import numpy as np #duplicte but required for drawing landmarks
 def draw_landmarks_on_image(rgb_image, detection_result):
     try:
         pose_landmarks_list = detection_result.pose_landmarks
@@ -184,10 +181,10 @@ class mediapipeThread:
             #the thread looks at an input queue and spits out the output queue
             with mp.tasks.vision.PoseLandmarker.create_from_options(options) as landmarker:
                 while True:
-                    print("update should be here","kivy_run_state" in self.shared_metadata_dictVAR3 and self.helperclassVAR.raw_queueVAR2.qsize() > 0,"kivy_run_state" in self.shared_metadata_dictVAR3 , self.helperclassVAR.raw_queueVAR2.qsize() > 0,flush =True)
-                    if "kivy_run_state" in self.shared_metadata_dictVAR3 and self.helperclassVAR.raw_queueVAR2.qsize() > 0:
+                    # print("update should be here",self.helperclassVAR.raw_queueVAR2.qsize() > 0,"kivy_run_state" in self.shared_metadata_dictVAR3 , self.helperclassVAR.raw_queueVAR2.qsize() > 0,flush =True)
+                    if self.helperclassVAR.raw_queueVAR2.qsize() > 0:
                         image = self.helperclassVAR.raw_queueVAR2.get()
-                        print("did i get?",type(image), flush=True)
+                        # print("did i get?",type(image), flush=True)
                         time1 = time.time()
                         
                         ogimage = image.copy()
@@ -200,9 +197,13 @@ class mediapipeThread:
                         # Make Detections
                         # results = detector.detect(image)
                         # results = landmarker.detect_for_video(image, int(cap.get(cv2.CAP_PROP_POS_MSEC)))
-                        #time has this many digits: 1685543338.9065359
-                        
-                        results = landmarker.detect_for_video(image, str(time.time())[-10:] ) #time.time() should TECHNICALLY work since these are fed in sequence anyways
+                        #time has this many digits: 1685543338.9065359, inconsistent digis
+                        #int(str(time.time())[-10:])
+                        timestr = str(time.time()).split(".")
+                        newint = int(timestr[0]+timestr[1][:3])
+                        #time.time should work, i'm feeding them in sequence anyways
+                        #just making sure they have only the first 3 digits from the decimal and it's an int
+                        results = landmarker.detect_for_video(image, newint) 
                         
                         # WORKS BUT IS STUCK 
                         # results = detector.detect(mp.Image(image_format=mp.ImageFormat.SRGB, data=image))
@@ -226,8 +227,10 @@ class mediapipeThread:
             print("mediapipe update thread died!", e, flush=True)
             import traceback
             print("full exception", "".join(traceback.format_exception(*sys.exc_info())))    
-def sepia_filter(*args):
+
+def sepia_filtermediapipethread(*args):
     try:
+        time1a = time.time()
         open_cvpipeline_helper_instanceVAR = args[0]
         raw_queueVAR = args[1]
         shared_globalindex_dictVAR2 = args[2]
@@ -249,8 +252,9 @@ def sepia_filter(*args):
         #transfer queue items: raw_queueVAR > new queue
         #what's the return? need to make sure i know the length of the original queue, then if return queue is that size, return it, NAH just make sure input is 0 and output is nonzero
         while True:
-            # print("not exiting", open_cvpipeline_helper_instanceVAR.raw_queueVAR2.qsize(), open_cvpipeline_helper_instanceVAR.resultsq.qsize())
+            print("not exiting", open_cvpipeline_helper_instanceVAR.raw_queueVAR2.qsize(), open_cvpipeline_helper_instanceVAR.resultsq.qsize())
             if open_cvpipeline_helper_instanceVAR.raw_queueVAR2.qsize() == 0 and open_cvpipeline_helper_instanceVAR.resultsq.qsize() > 0:
+                print("takes too long",time.time()-time1a , flush = True)
                 return open_cvpipeline_helper_instanceVAR.resultsq
 
         
@@ -388,6 +392,87 @@ def sepia_filter(*args):
         print("open_mediapipe died!", e, flush=True)
         import traceback
         print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
+
+import mediapipe as mp
+from mediapipe.tasks import python
+from mediapipe.tasks.python import vision
+
+with open('I:\CODING\FastCVApp\FastCVApp\examples\creativecommonsmedia\pose_landmarker_full.task', 'rb') as f:
+            modelbytes = f.read()
+            base_options = python.BaseOptions(model_asset_buffer=modelbytes)
+            VisionRunningMode = mp.tasks.vision.RunningMode
+            options = vision.PoseLandmarkerOptions(
+                base_options=base_options,
+                running_mode=VisionRunningMode.VIDEO,
+                )
+landmarker = mp.tasks.vision.PoseLandmarker.create_from_options(options)
+
+from queue import Queue
+def sepia_filter(*args):
+    try:
+        inputqueue = args[1]
+        bufferlenVAR = args[4]
+        answerqueue = Queue(maxsize=bufferlenVAR)
+        while inputqueue.qsize() > 0:
+            time1 = time.time()
+            image = inputqueue.get()
+            # print("did i get?",type(image), flush=True)
+            
+            ogimage = image.copy()
+            image = cv2.resize(image, (1280, 720)) #interpolation = cv2.INTER_AREA makes mediapipe detect nothing...
+            # print("image shape?", image.shape)
+
+            # Recolor Feed
+            # image.flags.writeable = False  # I have read that writable false/true this makes things faster for mediapipe holistic
+            image = mp.Image(image_format=mp.ImageFormat.SRGB, data=image)
+            # Make Detections
+            # results = detector.detect(image)
+            # results = landmarker.detect_for_video(image, int(cap.get(cv2.CAP_PROP_POS_MSEC)))
+            #time has this many digits: 1685543338.9065359, inconsistent digis
+            #int(str(time.time())[-10:])
+            timestr = str(time.time()).split(".")
+            newint = int(timestr[0]+timestr[1][:3])
+            #time.time should work, i'm feeding them in sequence anyways
+            #just making sure they have only the first 3 digits from the decimal and it's an int
+            results = landmarker.detect_for_video(image, newint) 
+            
+            # WORKS BUT IS STUCK 
+            # results = detector.detect(mp.Image(image_format=mp.ImageFormat.SRGB, data=image))
+            
+            # Recolor image back to BGR for rendering
+            # image.flags.writeable = True
+            # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            # fixed_image = draw_landmarks_on_image(image.numpy_view(), results)
+            #now draw on original image: 
+            fixed_image = draw_landmarks_on_image(ogimage, results)
+            #YOOO IT'S ALREADY NORMALIZED, NO NEED TO DO ANYTHING POGGERSSSSSSSS AND IT KEEPS THE SPEED HOLY
+            
+            # WORKS BUT IS STUCK 
+            # fixed_image = draw_landmarks_on_image(mp.Image(image_format=mp.ImageFormat.SRGB, data=image).numpy_view(), detection_result)
+            
+            fixed_image = cv2.cvtColor(fixed_image, cv2.COLOR_RGB2BGR)
+            answerqueue.put(fixed_image)
+            time2 = time.time()
+            print("time???", time2-time1,os.getpid())
+        return answerqueue
+
+    except Exception as e:
+        print("sepia_filter basic died!", e, flush=True)
+        import traceback
+        print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
+
+#init mediapipe
+def sepia_filtermpvar(*args):
+    try:
+        inputqueue = args[1]
+        #analyze all frames 
+        return inputqueue
+    except Exception as e:
+        print("sepia_filter mpvar died!", e, flush=True)
+        import traceback
+        print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
+
+
 app.appliedcv = sepia_filter
 
 if __name__ == "__main__":
