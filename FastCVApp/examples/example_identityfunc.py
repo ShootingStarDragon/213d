@@ -417,7 +417,7 @@ def sepia_filtermediapipethread(*args):
     #landmarker = mp.tasks.vision.PoseLandmarker.create_from_options(options)
 import mediapipe as mp
 from queue import Queue
-def sepia_filter(*args):
+def sepia_filterbasicmp(*args):
     try:
         inputqueue = args[1]
         bufferlenVAR = args[4]
@@ -429,7 +429,7 @@ def sepia_filter(*args):
             # print("did i get?",type(image), flush=True)
             
             ogimage = image.copy()
-            image = cv2.resize(image, (1280, 720)) #interpolation = cv2.INTER_AREA makes mediapipe detect nothing...
+            image = cv2.resize(image, (640, 480)) #interpolation = cv2.INTER_AREA makes mediapipe detect nothing...
             # print("image shape?", image.shape)
 
             # Recolor Feed
@@ -467,18 +467,18 @@ def sepia_filter(*args):
         return answerqueue
 
     except Exception as e:
-        print("sepia_filter basic died!", e, flush=True)
+        print("sepia_filter mpvar died!", e, flush=True)
         import traceback
         print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
 
 #init mediapipe
-def sepia_filtermpvar(*args):
+def sepia_filter(*args):
     try:
         inputqueue = args[1]
         #analyze all frames 
         return inputqueue
     except Exception as e:
-        print("sepia_filter mpvar died!", e, flush=True)
+        print("sepia_filter basic died!", e, flush=True)
         import traceback
         print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
 

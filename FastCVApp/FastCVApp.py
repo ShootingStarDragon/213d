@@ -353,6 +353,20 @@ def open_cvpipeline(*args):
         open_cvpipeline_helper_instance = open_cvpipeline_helper()
         open_cvpipeline_helper_instance.resultsq = Queue(maxsize=bufferlen)
 
+        #init mediapipe here so it spawns the right amt of processes
+        import mediapipe as mp
+        from mediapipe.tasks import python
+        from mediapipe.tasks.python import vision
+        with open('I:\CODING\FastCVApp\FastCVApp\examples\creativecommonsmedia\pose_landmarker_full.task', 'rb') as f:
+                    modelbytes = f.read()
+                    base_options = python.BaseOptions(model_asset_buffer=modelbytes)
+                    VisionRunningMode = mp.tasks.vision.RunningMode
+                    options = vision.PoseLandmarkerOptions(
+                        base_options=base_options,
+                        running_mode=VisionRunningMode.VIDEO,
+                        )
+        landmarker = mp.tasks.vision.PoseLandmarker.create_from_options(options)
+
         while True:
             if "kivy_run_state" in shared_metadata_dict:
                 if shared_metadata_dict["kivy_run_state"] == False:
@@ -402,13 +416,19 @@ def open_cvpipeline(*args):
                     if raw_queue.qsize() > 0 and analyzed_queue.qsize() == 0:
                         #give the queue to the cv func
                         #cv func returns a queue of frames
-                        resultqueue = appliedcv(open_cvpipeline_helper_instance, raw_queue, shared_globalindex_dictVAR, shared_metadata_dict, bufferlen)
+                        resultqueue = appliedcv(open_cvpipeline_helper_instance, raw_queue, shared_globalindex_dictVAR, shared_metadata_dict, bufferlen, landmarker)
                         fprint("#then get from the analyzed queue and apply blosc2", resultqueue.qsize())
+                        current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
+
+                        #figure out future time
+                        future_time = shared_globalindex_dictVAR["starttime"] + ((1/fps)*internal_framecount)
+
+                        fprint("frame advantage????", internal_framecount, current_framenumber, future_time-time.time())
                         for x in range(resultqueue.qsize()):
                             result_compressed = blosc2.pack_array2(resultqueue.get())
                             analyzed_queue.put(result_compressed)
                             analyzed_queueKEYS.put(raw_queueKEYS.get())
-                            fprint("x in range?", x)
+                            # fprint("x in range?", x)
 
 
                         # #analyze all the frames and write to sharedmem:
