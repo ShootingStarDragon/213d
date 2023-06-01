@@ -393,26 +393,36 @@ def sepia_filtermediapipethread(*args):
         import traceback
         print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
 
+# import mediapipe as mp
+# from mediapipe.tasks import python
+# from mediapipe.tasks.python import vision
+
+# with open('I:\CODING\FastCVApp\FastCVApp\examples\creativecommonsmedia\pose_landmarker_full.task', 'rb') as f:
+#             modelbytes = f.read()
+#             base_options = python.BaseOptions(model_asset_buffer=modelbytes)
+#             VisionRunningMode = mp.tasks.vision.RunningMode
+#             options = vision.PoseLandmarkerOptions(
+#                 base_options=base_options,
+#                 running_mode=VisionRunningMode.VIDEO,
+#                 )
+#i need to spawn 3 instances, not 6
+# print("whatis __name__?", __name__)
+# whatis __name__? __main__
+# whatis __name__? __mp_main__
+# whatis __name__? __mp_main__
+# whatis __name__? __mp_main__
+# whatis __name__? __mp_main__
+# whatis __name__? __mp_main__
+# if __name__ == "FastCVApp":
+    #landmarker = mp.tasks.vision.PoseLandmarker.create_from_options(options)
 import mediapipe as mp
-from mediapipe.tasks import python
-from mediapipe.tasks.python import vision
-
-with open('I:\CODING\FastCVApp\FastCVApp\examples\creativecommonsmedia\pose_landmarker_full.task', 'rb') as f:
-            modelbytes = f.read()
-            base_options = python.BaseOptions(model_asset_buffer=modelbytes)
-            VisionRunningMode = mp.tasks.vision.RunningMode
-            options = vision.PoseLandmarkerOptions(
-                base_options=base_options,
-                running_mode=VisionRunningMode.VIDEO,
-                )
-landmarker = mp.tasks.vision.PoseLandmarker.create_from_options(options)
-
 from queue import Queue
 def sepia_filter(*args):
     try:
         inputqueue = args[1]
         bufferlenVAR = args[4]
         answerqueue = Queue(maxsize=bufferlenVAR)
+        landmarkerVAR = args[5]
         while inputqueue.qsize() > 0:
             time1 = time.time()
             image = inputqueue.get()
@@ -434,7 +444,7 @@ def sepia_filter(*args):
             newint = int(timestr[0]+timestr[1][:3])
             #time.time should work, i'm feeding them in sequence anyways
             #just making sure they have only the first 3 digits from the decimal and it's an int
-            results = landmarker.detect_for_video(image, newint) 
+            results = landmarkerVAR.detect_for_video(image, newint) 
             
             # WORKS BUT IS STUCK 
             # results = detector.detect(mp.Image(image_format=mp.ImageFormat.SRGB, data=image))
