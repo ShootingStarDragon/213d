@@ -136,7 +136,7 @@ base_options = python.BaseOptions(model_asset_path='I:\CODING\FastCVApp\FastCVAp
 VisionRunningMode = mp.tasks.vision.RunningMode
 options = vision.PoseLandmarkerOptions(
     base_options=base_options,
-    running_mode=VisionRunningMode.VIDEO,
+    # running_mode=VisionRunningMode.VIDEO, #trying for image
     ) #idk how to add a video running_mode=VisionRunningMode.VIDEO,output_segmentation_masks=True
 detector = vision.PoseLandmarker.create_from_options(options)
 
@@ -163,7 +163,9 @@ with mp.tasks.vision.PoseLandmarker.create_from_options(options) as landmarker:
     # Make Detections
     # results = detector.detect(image)
     print("msec?", int(cap.get(cv2.CAP_PROP_POS_MSEC)))
-    results = landmarker.detect_for_video(image, int(cap.get(cv2.CAP_PROP_POS_MSEC)))
+    #video works, try using image, for video use running_mode=VisionRunningMode.VIDEO and landmarker.detect_for_video, for image don't put anything in options and use landmarker.detect
+    # results = landmarker.detect_for_video(image, int(cap.get(cv2.CAP_PROP_POS_MSEC)))
+    results = landmarker.detect(image, )
     
     # WORKS BUT IS STUCK 
     # results = detector.detect(mp.Image(image_format=mp.ImageFormat.SRGB, data=image))
