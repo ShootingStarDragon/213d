@@ -417,7 +417,7 @@ def sepia_filtermediapipethread(*args):
     #landmarker = mp.tasks.vision.PoseLandmarker.create_from_options(options)
 import mediapipe as mp
 from queue import Queue
-def sepia_filterbasicmp(*args):
+def sepia_filter(*args): #basicmp
     try:
         inputqueue = args[1]
         bufferlenVAR = args[4]
@@ -444,7 +444,8 @@ def sepia_filterbasicmp(*args):
             newint = int(timestr[0]+timestr[1][:3])
             #time.time should work, i'm feeding them in sequence anyways
             #just making sure they have only the first 3 digits from the decimal and it's an int
-            results = landmarkerVAR.detect_for_video(image, newint) 
+            # results = landmarkerVAR.detect_for_video(image, newint) 
+            results = landmarkerVAR.detect(image) 
             
             # WORKS BUT IS STUCK 
             # results = detector.detect(mp.Image(image_format=mp.ImageFormat.SRGB, data=image))
@@ -463,7 +464,7 @@ def sepia_filterbasicmp(*args):
             fixed_image = cv2.cvtColor(fixed_image, cv2.COLOR_RGB2BGR)
             answerqueue.put(fixed_image)
             time2 = time.time()
-            print("time???", time2-time1,os.getpid())
+            print("time???", time2-time1,os.getpid()) #len(results)
         return answerqueue
 
     except Exception as e:
@@ -472,7 +473,7 @@ def sepia_filterbasicmp(*args):
         print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
 
 #init mediapipe
-def sepia_filter(*args):
+def sepia_filternothing(*args):
     try:
         inputqueue = args[1]
         #analyze all frames 
