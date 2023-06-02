@@ -136,7 +136,8 @@ base_options = python.BaseOptions(model_asset_path='I:\CODING\FastCVApp\FastCVAp
 VisionRunningMode = mp.tasks.vision.RunningMode
 options = vision.PoseLandmarkerOptions(
     base_options=base_options,
-    # running_mode=VisionRunningMode.VIDEO, #trying for image
+    # running_mode=VisionRunningMode.IMAGE,
+    running_mode=VisionRunningMode.VIDEO, 
     ) #idk how to add a video running_mode=VisionRunningMode.VIDEO,output_segmentation_masks=True
 detector = vision.PoseLandmarker.create_from_options(options)
 
@@ -162,10 +163,15 @@ with mp.tasks.vision.PoseLandmarker.create_from_options(options) as landmarker:
     image = mp.Image(image_format=mp.ImageFormat.SRGB, data=image)
     # Make Detections
     # results = detector.detect(image)
-    print("msec?", int(cap.get(cv2.CAP_PROP_POS_MSEC)))
-    #video works, try using image, for video use running_mode=VisionRunningMode.VIDEO and landmarker.detect_for_video, for image don't put anything in options and use landmarker.detect
+    # print("msec?", int(cap.get(cv2.CAP_PROP_POS_MSEC)))
+    #video works, try using image, for video use running_mode=VisionRunningMode.VIDEO and landmarker.detect_for_video, for image running_mode=VisionRunningMode.IMAGE and use landmarker.detect
     # results = landmarker.detect_for_video(image, int(cap.get(cv2.CAP_PROP_POS_MSEC)))
-    results = landmarker.detect(image, )
+    #does the int matter?
+    timestr = str(time.time()).split(".")
+    newint = int(timestr[0][-4:]+timestr[1][:3])
+    print("newint not increasing?", newint)
+    results = landmarker.detect_for_video(image, newint)
+    # results = landmarker.detect(image)
     
     # WORKS BUT IS STUCK 
     # results = detector.detect(mp.Image(image_format=mp.ImageFormat.SRGB, data=image))
@@ -187,7 +193,7 @@ with mp.tasks.vision.PoseLandmarker.create_from_options(options) as landmarker:
     cv2.imshow("shower window", fixed_image)
     # cv2.imshow("og window", cv2.flip(ogimage, 0))
     time2 = time.time()
-    print("time???", time2-time1)
+    print("time???", time2-time1, "pose?", len(results.pose_landmarks))
     if cv2.waitKey(10) & 0xFF == ord('q'): # This puts you out of the loop above if you hit q
         break
     '''
