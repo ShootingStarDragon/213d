@@ -366,7 +366,9 @@ def open_cvpipeline(*args):
                     VisionRunningMode = mp.tasks.vision.RunningMode
                     options = vision.PoseLandmarkerOptions(
                         base_options=base_options,
-                        #running_mode=VisionRunningMode.VIDEO,
+                        running_mode=VisionRunningMode.VIDEO,
+                        #these were old settings, maybe it's too strict and not giving me poses
+                        min_pose_detection_confidence=0.5, min_tracking_confidence=0.5
                         )
         landmarker = mp.tasks.vision.PoseLandmarker.create_from_options(options)
 

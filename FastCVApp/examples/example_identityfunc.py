@@ -430,7 +430,7 @@ def sepia_filter(*args): #basicmp
             
             ogimage = image.copy()
             # image = cv2.resize(image, (640, 480)) #interpolation = cv2.INTER_AREA makes mediapipe detect nothing...
-            image = cv2.resize(image, (640, 480)) #interpolation = cv2.INTER_AREA makes mediapipe detect nothing...
+            image = cv2.resize(image, (1280, 720)) #interpolation = cv2.INTER_AREA makes mediapipe detect nothing...
             # print("image shape?", image.shape)
 
             # Recolor Feed
@@ -442,11 +442,11 @@ def sepia_filter(*args): #basicmp
             #time has this many digits: 1685543338.9065359, inconsistent digis
             #int(str(time.time())[-10:])
             timestr = str(time.time()).split(".")
-            newint = int(timestr[0]+timestr[1][:3])
+            newint = int(timestr[0][-4:]+timestr[1][:3]) #take last 4 of the whole number and first 3 of the decimal, idk if this matters tho
             #time.time should work, i'm feeding them in sequence anyways
             #just making sure they have only the first 3 digits from the decimal and it's an int
-            # results = landmarkerVAR.detect_for_video(image, newint) 
-            results = landmarkerVAR.detect(image) 
+            results = landmarkerVAR.detect_for_video(image, newint) 
+            # results = landmarkerVAR.detect(image) 
             
             # WORKS BUT IS STUCK 
             # results = detector.detect(mp.Image(image_format=mp.ImageFormat.SRGB, data=image))
@@ -465,7 +465,7 @@ def sepia_filter(*args): #basicmp
             fixed_image = cv2.cvtColor(fixed_image, cv2.COLOR_RGB2BGR)
             answerqueue.put(fixed_image)
             time2 = time.time()
-            print("time???", time2-time1,os.getpid(), len(results.pose_landmarks)) 
+            print("time???", time2-time1,os.getpid(), len(results.pose_landmarks), newint) 
         return answerqueue
 
     except Exception as e:
