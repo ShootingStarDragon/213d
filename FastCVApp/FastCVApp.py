@@ -131,7 +131,10 @@ FCVA_screen_manager: #remember to return a root widget
                     # fprint("correctkey?", correctkey)
                     # if len(correctkey) > 0:
                     frameref = "frame" + correctkey.replace("key",'')
+                    timeax = time.time()
                     frame = self.shared_analyzedBVAR[frameref]
+                    framesizeguy = frame
+                    fprint("how long to load a frame from shared mem?", time.time()-timeax, "size?", sys.getsizeof(framesizeguy))
 
                 # fprint("index in values?C",  self.index, self.shared_analyzedCKeycountVAR.values(), self.index in self.shared_analyzedCKeycountVAR.values())
                 if self.index in self.shared_analyzedCKeycountVAR.values():
@@ -418,14 +421,14 @@ def open_cvpipeline(*args):
                         #cv func returns a queue of frames
                         rtime = time.time()
                         resultqueue = appliedcv(open_cvpipeline_helper_instance, raw_queue, shared_globalindex_dictVAR, shared_metadata_dict, bufferlen, landmarker)
-                        fprint("resultqueue timing", time.time() - rtime, os.getpid())
+                        fprint("resultqueue timing", time.time() - rtime, os.getpid(), time.time())
                         fprint("#then get from the analyzed queue and apply blosc2", resultqueue.qsize())
                         current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
 
                         #figure out future time
                         future_time = shared_globalindex_dictVAR["starttime"] + ((1/fps)*internal_framecount)
 
-                        fprint("frame advantage????", os.getpid(), internal_framecount, current_framenumber, future_time-time.time())
+                        # fprint("frame advantage????", os.getpid(), internal_framecount, current_framenumber, future_time-time.time())
                         for x in range(resultqueue.qsize()):
                             result_compressed = blosc2.pack_array2(resultqueue.get())
                             analyzed_queue.put(result_compressed)
@@ -449,7 +452,8 @@ def open_cvpipeline(*args):
                         for x in range(bufferlen):
                             shared_analyzedVAR['frame'+str(x)] = analyzed_queue.get()
                             shared_analyzedKeycountVAR['key'+str(x)] = analyzed_queueKEYS.get()
-                        fprint("dictwritetime", time.time()-dictwritetime, os.getpid())
+                        fprint("dictwritetime", time.time()-dictwritetime, os.getpid(), time.time())
+                    fprint("frame advantage END????", os.getpid(), internal_framecount, current_framenumber, future_time-time.time(), time.time())
 
                     # print("what are analyzed keys?", shared_analyzedKeycountVAR.values(), flush = True)
     except Exception as e:
