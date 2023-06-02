@@ -363,7 +363,7 @@ def open_cvpipeline(*args):
                     VisionRunningMode = mp.tasks.vision.RunningMode
                     options = vision.PoseLandmarkerOptions(
                         base_options=base_options,
-                        running_mode=VisionRunningMode.VIDEO,
+                        #running_mode=VisionRunningMode.VIDEO,
                         )
         landmarker = mp.tasks.vision.PoseLandmarker.create_from_options(options)
 
@@ -416,14 +416,16 @@ def open_cvpipeline(*args):
                     if raw_queue.qsize() > 0 and analyzed_queue.qsize() == 0:
                         #give the queue to the cv func
                         #cv func returns a queue of frames
+                        rtime = time.time()
                         resultqueue = appliedcv(open_cvpipeline_helper_instance, raw_queue, shared_globalindex_dictVAR, shared_metadata_dict, bufferlen, landmarker)
+                        fprint("resultqueue timing", time.time() - rtime, os.getpid())
                         fprint("#then get from the analyzed queue and apply blosc2", resultqueue.qsize())
                         current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
 
                         #figure out future time
                         future_time = shared_globalindex_dictVAR["starttime"] + ((1/fps)*internal_framecount)
 
-                        fprint("frame advantage????", internal_framecount, current_framenumber, future_time-time.time())
+                        fprint("frame advantage????", os.getpid(), internal_framecount, current_framenumber, future_time-time.time())
                         for x in range(resultqueue.qsize()):
                             result_compressed = blosc2.pack_array2(resultqueue.get())
                             analyzed_queue.put(result_compressed)
@@ -443,9 +445,11 @@ def open_cvpipeline(*args):
                     
                     current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
                     if analyzed_queue.qsize() == bufferlen and max(shared_analyzedKeycountVAR.values()) < current_framenumber:
+                        dictwritetime = time.time()
                         for x in range(bufferlen):
                             shared_analyzedVAR['frame'+str(x)] = analyzed_queue.get()
                             shared_analyzedKeycountVAR['key'+str(x)] = analyzed_queueKEYS.get()
+                        fprint("dictwritetime", time.time()-dictwritetime, os.getpid())
 
                     # print("what are analyzed keys?", shared_analyzedKeycountVAR.values(), flush = True)
     except Exception as e:
