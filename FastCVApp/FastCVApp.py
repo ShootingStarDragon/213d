@@ -400,6 +400,11 @@ def open_cvpipeline(*args):
                 '''
                 #make sure things have started AND this processess is not stopped:
                 if "starttime" in shared_globalindex_dictVAR and shared_globalindex_dictVAR["subprocess" + str(pid)]:
+                    
+                    future_time = shared_globalindex_dictVAR["starttime"] + ((1/fps)*internal_framecount)
+                    current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
+                    fprint("frame advantage START????", os.getpid(), internal_framecount, current_framenumber, future_time-time.time(), time.time())
+                    
                     if raw_queue.qsize() == 0:
                         #get the right framecount:
                         framelist = frameblock(partitionnumber,instance_count,bufferlen,maxpartitions)
