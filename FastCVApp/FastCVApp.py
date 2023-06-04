@@ -111,7 +111,7 @@ FCVA_screen_manager: #remember to return a root widget
                 self.index = int((time.time() - self.starttime)/self.spf)
                 if self.index < 0:
                     self.index = 0
-                fprint("is cv subprocess keeping up?", self.index, self.shared_analyzedAKeycountVAR.values(),self.shared_analyzedBKeycountVAR.values(),self.shared_analyzedCKeycountVAR.values())
+                fprint("is cv subprocess keeping up?", self.index, self.shared_analyzedAKeycountVAR.values(),self.shared_analyzedBKeycountVAR.values(),self.shared_analyzedCKeycountVAR.values(),self.shared_analyzedDKeycountVAR.values())
                 #cheat for rn, just get current frame:
                 #know the current framenumber
                 #get the right shareddict https://www.geeksforgeeks.org/python-get-key-from-value-in-dictionary/#
@@ -143,6 +143,14 @@ FCVA_screen_manager: #remember to return a root widget
                     # if len(correctkey) > 0:
                     frameref = "frame" + correctkey.replace("key",'')
                     frame = self.shared_analyzedCVAR[frameref]
+
+                if self.index in self.shared_analyzedDKeycountVAR.values():
+                    correctkey = list(self.shared_analyzedDKeycountVAR.keys())[list(self.shared_analyzedDKeycountVAR.values()).index(self.index)]
+                    # fprint("correctkey?", correctkey)
+                    # if len(correctkey) > 0:
+                    frameref = "frame" + correctkey.replace("key",'')
+                    frame = self.shared_analyzedDVAR[frameref]
+
 
                 # https://stackoverflow.com/questions/43748991/how-to-check-if-a-variable-is-either-a-python-list-numpy-array-or-pandas-series
                 try:
@@ -294,6 +302,8 @@ FCVA_screen_manager: #remember to return a root widget
     MainApp.bufferlen = args[11]
     MainApp.cvpartitions = args[12]
     MainApp.framelength = args[13]
+    MainApp.shared_analyzedDVAR = args[14]
+    MainApp.shared_analyzedDKeycountVAR = args[15]
 
     MainApp().run()
 
@@ -400,7 +410,8 @@ def open_cvpipeline(*args):
                 '''
                 #make sure things have started AND this processess is not stopped:
                 if "starttime" in shared_globalindex_dictVAR and shared_globalindex_dictVAR["subprocess" + str(pid)]:
-                    
+
+                    initial_time = time.time()
                     future_time = shared_globalindex_dictVAR["starttime"] + ((1/fps)*internal_framecount)
                     current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
                     fprint("frame advantage START????", os.getpid(), internal_framecount, current_framenumber, future_time-time.time(), time.time())
@@ -460,7 +471,7 @@ def open_cvpipeline(*args):
                             shared_analyzedVAR['frame'+str(x)] = analyzed_queue.get()
                             shared_analyzedKeycountVAR['key'+str(x)] = analyzed_queueKEYS.get()
                         fprint("dictwritetime", time.time()-dictwritetime, os.getpid(), time.time())
-                    fprint("frame advantage END????", os.getpid(), internal_framecount, current_framenumber, future_time-time.time(), time.time())
+                    fprint("frame advantage END????", os.getpid(), internal_framecount, current_framenumber, future_time-time.time(), time.time(), "total time?", time.time() - initial_time)
 
                     # print("what are analyzed keys?", shared_analyzedKeycountVAR.values(), flush = True)
     except Exception as e:
@@ -501,6 +512,8 @@ class FCVA:
             shared_analyzedBKeycount = shared_mem_manager.dict()
             shared_analyzedC = shared_mem_manager.dict()
             shared_analyzedCKeycount = shared_mem_manager.dict()
+            shared_analyzedD = shared_mem_manager.dict()
+            shared_analyzedDKeycount = shared_mem_manager.dict()
             
 
             # set metadata kivy_run_state to true so cv subprocess will run and not get an error by reading uninstantiated shared memory.
@@ -609,7 +622,7 @@ class FCVA:
             video.release()
 
             bufferlen = 10
-            cvpartitions = 3
+            cvpartitions = 4
             #init shared dicts:
             for x in range(bufferlen):
                 shared_analyzedAKeycount["key" + str(x)] = -1
@@ -620,6 +633,9 @@ class FCVA:
 
                 shared_analyzedCKeycount["key" + str(x)] = -1
                 shared_analyzedC["frame" + str(x)] = -1
+
+                shared_analyzedDKeycount["key" + str(x)] = -1
+                shared_analyzedD["frame" + str(x)] = -1
             
             #sanity checks
             if not hasattr(self, "fps"):
@@ -695,9 +711,28 @@ class FCVA:
                 )
             cv_subprocessC.start()
 
+            cv_subprocessD = FCVA_mp.Process(
+                    target=open_cvpipeline,
+                    args=(
+                        shared_metadata_dict,
+                        self.appliedcv,
+                        shared_analyzedD,
+                        shared_globalindex_dict,
+                        shared_analyzedDKeycount,
+                        self.source,
+                        2, #partition #, starts at 0
+                        0, #instance of the block of relevant frames
+                        bufferlen, #bufferlen AKA how long the internal queues should be
+                        cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
+                        self.fps,
+                    ),
+                )
+            cv_subprocessD.start()
+
             kivy_subprocess = FCVA_mp.Process(
                 target=open_kivy,
-                args=(shared_analysis_dict, shared_metadata_dict, self.fps, shared_globalindex_dict, shared_analyzedA, shared_analyzedB, shared_analyzedC,shared_analyzedAKeycount,shared_analyzedBKeycount, shared_analyzedCKeycount, (1/self.fps), bufferlen,cvpartitions, self.length)
+                args=(shared_analysis_dict, shared_metadata_dict, self.fps, shared_globalindex_dict, shared_analyzedA, shared_analyzedB, shared_analyzedC,shared_analyzedAKeycount,shared_analyzedBKeycount, shared_analyzedCKeycount, (1/self.fps), bufferlen,cvpartitions, self.length, shared_analyzedD, shared_analyzedDKeycount)
+                # 
             )
             kivy_subprocess.start()
 
@@ -708,6 +743,7 @@ class FCVA:
                     cv_subprocessA.join()
                     cv_subprocessB.join()
                     cv_subprocessC.join()
+                    cv_subprocessD.join()
                     kivy_subprocess.join()
                     break
                 try:
