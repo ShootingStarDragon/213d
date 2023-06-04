@@ -274,7 +274,8 @@ FCVA_screen_manager: #remember to return a root widget
                 if self.starttime == None:
                     #init starttime:
                     # self.starttime = time.time() + 1
-                    self.starttime = time.time() + 2
+                    # self.starttime = time.time() + 2
+                    self.starttime = time.time() + 3
                     self.shared_globalindex_dictVAR["starttime"] = self.starttime
             else:
                 # self.shared_metadata_dictVAR[
@@ -427,7 +428,7 @@ def open_cvpipeline(*args):
                         for x in range(bufferlen*maxpartitions):
                             timegg = time.time()
                             (ret, framedata) = sourcecap.read()  #like .005 speed
-                            fprint("how fast is readin really?", time.time() - timegg) #0.010001897811889648
+                            # fprint("how fast is readin really?", time.time() - timegg) #0.010001897811889648
 
                             #compare internal framecount to see if it's a frame that this subprocess is supposed to analyze
                             if ret and internal_framecount in framelist:
@@ -439,7 +440,7 @@ def open_cvpipeline(*args):
                             if not ret and current_framenumber > internal_framecount+fps: #if ret is false, and we passed EOS (add 1 second (fps amount of frames) from internal_framecount AKA current_framenumber > internal_framecount + fps)
                                 shared_globalindex_dictVAR["subprocess" + str(pid)] = ret #say so in PID and wait for another process to reset it
                                 fprint("PID STOPPED", pid, internal_framecount)
-                        fprint("the for loop structure is slow...", time.time()-timeoog)
+                        # fprint("the for loop structure is slow...", time.time()-timeoog)
                     afterqueuetime = time.time()
                     
                     if raw_queue.qsize() > 0 and analyzed_queue.qsize() == 0:
@@ -463,7 +464,7 @@ def open_cvpipeline(*args):
                             analyzed_queueKEYS.put(raw_queueKEYS.get())
                             # fprint("blosc + queue timing?", time.time() - bloscthingy)
                         
-                        fprint("so blosc compressing is probably the other half", time.time() - otherhalf)
+                        # fprint("so blosc compressing is probably the other half", time.time() - otherhalf)
 
 
                         # #analyze all the frames and write to sharedmem:
@@ -477,15 +478,24 @@ def open_cvpipeline(*args):
                         #     analyzed_queueKEYS.put(raw_queueKEYS.get())
                     afteranalyzetime = time.time()
                     current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
-                    if analyzed_queue.qsize() == bufferlen and max(shared_analyzedKeycountVAR.values()) < current_framenumber:
+                    fprint("when to write?",
+                           os.getpid(),
+                           shared_analyzedKeycountVAR.values(),
+                           max(shared_analyzedKeycountVAR.values()),current_framenumber,
+                           max(shared_analyzedKeycountVAR.values()) < current_framenumber,
+                           time.time()
+                           )
+                    # if analyzed_queue.qsize() == bufferlen and max(shared_analyzedKeycountVAR.values()) < current_framenumber:
+                    if analyzed_queue.qsize() == bufferlen and (max(shared_analyzedKeycountVAR.values()) <= current_framenumber or max(shared_analyzedKeycountVAR.values()) == -1):
                         dictwritetime = time.time()
                         for x in range(bufferlen):
                             shared_analyzedVAR['frame'+str(x)] = analyzed_queue.get()
                             shared_analyzedKeycountVAR['key'+str(x)] = analyzed_queueKEYS.get()
-                        fprint("dictwritetime", time.time()-dictwritetime, os.getpid(), time.time())
+                        # fprint("dictwritetime", time.time()-dictwritetime, os.getpid(), time.time())
                     afterwritetime = time.time()
                     fprint("frame advantage END????", 
                             os.getpid(), 
+                            "partition number:", partitionnumber,
                             internal_framecount, 
                             current_framenumber, 
                             future_time-time.time(), 
@@ -743,7 +753,7 @@ class FCVA:
                         shared_globalindex_dict,
                         shared_analyzedDKeycount,
                         self.source,
-                        2, #partition #, starts at 0
+                        3, #partition #, starts at 0
                         0, #instance of the block of relevant frames
                         bufferlen, #bufferlen AKA how long the internal queues should be
                         cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
