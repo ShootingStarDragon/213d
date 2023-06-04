@@ -415,10 +415,10 @@ def sepia_filtermediapipethread(*args):
 # whatis __name__? __mp_main__
 # if __name__ == "FastCVApp":
     #landmarker = mp.tasks.vision.PoseLandmarker.create_from_options(options)
-# import mediapipe as mp
-from queue import Queue
 def sepia_filter2(*args): #basicmp
     try:
+        import mediapipe as mp
+        from queue import Queue
         inputqueue = args[1]
         bufferlenVAR = args[4]
         answerqueue = Queue(maxsize=bufferlenVAR)
@@ -478,6 +478,13 @@ def sepia_filter(*args): #nothing
     try:
         inputqueue = args[1]
         #analyze all frames 
+        # time.sleep(0.01)
+        # time.sleep(0.05)
+        # time.sleep(0.07)
+        # time.sleep(0.1) #still works even here...
+        time.sleep(0.15) #still works even here... frame advantage END???? 34448 360 312 1.5154035091400146 1685865658.4901376 total time? 1.0985207557678223 after initial queue time? 0.6219973564147949 after analyze time? 0.41951966285705566 after write time? 0.05700373649597168
+        # time.sleep(1) #finally failed...
+        # time.sleep(0.5) #failed as well... frame advantage END???? 28284 200 175 0.7413218021392822 1685865573.6464736 total time? 1.170780897140503 after initial queue time? 0.34678173065185547 after analyze time? 0.7500042915344238 after write time? 0.07399487495422363
         return inputqueue
     except Exception as e:
         print("sepia_filter basic died!", e, flush=True)
