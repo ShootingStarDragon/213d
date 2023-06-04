@@ -433,6 +433,7 @@ def open_cvpipeline(*args):
                             if not ret and current_framenumber > internal_framecount+fps: #if ret is false, and we passed EOS (add 1 second (fps amount of frames) from internal_framecount AKA current_framenumber > internal_framecount + fps)
                                 shared_globalindex_dictVAR["subprocess" + str(pid)] = ret #say so in PID and wait for another process to reset it
                                 fprint("PID STOPPED", pid, internal_framecount)
+                    afterqueuetime = time.time()
                     
                     if raw_queue.qsize() > 0 and analyzed_queue.qsize() == 0:
                         #give the queue to the cv func
@@ -463,7 +464,7 @@ def open_cvpipeline(*args):
                         #     result_compressed = blosc2.pack_array2(result)
                         #     analyzed_queue.put(result_compressed)
                         #     analyzed_queueKEYS.put(raw_queueKEYS.get())
-                    
+                    afteranalyzetime = time.time()
                     current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
                     if analyzed_queue.qsize() == bufferlen and max(shared_analyzedKeycountVAR.values()) < current_framenumber:
                         dictwritetime = time.time()
@@ -471,7 +472,8 @@ def open_cvpipeline(*args):
                             shared_analyzedVAR['frame'+str(x)] = analyzed_queue.get()
                             shared_analyzedKeycountVAR['key'+str(x)] = analyzed_queueKEYS.get()
                         fprint("dictwritetime", time.time()-dictwritetime, os.getpid(), time.time())
-                    fprint("frame advantage END????", os.getpid(), internal_framecount, current_framenumber, future_time-time.time(), time.time(), "total time?", time.time() - initial_time)
+                    afterwritetime = time.time()
+                    fprint("frame advantage END????", os.getpid(), internal_framecount, current_framenumber, future_time-time.time(), time.time(), "total time?", time.time() - initial_time, "after initial queue time?", time.time() - afterqueuetime, "after analyze time?", time.time() - afteranalyzetime, "after write time?", time.time() - afterwritetime)
 
                     # print("what are analyzed keys?", shared_analyzedKeycountVAR.values(), flush = True)
     except Exception as e:
