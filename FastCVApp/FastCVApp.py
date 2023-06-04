@@ -432,6 +432,8 @@ def open_cvpipeline(*args):
 
                             #compare internal framecount to see if it's a frame that this subprocess is supposed to analyze
                             if ret and internal_framecount in framelist:
+                                # i might not be picking up a pose because the frame is being read upside down, flip it first before analyzing with mediapipe
+                                framedata = cv2.flip(framedata, 0) 
                                 raw_queue.put(framedata) #im not giving bytes, yikes? # 0 time
                                 raw_queueKEYS.put(framelist[x % bufferlen]) # 0 time
                             internal_framecount += 1
