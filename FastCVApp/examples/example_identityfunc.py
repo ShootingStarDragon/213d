@@ -429,8 +429,8 @@ def sepia_filter(*args): #basicmp
             # print("did i get?",type(image), flush=True)
             
             ogimage = image.copy()
-            # image = cv2.resize(image, (640, 480)) #interpolation = cv2.INTER_AREA makes mediapipe detect nothing...
-            image = cv2.resize(image, (1280, 720)) #interpolation = cv2.INTER_AREA makes mediapipe detect nothing...
+            image = cv2.resize(image, (640, 480)) #interpolation = cv2.INTER_AREA makes mediapipe detect nothing...
+            # image = cv2.resize(image, (1280, 720)) #interpolation = cv2.INTER_AREA makes mediapipe detect nothing...
             # print("image shape?", image.shape)
 
             # Recolor Feed
@@ -465,7 +465,7 @@ def sepia_filter(*args): #basicmp
             fixed_image = cv2.cvtColor(fixed_image, cv2.COLOR_RGB2BGR)
             answerqueue.put(fixed_image)
             time2 = time.time()
-            print("time???", time2-time1,os.getpid(), len(results.pose_landmarks), newint) 
+            print("time???", len(results.pose_landmarks), time2-time1,os.getpid(), newint) 
         return answerqueue
 
     except Exception as e:
