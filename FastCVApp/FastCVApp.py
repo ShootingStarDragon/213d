@@ -273,7 +273,8 @@ FCVA_screen_manager: #remember to return a root widget
                 self.shared_metadata_dictVAR["toggleCV"] = True
                 if self.starttime == None:
                     #init starttime:
-                    self.starttime = time.time() + 1
+                    # self.starttime = time.time() + 1
+                    self.starttime = time.time() + 2
                     self.shared_globalindex_dictVAR["starttime"] = self.starttime
             else:
                 # self.shared_metadata_dictVAR[
@@ -349,7 +350,8 @@ def open_cvpipeline(*args):
         maxpartitions = args[9]
         fps = args[10]
 
-        sourcecap = cv2.VideoCapture(source)
+        #didn't know about apipreference: https://stackoverflow.com/questions/73753126/why-does-opencv-read-video-faster-than-ffmpeg
+        sourcecap = cv2.VideoCapture(source, apiPreference=cv2.CAP_FFMPEG)
         internal_framecount = 0
         analyzedframecounter = 0
         instance_count = 0
@@ -421,18 +423,23 @@ def open_cvpipeline(*args):
                         framelist = frameblock(partitionnumber,instance_count,bufferlen,maxpartitions)
                         fprint("says true for some reason?", shared_globalindex_dictVAR["subprocess" + str(pid)])
                         instance_count += 1
+                        timeoog = time.time()
                         for x in range(bufferlen*maxpartitions):
-                            (ret, framedata) = sourcecap.read()
+                            timegg = time.time()
+                            (ret, framedata) = sourcecap.read()  #like .005 speed
+                            fprint("how fast is readin really?", time.time() - timegg) #0.010001897811889648
+
                             #compare internal framecount to see if it's a frame that this subprocess is supposed to analyze
                             if ret and internal_framecount in framelist:
-                                raw_queue.put(framedata)
-                                raw_queueKEYS.put(framelist[x % bufferlen])
+                                raw_queue.put(framedata) #im not giving bytes, yikes? # 0 time
+                                raw_queueKEYS.put(framelist[x % bufferlen]) # 0 time
                             internal_framecount += 1
                             # fprint("ret, queue, keys, internal",ret, type(framedata), framelist[x % bufferlen], internal_framecount)
                             current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
                             if not ret and current_framenumber > internal_framecount+fps: #if ret is false, and we passed EOS (add 1 second (fps amount of frames) from internal_framecount AKA current_framenumber > internal_framecount + fps)
                                 shared_globalindex_dictVAR["subprocess" + str(pid)] = ret #say so in PID and wait for another process to reset it
                                 fprint("PID STOPPED", pid, internal_framecount)
+                        fprint("the for loop structure is slow...", time.time()-timeoog)
                     afterqueuetime = time.time()
                     
                     if raw_queue.qsize() > 0 and analyzed_queue.qsize() == 0:
@@ -443,16 +450,20 @@ def open_cvpipeline(*args):
                         fprint("resultqueue timing", time.time() - rtime, os.getpid(), time.time())
                         fprint("#then get from the analyzed queue and apply blosc2", resultqueue.qsize())
                         current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
+                        otherhalf = time.time()
 
                         #figure out future time
                         future_time = shared_globalindex_dictVAR["starttime"] + ((1/fps)*internal_framecount)
 
                         # fprint("frame advantage????", os.getpid(), internal_framecount, current_framenumber, future_time-time.time())
                         for x in range(resultqueue.qsize()):
+                            bloscthingy = time.time()
                             result_compressed = blosc2.pack_array2(resultqueue.get())
                             analyzed_queue.put(result_compressed)
                             analyzed_queueKEYS.put(raw_queueKEYS.get())
-                            # fprint("x in range?", x)
+                            # fprint("blosc + queue timing?", time.time() - bloscthingy)
+                        
+                        fprint("so blosc compressing is probably the other half", time.time() - otherhalf)
 
 
                         # #analyze all the frames and write to sharedmem:
@@ -480,9 +491,9 @@ def open_cvpipeline(*args):
                             future_time-time.time(), 
                             time.time(), 
                             "total time?", time.time() - initial_time, 
-                            "after initial queue time?", time.time() - afterqueuetime, 
-                            "after analyze time?", time.time() - afteranalyzetime, 
-                            "after write time?", time.time() - afterwritetime)
+                            "after initial queue time?", afterqueuetime - initial_time, 
+                            "after analyze time?", afteranalyzetime -afterqueuetime, 
+                            "after write time?", afterwritetime - afteranalyzetime)
 
                     # print("what are analyzed keys?", shared_analyzedKeycountVAR.values(), flush = True)
     except Exception as e:
@@ -632,7 +643,8 @@ class FCVA:
                 self.length += 1
             video.release()
 
-            bufferlen = 10
+            # bufferlen = 10
+            bufferlen = 20
             cvpartitions = 4
             #init shared dicts:
             for x in range(bufferlen):
