@@ -473,7 +473,16 @@ def open_cvpipeline(*args):
                             shared_analyzedKeycountVAR['key'+str(x)] = analyzed_queueKEYS.get()
                         fprint("dictwritetime", time.time()-dictwritetime, os.getpid(), time.time())
                     afterwritetime = time.time()
-                    fprint("frame advantage END????", os.getpid(), internal_framecount, current_framenumber, future_time-time.time(), time.time(), "total time?", time.time() - initial_time, "after initial queue time?", time.time() - afterqueuetime, "after analyze time?", time.time() - afteranalyzetime, "after write time?", time.time() - afterwritetime)
+                    fprint("frame advantage END????", 
+                            os.getpid(), 
+                            internal_framecount, 
+                            current_framenumber, 
+                            future_time-time.time(), 
+                            time.time(), 
+                            "total time?", time.time() - initial_time, 
+                            "after initial queue time?", time.time() - afterqueuetime, 
+                            "after analyze time?", time.time() - afteranalyzetime, 
+                            "after write time?", time.time() - afterwritetime)
 
                     # print("what are analyzed keys?", shared_analyzedKeycountVAR.values(), flush = True)
     except Exception as e:

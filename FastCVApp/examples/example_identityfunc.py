@@ -415,9 +415,9 @@ def sepia_filtermediapipethread(*args):
 # whatis __name__? __mp_main__
 # if __name__ == "FastCVApp":
     #landmarker = mp.tasks.vision.PoseLandmarker.create_from_options(options)
-import mediapipe as mp
+# import mediapipe as mp
 from queue import Queue
-def sepia_filter(*args): #basicmp
+def sepia_filter2(*args): #basicmp
     try:
         inputqueue = args[1]
         bufferlenVAR = args[4]
@@ -474,7 +474,7 @@ def sepia_filter(*args): #basicmp
         print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
 
 #init mediapipe
-def sepia_filternothing(*args):
+def sepia_filter(*args): #nothing
     try:
         inputqueue = args[1]
         #analyze all frames 
