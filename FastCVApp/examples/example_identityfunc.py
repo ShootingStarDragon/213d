@@ -214,6 +214,7 @@ class mediapipeThread:
                         # fixed_image = draw_landmarks_on_image(image.numpy_view(), results)
                         #now draw on original image: 
                         fixed_image = draw_landmarks_on_image(ogimage, results)
+                        print("poses?", flush = True)
                         #YOOO IT'S ALREADY NORMALIZED, NO NEED TO DO ANYTHING POGGERSSSSSSSS AND IT KEEPS THE SPEED HOLY
                         
                         # WORKS BUT IS STUCK 
@@ -457,6 +458,7 @@ def sepia_filter2(*args): #basicmp
             # fixed_image = draw_landmarks_on_image(image.numpy_view(), results)
             #now draw on original image: 
             fixed_image = draw_landmarks_on_image(ogimage, results)
+            print("poses?", flush = True)
             #YOOO IT'S ALREADY NORMALIZED, NO NEED TO DO ANYTHING POGGERSSSSSSSS AND IT KEEPS THE SPEED HOLY
             
             # WORKS BUT IS STUCK 
