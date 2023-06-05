@@ -339,6 +339,89 @@ def frameblock(*args):
 class open_cvpipeline_helper:
     pass
 
+def open_mediafile(*args):
+    '''
+    even though reading a frame is 0.01 sec on this desktop, each pipeline must read spare frames that is a waste of time
+    right now there are 4 subprocesses, 10 framebuffer.
+    so 30 frames are a waste of time: 0.3 seconds. that's huge
+    I can make it smaller by having a read subprocess and use blosc pack1 to stuff into a proper shared dict as in the older attempts
+    '''
+    import math
+    source                      = args[0]
+    bufferlenVAR                = args[1]
+    maxpartitionsVAR            = args[2]
+    shared_globalindex_dictVAR  = args[3]
+    fps                         = args[4]
+    sharedmem_list              = args[5]
+    # LIST OF SHAREDMEM IN THIS PAIRING: 
+    #     sharedmem1
+    #     sharedmem1keys
+    #     sharedmem2
+    #     sharedmem2keys
+    #     sharedmem3
+    #     sharedmem3keys
+    #     sharedmem4
+    #     sharedmem4keys
+    shared_metadata_dictVAR     = args[6]
+
+    sourcecap = cv2.VideoCapture(source, apiPreference=cv2.CAP_FFMPEG)
+    internal_framecount = 0
+    while True:
+        if "kivy_run_state" in shared_metadata_dictVAR:
+            if shared_metadata_dictVAR["kivy_run_state"] == False:
+                print("exiting open_mediafile", os.getpid(), flush=True)
+                break
+
+        current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
+        
+        # ???
+        # compress with blosc
+        # write to correct sharedmem
+
+        sharedmemlist_order = 1 2 3 4
+        sharedmemKEYS_order = 1 2 3 4
+        #if current time is < starttime, init bufferlen*maxpartitions amount of frames:, this is ok because there is a few seconds delay
+        if time.time() < shared_globalindex_dictVAR["starttime"]:
+            for x, y in zip(range(len(bufferlenVAR*maxpartitionsVAR)), sharedmem_list):
+                ret, frame = sourcecap.read()
+                frame = blosc2.pack(frame)
+                
+                #how to write to correct frame?
+                correctz = int(math.floor(x/bufferlenVAR))
+
+                #0248
+                sharedmem_list[correctz*2]["frame" + str(x%bufferlenVAR)] = frame
+                #1357
+                sharedmem_list[(correctz*2)+1]["key" + str(x%bufferlenVAR)] = x
+                internal_framecount += 1
+        
+        #this is after init because internalframecount of 0 - nonzero is always less than currentframenumber (which can also be negative btw)
+        #don't read too far into the future, just read bufferlen blocks at a time
+        if internal_framecount- (bufferlenVAR*(maxpartitionsVAR-1))<=current_framenumber:
+            #read a bufferlen amount of frames and write to proper shareddict:
+            for x in range(len(bufferlenVAR)):
+                ret, frame = sourcecap.read()
+                frame = blosc2.pack(frame)
+
+                #how to write to correct frame???
+                # correct sharedmem is dictated by internal_framecount
+                correctz = int(math.floor(internal_framecount/bufferlenVAR))
+                # 57
+                # 5.7
+                # 5
+                # 5 mod 4 is 1, remember mod 4 is A B C D 
+                # numbering: 0 1 2 3 4 5
+                #            A B C D A B
+                # pairing is gonna be:
+                # A A' B B' C C' D D' where A is frame and A' is KEYS
+                # this is still correct...
+                sharedmem_list[correctz*2]["frame" + str(x%bufferlenVAR)] = frame
+                #1357
+                sharedmem_list[(correctz*2)+1]["key" + str(x%bufferlenVAR)] = x
+
+                internal_framecount += 1
+
+
 def open_cvpipeline(*args):
     try:
         shared_metadata_dict = args[0]
@@ -553,6 +636,15 @@ class FCVA:
             shared_analyzedCKeycount = shared_mem_manager.dict()
             shared_analyzedD = shared_mem_manager.dict()
             shared_analyzedDKeycount = shared_mem_manager.dict()
+
+            shared_rawA = shared_mem_manager.dict()
+            shared_rawAKEYS = shared_mem_manager.dict()
+            shared_rawB = shared_mem_manager.dict()
+            shared_rawBKEYS = shared_mem_manager.dict()
+            shared_rawC = shared_mem_manager.dict()
+            shared_rawCKEYS = shared_mem_manager.dict()
+            shared_rawD = shared_mem_manager.dict()
+            shared_rawDKEYS = shared_mem_manager.dict()
             
 
             # set metadata kivy_run_state to true so cv subprocess will run and not get an error by reading uninstantiated shared memory.
@@ -665,18 +757,30 @@ class FCVA:
             cvpartitions = 4
             #init shared dicts:
             for x in range(bufferlen):
-                shared_analyzedAKeycount["key" + str(x)] = -1
                 shared_analyzedA["frame" + str(x)] = -1
+                shared_analyzedAKeycount["key" + str(x)] = -1
 
-                shared_analyzedBKeycount["key" + str(x)] = -1
                 shared_analyzedB["frame" + str(x)] = -1
+                shared_analyzedBKeycount["key" + str(x)] = -1
 
-                shared_analyzedCKeycount["key" + str(x)] = -1
                 shared_analyzedC["frame" + str(x)] = -1
+                shared_analyzedCKeycount["key" + str(x)] = -1
 
-                shared_analyzedDKeycount["key" + str(x)] = -1
                 shared_analyzedD["frame" + str(x)] = -1
-            
+                shared_analyzedDKeycount["key" + str(x)] = -1
+
+                shared_rawA["frame" + str(x)] = -1
+                shared_rawAKEYS["key" + str(x)] = -1
+
+                shared_rawB["frame" + str(x)] = -1
+                shared_rawBKEYS["key" + str(x)] = -1
+
+                shared_rawC["frame" + str(x)] = -1
+                shared_rawCKEYS["key" + str(x)] = -1
+
+                shared_rawD["frame" + str(x)] = -1
+                shared_rawDKEYS["key" + str(x)] = -1
+
             #sanity checks
             if not hasattr(self, "fps"):
                 # default to 30fps, else set blit buffer speed to 1/30 sec
@@ -697,6 +801,37 @@ class FCVA:
                 )
             
             #start the subprocesses
+            
+            shared_rawA = shared_mem_manager.dict()
+            shared_rawAKEYS = shared_mem_manager.dict()
+            shared_rawB = shared_mem_manager.dict()
+            shared_rawBKEYS = shared_mem_manager.dict()
+            shared_rawC = shared_mem_manager.dict()
+            shared_rawCKEYS = shared_mem_manager.dict()
+            shared_rawD = shared_mem_manager.dict()
+            shared_rawDKEYS = shared_mem_manager.dict()
+
+            mediaread_subprocess = FCVA_mp.Process(
+                    target=open_mediafile,
+                    args=(
+                        self.source,
+                        bufferlen,
+                        cvpartitions,
+                        shared_globalindex_dict,
+                        self.fps,
+                        [   shared_rawA, 
+                            shared_rawAKEYS,
+                            shared_rawB,
+                            shared_rawBKEYS,
+                            shared_rawC,
+                            shared_rawCKEYS,
+                            shared_rawD,
+                            shared_rawDKEYS],
+                        shared_metadata_dict
+                    ),
+                )
+            mediaread_subprocess.start()
+            
             cv_subprocessA = FCVA_mp.Process(
                     target=open_cvpipeline,
                     args=(
@@ -780,6 +915,7 @@ class FCVA:
             while "kivy_run_state" in shared_metadata_dict.keys():
                 if shared_metadata_dict["kivy_run_state"] == False:
                     # when the while block is done, close all the subprocesses using .join to gracefully exit. also make sure opencv releases the video.
+                    mediaread_subprocess.join()
                     cv_subprocessA.join()
                     cv_subprocessB.join()
                     cv_subprocessC.join()
