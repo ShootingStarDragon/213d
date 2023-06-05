@@ -156,7 +156,9 @@ FCVA_screen_manager: #remember to return a root widget
                 try:
                     if frame != None:
                         # frame = blosc2.unpack_array2(frame)
+                        oldtime = time.time()
                         frame = blosc2.unpack(frame)
+                        fprint("unpack time?", time.time() - oldtime)
                         if isinstance(frame,np.ndarray):
                             buf = frame.tobytes()
                             frame = np.frombuffer(frame, np.uint8).copy().reshape(1080, 1920, 3)
@@ -467,7 +469,7 @@ def open_cvpipeline(*args):
                             result_compressed = blosc2.pack(resultqueue.get())
                             analyzed_queue.put(result_compressed)
                             analyzed_queueKEYS.put(raw_queueKEYS.get())
-                            # fprint("blosc + queue timing?", time.time() - bloscthingy)
+                            fprint("blosc + queue timing?", time.time() - bloscthingy)
                         
                         # fprint("so blosc compressing is probably the other half", time.time() - otherhalf)
 
@@ -658,8 +660,8 @@ class FCVA:
                 self.length += 1
             video.release()
 
-            # bufferlen = 10
-            bufferlen = 20
+            bufferlen = 10
+            # bufferlen = 20
             cvpartitions = 4
             #init shared dicts:
             for x in range(bufferlen):
