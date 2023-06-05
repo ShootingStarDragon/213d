@@ -155,7 +155,8 @@ FCVA_screen_manager: #remember to return a root widget
                 # https://stackoverflow.com/questions/43748991/how-to-check-if-a-variable-is-either-a-python-list-numpy-array-or-pandas-series
                 try:
                     if frame != None:
-                        frame = blosc2.unpack_array2(frame)
+                        # frame = blosc2.unpack_array2(frame)
+                        frame = blosc2.unpack(frame)
                         if isinstance(frame,np.ndarray):
                             buf = frame.tobytes()
                             frame = np.frombuffer(frame, np.uint8).copy().reshape(1080, 1920, 3)
@@ -428,12 +429,13 @@ def open_cvpipeline(*args):
                         for x in range(bufferlen*maxpartitions):
                             timegg = time.time()
                             (ret, framedata) = sourcecap.read()  #like .005 speed
-                            # fprint("how fast is readin really?", time.time() - timegg) #0.010001897811889648
+                            fprint("how fast is readin really?", time.time() - timegg) #0.010001897811889648
 
                             #compare internal framecount to see if it's a frame that this subprocess is supposed to analyze
                             if ret and internal_framecount in framelist:
                                 # i might not be picking up a pose because the frame is being read upside down, flip it first before analyzing with mediapipe
                                 framedata = cv2.flip(framedata, 0) 
+                                framedata = cv2.cvtColor(framedata, cv2.COLOR_RGB2BGR)
                                 raw_queue.put(framedata) #im not giving bytes, yikes? # 0 time
                                 raw_queueKEYS.put(framelist[x % bufferlen]) # 0 time
                             internal_framecount += 1
@@ -442,7 +444,7 @@ def open_cvpipeline(*args):
                             if not ret and current_framenumber > internal_framecount+fps: #if ret is false, and we passed EOS (add 1 second (fps amount of frames) from internal_framecount AKA current_framenumber > internal_framecount + fps)
                                 shared_globalindex_dictVAR["subprocess" + str(pid)] = ret #say so in PID and wait for another process to reset it
                                 fprint("PID STOPPED", pid, internal_framecount)
-                        # fprint("the for loop structure is slow...", time.time()-timeoog)
+                        fprint("the for loop structure is slow...", time.time()-timeoog)
                     afterqueuetime = time.time()
                     
                     if raw_queue.qsize() > 0 and analyzed_queue.qsize() == 0:
@@ -461,7 +463,8 @@ def open_cvpipeline(*args):
                         # fprint("frame advantage????", os.getpid(), internal_framecount, current_framenumber, future_time-time.time())
                         for x in range(resultqueue.qsize()):
                             bloscthingy = time.time()
-                            result_compressed = blosc2.pack_array2(resultqueue.get())
+                            # result_compressed = blosc2.pack_array2(resultqueue.get())
+                            result_compressed = blosc2.pack(resultqueue.get())
                             analyzed_queue.put(result_compressed)
                             analyzed_queueKEYS.put(raw_queueKEYS.get())
                             # fprint("blosc + queue timing?", time.time() - bloscthingy)
