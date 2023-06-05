@@ -416,7 +416,7 @@ def sepia_filtermediapipethread(*args):
 # whatis __name__? __mp_main__
 # if __name__ == "FastCVApp":
     #landmarker = mp.tasks.vision.PoseLandmarker.create_from_options(options)
-def sepia_filter2(*args): #basicmp
+def sepia_filter(*args): #basicmp
     try:
         import mediapipe as mp
         from queue import Queue
@@ -458,13 +458,14 @@ def sepia_filter2(*args): #basicmp
             # fixed_image = draw_landmarks_on_image(image.numpy_view(), results)
             #now draw on original image: 
             fixed_image = draw_landmarks_on_image(ogimage, results)
-            print("poses?", flush = True)
+            # print("poses?", len(results.pose_landmarks), flush = True)
             #YOOO IT'S ALREADY NORMALIZED, NO NEED TO DO ANYTHING POGGERSSSSSSSS AND IT KEEPS THE SPEED HOLY
             
             # WORKS BUT IS STUCK 
             # fixed_image = draw_landmarks_on_image(mp.Image(image_format=mp.ImageFormat.SRGB, data=image).numpy_view(), detection_result)
             
-            fixed_image = cv2.cvtColor(fixed_image, cv2.COLOR_RGB2BGR)
+            #maybe the colors are messed up from ffmpeg, try converting color at the beginning as well (where u also flip the image)
+            # fixed_image = cv2.cvtColor(fixed_image, cv2.COLOR_RGB2BGR)
             answerqueue.put(fixed_image)
             time2 = time.time()
             print("time???", len(results.pose_landmarks), time2-time1,os.getpid(), newint) 
@@ -476,7 +477,7 @@ def sepia_filter2(*args): #basicmp
         print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
 
 #init mediapipe
-def sepia_filter(*args): #nothing
+def sepia_filter2(*args): #nothing
     try:
         inputqueue = args[1]
         #analyze all frames 
