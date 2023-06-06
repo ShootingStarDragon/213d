@@ -243,7 +243,7 @@ FCVA_screen_manager: #remember to return a root widget
             self.newt = time.time()
             if hasattr(self, 'newt'):
                 if self.newt - timeog > 0 and (1/(self.newt- timeog)) < 200:
-                    print("blit fps?", 1/(self.newt- timeog))
+                    # print("blit fps?", 1/(self.newt- timeog))
                     pass
         
         def toggleCV(self, *args):
@@ -332,7 +332,7 @@ def frameblock(*args):
     instance = args[1]
     bufferlen = args[2]
     maxpartitions = args[3]
-    print("frameblock args?", partitionnumber, instance)
+    # print("frameblock args?", partitionnumber, instance)
     Ans = [x + bufferlen*maxpartitions*instance + partitionnumber*bufferlen for x in range(bufferlen)]
     return Ans
 
@@ -346,96 +346,138 @@ def open_mediafile(*args):
     so 30 frames are a waste of time: 0.3 seconds. that's huge
     I can make it smaller by having a read subprocess and use blosc pack1 to stuff into a proper shared dict as in the older attempts
     '''
-    import math
-    source                      = args[0]
-    bufferlenVAR                = args[1]
-    maxpartitionsVAR            = args[2]
-    shared_globalindex_dictVAR  = args[3]
-    fps                         = args[4]
-    sharedmem_list              = args[5]
-    # LIST OF SHAREDMEM IN THIS PAIRING: 
-    #     sharedmem1
-    #     sharedmem1keys
-    #     sharedmem2
-    #     sharedmem2keys
-    #     sharedmem3
-    #     sharedmem3keys
-    #     sharedmem4
-    #     sharedmem4keys
-    shared_metadata_dictVAR     = args[6]
+    try:    
+        import math
+        source                      = args[0]
+        bufferlenVAR                = args[1]
+        maxpartitionsVAR            = args[2]
+        shared_globalindex_dictVAR  = args[3]
+        fps                         = args[4]
+        sharedmem_list              = args[5]
+        # LIST OF SHAREDMEM IN THIS PAIRING: 
+        #     sharedmem1
+        #     sharedmem1keys
+        #     sharedmem2
+        #     sharedmem2keys
+        #     sharedmem3
+        #     sharedmem3keys
+        #     sharedmem4
+        #     sharedmem4keys
+        shared_metadata_dictVAR     = args[6]
 
-    sourcecap = cv2.VideoCapture(source, apiPreference=cv2.CAP_FFMPEG)
-    internal_framecount = 0
-    while True:
-        if "kivy_run_state" in shared_metadata_dictVAR:
-            if shared_metadata_dictVAR["kivy_run_state"] == False:
-                print("exiting open_mediafile", os.getpid(), flush=True)
-                break
+        sourcecap = cv2.VideoCapture(source, apiPreference=cv2.CAP_FFMPEG)
+        internal_framecount = 0
+        while True:
+            if "kivy_run_state" in shared_metadata_dictVAR:
+                if shared_metadata_dictVAR["kivy_run_state"] == False:
+                    print("exiting open_mediafile", os.getpid(), flush=True)
+                    break
+            # fprint("read literally never updates", "starttime" in shared_globalindex_dictVAR)
 
-        current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
-        
-        # ???
-        # compress with blosc
-        # write to correct sharedmem
+            if "starttime" in shared_globalindex_dictVAR:
+                current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
+                if current_framenumber < 0:
+                    current_framenumber = 0
+                # ???
+                # compress with blosc
+                # write to correct sharedmem
 
-        sharedmemlist_order = 1 2 3 4
-        sharedmemKEYS_order = 1 2 3 4
-        #if current time is < starttime, init bufferlen*maxpartitions amount of frames:, this is ok because there is a few seconds delay
-        if time.time() < shared_globalindex_dictVAR["starttime"]:
-            for x, y in zip(range(len(bufferlenVAR*maxpartitionsVAR)), sharedmem_list):
-                ret, frame = sourcecap.read()
-                frame = blosc2.pack(frame)
+                # sharedmemlist_order = 1 2 3 4
+                # sharedmemKEYS_order = 1 2 3 4
+                # #if current time is < starttime, init bufferlen*maxpartitions amount of frames:, this is ok because there is a few seconds delay
+                # if time.time() < shared_globalindex_dictVAR["starttime"]:
+                #     for x in range(bufferlenVAR*maxpartitionsVAR):
+                #         ret, frame = sourcecap.read()
+                #         frame = cv2.flip(frame, 0) 
+                #         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                #         frame = blosc2.pack(frame)
+                        
+                #         #how to write to correct frame?
+                #         correctz = int(math.floor(x/bufferlenVAR))
+
+                #         #0248
+                #         sharedmem_list[correctz*2]["frame" + str(x%bufferlenVAR)] = frame
+                #         #1357
+                #         sharedmem_list[(correctz*2)+1]["key" + str(x%bufferlenVAR)] = x
+                #         internal_framecount += 1
                 
-                #how to write to correct frame?
-                correctz = int(math.floor(x/bufferlenVAR))
+                #this is after init because internalframecount of 0 - nonzero is always less than currentframenumber (which can also be negative btw)
+                #don't read too far into the future, just read bufferlen blocks at a time
+                # fprint("read never updates", 
+                #     internal_framecount,
+                #     (bufferlenVAR*(maxpartitionsVAR-1)),
+                #     internal_framecount- (bufferlenVAR*(maxpartitionsVAR-1)),
+                #     current_framenumber,
+                #     internal_framecount- (bufferlenVAR*(maxpartitionsVAR-1))<=current_framenumber)
+                # fprint("read never updates", 
+                #     internal_framecount,
+                #    )
+                if internal_framecount- (bufferlenVAR*(maxpartitionsVAR-1))<=current_framenumber:
+                    #read a bufferlen amount of frames and write to proper shareddict:
+                    beginningtime = time.time()
+                    for x in range(bufferlenVAR):
+                        startertime = time.time()
+                        ret, frame = sourcecap.read()
+                        # frame = cv2.flip(frame, 0) 
+                        # frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                        frame = blosc2.pack(frame, filter=blosc2.Filter.SHUFFLE, codec=blosc2.Codec.LZ4)
+                        framemanipulation = time.time()
 
-                #0248
-                sharedmem_list[correctz*2]["frame" + str(x%bufferlenVAR)] = frame
-                #1357
-                sharedmem_list[(correctz*2)+1]["key" + str(x%bufferlenVAR)] = x
-                internal_framecount += 1
-        
-        #this is after init because internalframecount of 0 - nonzero is always less than currentframenumber (which can also be negative btw)
-        #don't read too far into the future, just read bufferlen blocks at a time
-        if internal_framecount- (bufferlenVAR*(maxpartitionsVAR-1))<=current_framenumber:
-            #read a bufferlen amount of frames and write to proper shareddict:
-            for x in range(len(bufferlenVAR)):
-                ret, frame = sourcecap.read()
-                frame = blosc2.pack(frame)
+                        #how to write to correct frame???
+                        # correct sharedmem is dictated by internal_framecount
+                        correctz = int(math.floor(internal_framecount/bufferlenVAR))%maxpartitionsVAR
+                        # 57
+                        # 5.7
+                        # 5
+                        # 5 mod 4 is 1, remember mod 4 is A B C D 
+                        # numbering: 0 1 2 3 4 5
+                        #            A B C D A B
+                        # pairing is gonna be:
+                        # A A' B B' C C' D D' where A is frame and A' is KEYS
+                        # this is still correct...
+                        # fprint("it's updating the wrong shareddict", correctz, internal_framecount, bufferlenVAR, sharedmem_list)
+                        #sharedmem_list[correctz*2].keys(), sharedmem_list[(correctz*2)+1].keys(),
+                        sharedmem_list[correctz*2]["frame" + str(x%bufferlenVAR)] = frame
+                        sharedmemwrite = time.time()
+                        #1357
+                        sharedmem_list[(correctz*2)+1]["key" + str(x%bufferlenVAR)] = internal_framecount
+                        sharedmemkeyswrite = time.time()
 
-                #how to write to correct frame???
-                # correct sharedmem is dictated by internal_framecount
-                correctz = int(math.floor(internal_framecount/bufferlenVAR))
-                # 57
-                # 5.7
-                # 5
-                # 5 mod 4 is 1, remember mod 4 is A B C D 
-                # numbering: 0 1 2 3 4 5
-                #            A B C D A B
-                # pairing is gonna be:
-                # A A' B B' C C' D D' where A is frame and A' is KEYS
-                # this is still correct...
-                sharedmem_list[correctz*2]["frame" + str(x%bufferlenVAR)] = frame
-                #1357
-                sharedmem_list[(correctz*2)+1]["key" + str(x%bufferlenVAR)] = x
+                        internal_framecount += 1
+                    current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
+                    fprint("is read subprocess slow?", 
+                            internal_framecount, 
+                            current_framenumber, 
+                            "totaltime: ",time.time() - beginningtime,
+                            "framemanipulation+ .read())",
+                            framemanipulation - startertime,
+                            "sharedmemwrite: ",
+                            sharedmemwrite - framemanipulation,
+                            "sharedmemKEYSwrite: ",
+                            sharedmemkeyswrite - sharedmemwrite,)
+    except Exception as e:
+        print("open_mediafile died!", e)
+        import traceback
+        print("full exception open_mediafile", "".join(traceback.format_exception(*sys.exc_info())))
 
-                internal_framecount += 1
 
 
 def open_cvpipeline(*args):
     try:
-        shared_metadata_dict = args[0]
-        appliedcv = args[1]
+        shared_metadata_dict            =  args[0]
+        appliedcv                       = args[1]
         shared_metadata_dict["mp_ready"] = True
-        shared_analyzedVAR = args[2]
-        shared_globalindex_dictVAR = args[3] #self.shared_globalindex_dictVAR["starttime"]
-        shared_analyzedKeycountVAR = args[4]
-        source = args[5]
-        partitionnumber = args[6]
-        instance = args[7]
-        bufferlen = args[8]
-        maxpartitions = args[9]
-        fps = args[10]
+        shared_analyzedVAR              = args[2]
+        shared_globalindex_dictVAR      = args[3] #self.shared_globalindex_dictVAR["starttime"]
+        shared_analyzedKeycountVAR      = args[4]
+        source                          = args[5]
+        partitionnumber                 = args[6]
+        instance                        = args[7]
+        bufferlen                       = args[8]
+        maxpartitions                   = args[9]
+        fps                             = args[10]
+        shared_rawdict                  = args[11]
+        shared_rawKEYSdict              = args[12]
 
         #didn't know about apipreference: https://stackoverflow.com/questions/73753126/why-does-opencv-read-video-faster-than-ffmpeg
         sourcecap = cv2.VideoCapture(source, apiPreference=cv2.CAP_FFMPEG)
@@ -467,7 +509,7 @@ def open_cvpipeline(*args):
                         base_options=base_options,
                         running_mode=VisionRunningMode.VIDEO,
                         #these were old settings, maybe it's too strict and not giving me poses
-                        min_pose_detection_confidence=0.5, min_tracking_confidence=0.5
+                        # min_pose_detection_confidence=0.5, min_tracking_confidence=0.5
                         )
         landmarker = mp.tasks.vision.PoseLandmarker.create_from_options(options)
 
@@ -505,16 +547,45 @@ def open_cvpipeline(*args):
                     current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
                     fprint("frame advantage START????", os.getpid(), internal_framecount, current_framenumber, future_time-time.time(), time.time())
                     
+                    # if raw_queue.qsize() == 0:
+                    #     framelist = frameblock(partitionnumber,instance_count,bufferlen,maxpartitions)
+
+                    #     keysequence = []
+
+                    #     #assume frames are placed in order in read subprocess:
+                    #     value_list = [y for y in shared_rawKEYSdict.values()]
+                    #     if value_list == framelist:
+                    #         for x in range(len(shared_rawdict)):
+                    #             #assume frame is in blosc format so unpack it
+                    #             framedata = blosc2.unpack(shared_rawdict["frame" + str(x)])
+                    #             internal_framecount = shared_rawKEYSdict["key" + str(x)]
+                    #             raw_queue.put(framedata)
+                    #             raw_queueKEYS.put(internal_framecount)
+                    #             keysequence.append(internal_framecount)
+
+                    #         instance_count += 1
+                    #     fprint("check the keys dictionary for new frames, if there's bufferlen amount of new frames, load them into the queue", 
+                    #            os.getpid(),
+                    #            current_framenumber,
+                    #            framelist,
+                    #            value_list, #shared_rawKEYSdict.values()
+                    #            keysequence
+                    #            )
+
+
+
+
+                    
                     if raw_queue.qsize() == 0:
                         #get the right framecount:
                         framelist = frameblock(partitionnumber,instance_count,bufferlen,maxpartitions)
-                        fprint("says true for some reason?", shared_globalindex_dictVAR["subprocess" + str(pid)])
+                        # fprint("says true for some reason?", shared_globalindex_dictVAR["subprocess" + str(pid)])
                         instance_count += 1
                         timeoog = time.time()
                         for x in range(bufferlen*maxpartitions):
                             timegg = time.time()
                             (ret, framedata) = sourcecap.read()  #like .005 speed
-                            fprint("how fast is readin really?", time.time() - timegg) #0.010001897811889648
+                            # fprint("how fast is readin really?", time.time() - timegg) #0.010001897811889648
 
                             #compare internal framecount to see if it's a frame that this subprocess is supposed to analyze
                             if ret and internal_framecount in framelist:
@@ -549,10 +620,10 @@ def open_cvpipeline(*args):
                         for x in range(resultqueue.qsize()):
                             bloscthingy = time.time()
                             # result_compressed = blosc2.pack_array2(resultqueue.get())
-                            result_compressed = blosc2.pack(resultqueue.get())
+                            result_compressed = blosc2.pack(resultqueue.get(),filter=blosc2.Filter.SHUFFLE, codec=blosc2.Codec.LZ4)
                             analyzed_queue.put(result_compressed)
                             analyzed_queueKEYS.put(raw_queueKEYS.get())
-                            fprint("blosc + queue timing?", time.time() - bloscthingy)
+                            # fprint("blosc + queue timing?", time.time() - bloscthingy)
                         
                         # fprint("so blosc compressing is probably the other half", time.time() - otherhalf)
 
@@ -568,13 +639,13 @@ def open_cvpipeline(*args):
                         #     analyzed_queueKEYS.put(raw_queueKEYS.get())
                     afteranalyzetime = time.time()
                     current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
-                    fprint("when to write?",
-                           os.getpid(),
-                           shared_analyzedKeycountVAR.values(),
-                           max(shared_analyzedKeycountVAR.values()),current_framenumber,
-                           max(shared_analyzedKeycountVAR.values()) < current_framenumber,
-                           time.time()
-                           )
+                    # fprint("when to write?",
+                    #        os.getpid(),
+                    #        shared_analyzedKeycountVAR.values(),
+                    #        max(shared_analyzedKeycountVAR.values()),current_framenumber,
+                    #        max(shared_analyzedKeycountVAR.values()) < current_framenumber,
+                    #        time.time()
+                    #        )
                     # if analyzed_queue.qsize() == bufferlen and max(shared_analyzedKeycountVAR.values()) < current_framenumber:
                     if analyzed_queue.qsize() == bufferlen and (max(shared_analyzedKeycountVAR.values()) <= current_framenumber or max(shared_analyzedKeycountVAR.values()) == -1):
                         dictwritetime = time.time()
@@ -600,6 +671,185 @@ def open_cvpipeline(*args):
         print("open_appliedcv died!", e)
         import traceback
         print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
+
+# def open_cvpipelineWORKED(*args):
+#     try:
+#         shared_metadata_dict = args[0]
+#         appliedcv = args[1]
+#         shared_metadata_dict["mp_ready"] = True
+#         shared_analyzedVAR = args[2]
+#         shared_globalindex_dictVAR = args[3] #self.shared_globalindex_dictVAR["starttime"]
+#         shared_analyzedKeycountVAR = args[4]
+#         source = args[5]
+#         partitionnumber = args[6]
+#         instance = args[7]
+#         bufferlen = args[8]
+#         maxpartitions = args[9]
+#         fps = args[10]
+
+#         #didn't know about apipreference: https://stackoverflow.com/questions/73753126/why-does-opencv-read-video-faster-than-ffmpeg
+#         sourcecap = cv2.VideoCapture(source, apiPreference=cv2.CAP_FFMPEG)
+#         internal_framecount = 0
+#         analyzedframecounter = 0
+#         instance_count = 0
+        
+#         pid = os.getpid()
+#         shared_globalindex_dictVAR["subprocess" + str(pid)] = True
+
+#         from queue import Queue
+#         raw_queue = Queue(maxsize=bufferlen)
+#         raw_queueKEYS = Queue(maxsize=bufferlen)
+#         analyzed_queue = Queue(maxsize=bufferlen)
+#         analyzed_queueKEYS = Queue(maxsize=bufferlen)
+        
+#         open_cvpipeline_helper_instance = open_cvpipeline_helper()
+#         open_cvpipeline_helper_instance.resultsq = Queue(maxsize=bufferlen)
+
+#         #init mediapipe here so it spawns the right amt of processes
+#         import mediapipe as mp
+#         from mediapipe.tasks import python
+#         from mediapipe.tasks.python import vision
+#         with open('I:\CODING\FastCVApp\FastCVApp\examples\creativecommonsmedia\pose_landmarker_full.task', 'rb') as f:
+#                     modelbytes = f.read()
+#                     base_options = python.BaseOptions(model_asset_buffer=modelbytes)
+#                     VisionRunningMode = mp.tasks.vision.RunningMode
+#                     options = vision.PoseLandmarkerOptions(
+#                         base_options=base_options,
+#                         running_mode=VisionRunningMode.VIDEO,
+#                         #these were old settings, maybe it's too strict and not giving me poses
+#                         min_pose_detection_confidence=0.5, min_tracking_confidence=0.5
+#                         )
+#         landmarker = mp.tasks.vision.PoseLandmarker.create_from_options(options)
+
+#         while True:
+#             if "kivy_run_state" in shared_metadata_dict:
+#                 if shared_metadata_dict["kivy_run_state"] == False:
+#                     print("exiting open_appliedcv", os.getpid(), flush=True)
+#                     break
+#                 '''
+#                 NEW PLAN:
+#                 Init shared dicts at the beginning instead of checking every while loop
+                
+#                 use 3 subprocesses(A,B,C) to use opencv to get frames from 1 file simultaneously (pray it works and there's no file hold...)
+#                 then for each subprocesses, request 10 frames (0-9 > A, 10-19> B, 20-39>C, etc)
+#                 2 queues, 1 naked frame, 1 analyzed frame that is written to sharedmem for kivy to see
+#                 2 dicts:
+#                 rawqueue
+#                 analyzedqueue
+
+#                 LOOP:
+#                     3 actions: 
+#                     Read
+#                         request the RIGHT 10 frames (0-10 or 11-20 or 21-30)
+#                         Load raw frames only if analyze queue is empty (this implicitly checks for time, keeps frames loaded, and stops u from loading too much)
+#                     Analyze
+#                         Analyze all the time (if analyze queue is empty and there is a framequeue)
+#                     Write
+#                         Write to shared dict if init OR frames are old
+#                 '''
+#                 #make sure things have started AND this processess is not stopped:
+#                 if "starttime" in shared_globalindex_dictVAR and shared_globalindex_dictVAR["subprocess" + str(pid)]:
+
+#                     initial_time = time.time()
+#                     future_time = shared_globalindex_dictVAR["starttime"] + ((1/fps)*internal_framecount)
+#                     current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
+#                     # fprint("frame advantage START????", os.getpid(), internal_framecount, current_framenumber, future_time-time.time(), time.time())
+                    
+#                     if raw_queue.qsize() == 0:
+#                         #get the right framecount:
+#                         framelist = frameblock(partitionnumber,instance_count,bufferlen,maxpartitions)
+#                         fprint("says true for some reason?", shared_globalindex_dictVAR["subprocess" + str(pid)])
+#                         instance_count += 1
+#                         timeoog = time.time()
+#                         for x in range(bufferlen*maxpartitions):
+#                             timegg = time.time()
+#                             (ret, framedata) = sourcecap.read()  #like .005 speed
+#                             fprint("how fast is readin really?", time.time() - timegg) #0.010001897811889648
+
+#                             #compare internal framecount to see if it's a frame that this subprocess is supposed to analyze
+#                             if ret and internal_framecount in framelist:
+#                                 # i might not be picking up a pose because the frame is being read upside down, flip it first before analyzing with mediapipe
+#                                 framedata = cv2.flip(framedata, 0) 
+#                                 framedata = cv2.cvtColor(framedata, cv2.COLOR_RGB2BGR)
+#                                 raw_queue.put(framedata) #im not giving bytes, yikes? # 0 time
+#                                 raw_queueKEYS.put(framelist[x % bufferlen]) # 0 time
+#                             internal_framecount += 1
+#                             # fprint("ret, queue, keys, internal",ret, type(framedata), framelist[x % bufferlen], internal_framecount)
+#                             current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
+#                             if not ret and current_framenumber > internal_framecount+fps: #if ret is false, and we passed EOS (add 1 second (fps amount of frames) from internal_framecount AKA current_framenumber > internal_framecount + fps)
+#                                 shared_globalindex_dictVAR["subprocess" + str(pid)] = ret #say so in PID and wait for another process to reset it
+#                                 fprint("PID STOPPED", pid, internal_framecount)
+#                         fprint("the for loop structure is slow...", time.time()-timeoog)
+#                     afterqueuetime = time.time()
+                    
+#                     if raw_queue.qsize() > 0 and analyzed_queue.qsize() == 0:
+#                         #give the queue to the cv func
+#                         #cv func returns a queue of frames
+#                         rtime = time.time()
+#                         resultqueue = appliedcv(open_cvpipeline_helper_instance, raw_queue, shared_globalindex_dictVAR, shared_metadata_dict, bufferlen, landmarker)
+#                         fprint("resultqueue timing", time.time() - rtime, os.getpid(), time.time())
+#                         fprint("#then get from the analyzed queue and apply blosc2", resultqueue.qsize())
+#                         current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
+#                         otherhalf = time.time()
+
+#                         #figure out future time
+#                         future_time = shared_globalindex_dictVAR["starttime"] + ((1/fps)*internal_framecount)
+
+#                         # fprint("frame advantage????", os.getpid(), internal_framecount, current_framenumber, future_time-time.time())
+#                         for x in range(resultqueue.qsize()):
+#                             bloscthingy = time.time()
+#                             # result_compressed = blosc2.pack_array2(resultqueue.get())
+#                             result_compressed = blosc2.pack(resultqueue.get())
+#                             analyzed_queue.put(result_compressed)
+#                             analyzed_queueKEYS.put(raw_queueKEYS.get())
+#                             fprint("blosc + queue timing?", time.time() - bloscthingy)
+                        
+#                         # fprint("so blosc compressing is probably the other half", time.time() - otherhalf)
+
+
+#                         # #analyze all the frames and write to sharedmem:
+#                         # for x in range(raw_queue.qsize()):
+#                         #     result = appliedcv(
+#                         #                 raw_queue.get(),
+#                         #             )
+#                         #     #compress the numpy array with blosc so that reading is not as bad of a bottleneck
+#                         #     result_compressed = blosc2.pack_array2(result)
+#                         #     analyzed_queue.put(result_compressed)
+#                         #     analyzed_queueKEYS.put(raw_queueKEYS.get())
+#                     afteranalyzetime = time.time()
+#                     current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
+#                     fprint("when to write?",
+#                            os.getpid(),
+#                            shared_analyzedKeycountVAR.values(),
+#                            max(shared_analyzedKeycountVAR.values()),current_framenumber,
+#                            max(shared_analyzedKeycountVAR.values()) < current_framenumber,
+#                            time.time()
+#                            )
+#                     # if analyzed_queue.qsize() == bufferlen and max(shared_analyzedKeycountVAR.values()) < current_framenumber:
+#                     if analyzed_queue.qsize() == bufferlen and (max(shared_analyzedKeycountVAR.values()) <= current_framenumber or max(shared_analyzedKeycountVAR.values()) == -1):
+#                         dictwritetime = time.time()
+#                         for x in range(bufferlen):
+#                             shared_analyzedVAR['frame'+str(x)] = analyzed_queue.get()
+#                             shared_analyzedKeycountVAR['key'+str(x)] = analyzed_queueKEYS.get()
+#                         # fprint("dictwritetime", time.time()-dictwritetime, os.getpid(), time.time())
+#                     afterwritetime = time.time()
+#                     # fprint("frame advantage END????", 
+#                     #         os.getpid(), 
+#                     #         "partition number:", partitionnumber,
+#                     #         internal_framecount, 
+#                     #         current_framenumber, 
+#                     #         future_time-time.time(), 
+#                     #         time.time(), 
+#                     #         "total time?", time.time() - initial_time, 
+#                     #         "after initial queue time?", afterqueuetime - initial_time, 
+#                     #         "after analyze time?", afteranalyzetime -afterqueuetime, 
+#                     #         "after write time?", afterwritetime - afteranalyzetime)
+
+#                     # print("what are analyzed keys?", shared_analyzedKeycountVAR.values(), flush = True)
+#     except Exception as e:
+#         print("open_appliedcv died!", e)
+#         import traceback
+#         print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
 
 class FCVA:
     def __init__(self, *args, **kwargs):
@@ -846,6 +1096,8 @@ class FCVA:
                         bufferlen, #bufferlen AKA how long the internal queues should be
                         cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
                         self.fps,
+                        shared_rawA,
+                        shared_rawAKEYS
                     ),
                 )
             cv_subprocessA.start()
@@ -864,6 +1116,8 @@ class FCVA:
                         bufferlen, #bufferlen AKA how long the internal queues should be
                         cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
                         self.fps,
+                        shared_rawB,
+                        shared_rawBKEYS
                     ),
                 )
             cv_subprocessB.start()
@@ -882,6 +1136,8 @@ class FCVA:
                         bufferlen, #bufferlen AKA how long the internal queues should be
                         cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
                         self.fps,
+                        shared_rawC,
+                        shared_rawCKEYS
                     ),
                 )
             cv_subprocessC.start()
@@ -900,6 +1156,8 @@ class FCVA:
                         bufferlen, #bufferlen AKA how long the internal queues should be
                         cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
                         self.fps,
+                        shared_rawD,
+                        shared_rawDKEYS
                     ),
                 )
             cv_subprocessD.start()
