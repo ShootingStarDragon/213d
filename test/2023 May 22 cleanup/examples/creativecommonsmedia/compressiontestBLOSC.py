@@ -124,9 +124,18 @@ if __name__ == "__main__":
     print("unpack_array test", time2- time1, sys.getsizeof(unpacktest))
     print("compressor lists? ", blosc2.compressor_list())
 
+    #need more speed...
+    ret, frame6 = cap.read()
+    struggle = time.time()
+    FASTER = blosc2.pack(frame6, filter=blosc2.Filter.SHUFFLE, codec=blosc2.Codec.LZ4)
+    print("SPEED???", time.time() - struggle)
+    struggle2 = time.time()
+    FASTER2 = blosc2.unpack(FASTER)
+    print("decompress SPEED???", time.time() - struggle2, sys.getsizeof(FASTER))
 
     while True:
-        cv2.imshow('img', unpack2test)  # Show the image for testing
+        # cv2.imshow('img', unpack2test)  # Show the image for testing
+        cv2.imshow('img', struggle2)  # Show the image for testing
         # cv2.waitKey(1000)
         if cv2.waitKey(25) & 0xFF == ord('q'):
             break
