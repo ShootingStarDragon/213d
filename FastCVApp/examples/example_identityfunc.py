@@ -186,9 +186,12 @@ class mediapipeThread:
                         image = self.helperclassVAR.raw_queueVAR2.get()
                         # print("did i get?",type(image), flush=True)
                         time1 = time.time()
+                        # image = cv2.flip(image, 0) 
+                        # image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
                         
                         ogimage = image.copy()
-                        image = cv2.resize(image, (1280, 720)) #interpolation = cv2.INTER_AREA makes mediapipe detect nothing...
+                        image = cv2.resize(image, (640, 480))
+                        # image = cv2.resize(image, (1280, 720)) #interpolation = cv2.INTER_AREA makes mediapipe detect nothing...
                         # print("image shape?", image.shape)
 
                         # Recolor Feed
@@ -220,7 +223,7 @@ class mediapipeThread:
                         # WORKS BUT IS STUCK 
                         # fixed_image = draw_landmarks_on_image(mp.Image(image_format=mp.ImageFormat.SRGB, data=image).numpy_view(), detection_result)
                         
-                        fixed_image = cv2.cvtColor(fixed_image, cv2.COLOR_RGB2BGR)
+                        # fixed_image = cv2.cvtColor(fixed_image, cv2.COLOR_RGB2BGR)
                         self.helperclassVAR.resultsq.put(fixed_image)
                         time2 = time.time()
                         # print("time???", time2-time1,os.getpid())
@@ -428,9 +431,11 @@ def sepia_filter(*args): #basicmp
             time1 = time.time()
             image = inputqueue.get()
             # print("did i get?",type(image), flush=True)
+            image = cv2.flip(image, 0) 
+            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
             
             ogimage = image.copy()
-            image = cv2.resize(image, (640, 480)) #interpolation = cv2.INTER_AREA makes mediapipe detect nothing...
+            # image = cv2.resize(image, (640, 480)) #interpolation = cv2.INTER_AREA makes mediapipe detect nothing...
             # image = cv2.resize(image, (1280, 720)) #interpolation = cv2.INTER_AREA makes mediapipe detect nothing...
             # print("image shape?", image.shape)
 
