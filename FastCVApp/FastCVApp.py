@@ -157,16 +157,20 @@ FCVA_screen_manager: #remember to return a root widget
                     if frame != None:
                         # frame = blosc2.unpack_array2(frame)
                         oldtime = time.time()
-                        frame = blosc2.unpack(frame)
+                        # frame = blosc2.unpack(frame)
+                        frame = blosc2.decompress(frame)
                         fprint("unpack time?", time.time() - oldtime)
-                        if isinstance(frame,np.ndarray):
-                            buf = frame.tobytes()
+                        frame = np.frombuffer(frame, np.uint8).copy().reshape(1080, 1920, 3)
+                        frame = cv2.flip(frame, 0)
+                        buf = frame.tobytes()
+                        if isinstance(frame,np.ndarray): #trying bytes
+                            # buf = frame.tobytes() 
                             # frame = np.frombuffer(frame, np.uint8).copy().reshape(1080, 1920, 3)
                             #fix the frame
                             # frame = cv2.flip(frame, 0) 
                             # frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
 
-                            frame = np.frombuffer(frame, np.uint8).copy().reshape(720, 1280, 3)
+                            # frame = np.frombuffer(frame, np.uint8).copy().reshape(720, 1280, 3)
                             # frame = np.frombuffer(frame, np.uint8).copy().reshape(480, 640, 3)
                             
                             # complicated way of safely checking if a value may or may not exist, then get that value:
@@ -580,10 +584,6 @@ def open_cvpipeline(*args):
                     #            value_list, #shared_rawKEYSdict.values()
                     #            keysequence
                     #            )
-
-
-
-
                     
                     if raw_queue.qsize() == 0:
                         #get the right framecount:
@@ -599,7 +599,7 @@ def open_cvpipeline(*args):
                             #compare internal framecount to see if it's a frame that this subprocess is supposed to analyze
                             if ret and internal_framecount in framelist:
                                 # i might not be picking up a pose because the frame is being read upside down, flip it first before analyzing with mediapipe
-                                framedata = cv2.resize(framedata, (1280, 720))
+                                # framedata = cv2.resize(framedata, (1280, 720))
                                 # framedata = cv2.resize(framedata, (640, 480))
                                 # framedata = cv2.flip(framedata, 0) 
                                 # framedata = cv2.cvtColor(framedata, cv2.COLOR_RGB2BGR)
@@ -631,8 +631,9 @@ def open_cvpipeline(*args):
                         for x in range(resultqueue.qsize()):
                             bloscthingy = time.time()
                             # result_compressed = blosc2.pack_array2(resultqueue.get())
-                            result_compressed = blosc2.pack(resultqueue.get(),filter=blosc2.Filter.SHUFFLE, codec=blosc2.Codec.LZ4)
-                            # result_compressed = resultqueue.get().tobytes()
+                            # result_compressed = blosc2.pack(resultqueue.get(),filter=blosc2.Filter.SHUFFLE, codec=blosc2.Codec.LZ4)
+                            result_compressed = resultqueue.get().tobytes()
+                            result_compressed = blosc2.compress(result_compressed,filter=blosc2.Filter.SHUFFLE, codec=blosc2.Codec.LZ4)
                             analyzed_queue.put(result_compressed)
                             analyzed_queueKEYS.put(raw_queueKEYS.get())
                             # fprint("blosc + queue timing?", time.time() - bloscthingy)
