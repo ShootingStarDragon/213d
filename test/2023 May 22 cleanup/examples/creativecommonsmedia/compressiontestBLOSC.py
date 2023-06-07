@@ -60,7 +60,7 @@ if __name__ == "__main__":
 
     # import timeit
     time1 = time.time()
-    blosc2.compress(bytes_array, typesize=8)
+    compresstest1 = blosc2.compress(bytes_array, typesize=8)
     time2 = time.time()
     print("blosc2 time on random array?", time2 - time1)
     # print(timeit.timeit('blosc2.compress(bytes_array, typesize=8)'))
@@ -72,7 +72,10 @@ if __name__ == "__main__":
     timeB = time.time()
 
     time1 = time.time()
-    newguy = blosc2.compress(frame2, typesize=8)
+    # newguy = blosc2.compress(frame2, typesize=8)
+    newguy = blosc2.compress(framebytes, codec=blosc2.Codec.LZ4)
+    #no LZ4 blosc2 time for compress on my framedata? 0.006999492645263672 time to tobytes 0.0020008087158203125 framesize 6220833 size of newguy: 3880435 decompress time 0.0019989013671875
+    # WITH LZ4 blosc2 time for compress on my framedata? 0.005001544952392578 time to tobytes 0.001999378204345703 framesize 6220833 size of newguy: 3854712 decompress time 0.0019998550415039062
     time2 = time.time()
     newguy2 = blosc2.decompress(newguy)
     print("blosc2 time for compress on my framedata?", time2 - time1, "time to tobytes", timeB - timeA, "framesize", sys.getsizeof(framebytes), "size of newguy:", sys.getsizeof(newguy), "decompress time", time.time() - time2)
@@ -133,9 +136,11 @@ if __name__ == "__main__":
     FASTER2 = blosc2.unpack(FASTER)
     print("decompress SPEED???", time.time() - struggle2, sys.getsizeof(FASTER))
 
+    newguyfixxedd = np.frombuffer(newguy2, np.uint8).copy().reshape(1080, 1920, 3)
+
     while True:
         # cv2.imshow('img', unpack2test)  # Show the image for testing
-        cv2.imshow('img', struggle2)  # Show the image for testing
+        cv2.imshow('img', newguyfixxedd)  # Show the image for testing
         # cv2.waitKey(1000)
         if cv2.waitKey(25) & 0xFF == ord('q'):
             break
