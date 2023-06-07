@@ -157,12 +157,17 @@ FCVA_screen_manager: #remember to return a root widget
                     if frame != None:
                         # frame = blosc2.unpack_array2(frame)
                         oldtime = time.time()
-                        # frame = blosc2.unpack(frame)
+                        frame = blosc2.unpack(frame)
                         fprint("unpack time?", time.time() - oldtime)
                         if isinstance(frame,np.ndarray):
                             buf = frame.tobytes()
                             # frame = np.frombuffer(frame, np.uint8).copy().reshape(1080, 1920, 3)
+                            #fix the frame
+                            # frame = cv2.flip(frame, 0) 
+                            # frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+
                             frame = np.frombuffer(frame, np.uint8).copy().reshape(720, 1280, 3)
+                            # frame = np.frombuffer(frame, np.uint8).copy().reshape(480, 640, 3)
                             
                             # complicated way of safely checking if a value may or may not exist, then get that value:
                             #quickly checked this, time is 0...
@@ -367,7 +372,7 @@ def open_mediafile(*args):
         #     sharedmem4keys
         shared_metadata_dictVAR     = args[6]
 
-        sourcecap = cv2.VideoCapture(source, apiPreference=cv2.CAP_FFMPEG)
+        sourcecap = cv2.VideoCapture(source) #, apiPreference=cv2.CAP_FFMPEG
         internal_framecount = 0
         while True:
             if "kivy_run_state" in shared_metadata_dictVAR:
@@ -595,8 +600,9 @@ def open_cvpipeline(*args):
                             if ret and internal_framecount in framelist:
                                 # i might not be picking up a pose because the frame is being read upside down, flip it first before analyzing with mediapipe
                                 framedata = cv2.resize(framedata, (1280, 720))
-                                framedata = cv2.flip(framedata, 0) 
-                                framedata = cv2.cvtColor(framedata, cv2.COLOR_RGB2BGR)
+                                # framedata = cv2.resize(framedata, (640, 480))
+                                # framedata = cv2.flip(framedata, 0) 
+                                # framedata = cv2.cvtColor(framedata, cv2.COLOR_RGB2BGR)
                                 raw_queue.put(framedata) #im not giving bytes, yikes? # 0 time
                                 raw_queueKEYS.put(framelist[x % bufferlen]) # 0 time
                             internal_framecount += 1
@@ -625,8 +631,8 @@ def open_cvpipeline(*args):
                         for x in range(resultqueue.qsize()):
                             bloscthingy = time.time()
                             # result_compressed = blosc2.pack_array2(resultqueue.get())
-                            # result_compressed = blosc2.pack(resultqueue.get(),filter=blosc2.Filter.SHUFFLE, codec=blosc2.Codec.LZ4)
-                            result_compressed = resultqueue.get()
+                            result_compressed = blosc2.pack(resultqueue.get(),filter=blosc2.Filter.SHUFFLE, codec=blosc2.Codec.LZ4)
+                            # result_compressed = resultqueue.get().tobytes()
                             analyzed_queue.put(result_compressed)
                             analyzed_queueKEYS.put(raw_queueKEYS.get())
                             # fprint("blosc + queue timing?", time.time() - bloscthingy)
@@ -666,7 +672,7 @@ def open_cvpipeline(*args):
                             internal_framecount, 
                             current_framenumber, 
                             future_time-time.time(), 
-                            time.time(), 
+                            # time.time(), 
                             "total time?", time.time() - initial_time, 
                             "after initial queue time?", afterqueuetime - initial_time, 
                             "after analyze time?", afteranalyzetime -afterqueuetime, 
@@ -1068,26 +1074,26 @@ class FCVA:
             shared_rawD = shared_mem_manager.dict()
             shared_rawDKEYS = shared_mem_manager.dict()
 
-            mediaread_subprocess = FCVA_mp.Process(
-                    target=open_mediafile,
-                    args=(
-                        self.source,
-                        bufferlen,
-                        cvpartitions,
-                        shared_globalindex_dict,
-                        self.fps,
-                        [   shared_rawA, 
-                            shared_rawAKEYS,
-                            shared_rawB,
-                            shared_rawBKEYS,
-                            shared_rawC,
-                            shared_rawCKEYS,
-                            shared_rawD,
-                            shared_rawDKEYS],
-                        shared_metadata_dict
-                    ),
-                )
-            mediaread_subprocess.start()
+            # mediaread_subprocess = FCVA_mp.Process(
+            #         target=open_mediafile,
+            #         args=(
+            #             self.source,
+            #             bufferlen,
+            #             cvpartitions,
+            #             shared_globalindex_dict,
+            #             self.fps,
+            #             [   shared_rawA, 
+            #                 shared_rawAKEYS,
+            #                 shared_rawB,
+            #                 shared_rawBKEYS,
+            #                 shared_rawC,
+            #                 shared_rawCKEYS,
+            #                 shared_rawD,
+            #                 shared_rawDKEYS],
+            #             shared_metadata_dict
+            #         ),
+            #     )
+            # mediaread_subprocess.start()
             
             cv_subprocessA = FCVA_mp.Process(
                     target=open_cvpipeline,
