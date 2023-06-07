@@ -157,7 +157,7 @@ FCVA_screen_manager: #remember to return a root widget
                     if frame != None:
                         # frame = blosc2.unpack_array2(frame)
                         oldtime = time.time()
-                        frame = blosc2.unpack(frame)
+                        # frame = blosc2.unpack(frame)
                         fprint("unpack time?", time.time() - oldtime)
                         if isinstance(frame,np.ndarray):
                             buf = frame.tobytes()
@@ -625,7 +625,8 @@ def open_cvpipeline(*args):
                         for x in range(resultqueue.qsize()):
                             bloscthingy = time.time()
                             # result_compressed = blosc2.pack_array2(resultqueue.get())
-                            result_compressed = blosc2.pack(resultqueue.get(),filter=blosc2.Filter.SHUFFLE, codec=blosc2.Codec.LZ4)
+                            # result_compressed = blosc2.pack(resultqueue.get(),filter=blosc2.Filter.SHUFFLE, codec=blosc2.Codec.LZ4)
+                            result_compressed = resultqueue.get()
                             analyzed_queue.put(result_compressed)
                             analyzed_queueKEYS.put(raw_queueKEYS.get())
                             # fprint("blosc + queue timing?", time.time() - bloscthingy)
