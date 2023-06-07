@@ -105,10 +105,11 @@ from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
 # import numpy as np #duplicte but required for drawing landmarks
 def draw_landmarks_on_image(rgb_image, detection_result):
+# def draw_landmarks_on_image(annotated_image, detection_result):
     try:
         pose_landmarks_list = detection_result.pose_landmarks
         annotated_image = np.copy(rgb_image)
-        annotated_image = cv2.cvtColor(annotated_image, cv2.COLOR_BGR2RGB)
+        # annotated_image = cv2.cvtColor(annotated_image, cv2.COLOR_BGR2RGB)
 
         # Loop through the detected poses to visualize.
         for idx in range(len(pose_landmarks_list)):
@@ -431,11 +432,11 @@ def sepia_filter(*args): #basicmp
             time1 = time.time()
             image = inputqueue.get()
             # print("did i get?",type(image), flush=True)
-            image = cv2.flip(image, 0) 
-            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+            # image = cv2.flip(image, 0) 
+            # image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
             
             ogimage = image.copy()
-            # image = cv2.resize(image, (640, 480)) #interpolation = cv2.INTER_AREA makes mediapipe detect nothing...
+            image = cv2.resize(image, (640, 480)) #interpolation = cv2.INTER_AREA makes mediapipe detect nothing...
             # image = cv2.resize(image, (1280, 720)) #interpolation = cv2.INTER_AREA makes mediapipe detect nothing...
             # print("image shape?", image.shape)
 
