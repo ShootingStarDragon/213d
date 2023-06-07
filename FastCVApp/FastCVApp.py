@@ -161,7 +161,8 @@ FCVA_screen_manager: #remember to return a root widget
                         fprint("unpack time?", time.time() - oldtime)
                         if isinstance(frame,np.ndarray):
                             buf = frame.tobytes()
-                            frame = np.frombuffer(frame, np.uint8).copy().reshape(1080, 1920, 3)
+                            # frame = np.frombuffer(frame, np.uint8).copy().reshape(1080, 1920, 3)
+                            frame = np.frombuffer(frame, np.uint8).copy().reshape(720, 1280, 3)
                             
                             # complicated way of safely checking if a value may or may not exist, then get that value:
                             #quickly checked this, time is 0...
@@ -279,6 +280,7 @@ FCVA_screen_manager: #remember to return a root widget
                     # self.starttime = time.time() + 1
                     # self.starttime = time.time() + 2
                     self.starttime = time.time() + 3
+                    # self.starttime = time.time() + 8
                     self.shared_globalindex_dictVAR["starttime"] = self.starttime
             else:
                 # self.shared_metadata_dictVAR[
@@ -502,12 +504,14 @@ def open_cvpipeline(*args):
         from mediapipe.tasks import python
         from mediapipe.tasks.python import vision
         with open('I:\CODING\FastCVApp\FastCVApp\examples\creativecommonsmedia\pose_landmarker_full.task', 'rb') as f:
+        # with open('I:\CODING\FastCVApp\FastCVApp\examples\creativecommonsmedia\pose_landmarker_lite.task', 'rb') as f:
                     modelbytes = f.read()
                     base_options = python.BaseOptions(model_asset_buffer=modelbytes)
                     VisionRunningMode = mp.tasks.vision.RunningMode
                     options = vision.PoseLandmarkerOptions(
                         base_options=base_options,
                         running_mode=VisionRunningMode.VIDEO,
+                        # model_complexity = 0,
                         #these were old settings, maybe it's too strict and not giving me poses
                         # min_pose_detection_confidence=0.5, min_tracking_confidence=0.5
                         )
@@ -590,16 +594,17 @@ def open_cvpipeline(*args):
                             #compare internal framecount to see if it's a frame that this subprocess is supposed to analyze
                             if ret and internal_framecount in framelist:
                                 # i might not be picking up a pose because the frame is being read upside down, flip it first before analyzing with mediapipe
+                                framedata = cv2.resize(framedata, (1280, 720))
                                 framedata = cv2.flip(framedata, 0) 
                                 framedata = cv2.cvtColor(framedata, cv2.COLOR_RGB2BGR)
                                 raw_queue.put(framedata) #im not giving bytes, yikes? # 0 time
                                 raw_queueKEYS.put(framelist[x % bufferlen]) # 0 time
                             internal_framecount += 1
                             # fprint("ret, queue, keys, internal",ret, type(framedata), framelist[x % bufferlen], internal_framecount)
-                            current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
-                            if not ret and current_framenumber > internal_framecount+fps: #if ret is false, and we passed EOS (add 1 second (fps amount of frames) from internal_framecount AKA current_framenumber > internal_framecount + fps)
-                                shared_globalindex_dictVAR["subprocess" + str(pid)] = ret #say so in PID and wait for another process to reset it
-                                fprint("PID STOPPED", pid, internal_framecount)
+                            # current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
+                            # if not ret and current_framenumber > internal_framecount+fps: #if ret is false, and we passed EOS (add 1 second (fps amount of frames) from internal_framecount AKA current_framenumber > internal_framecount + fps)
+                            #     shared_globalindex_dictVAR["subprocess" + str(pid)] = ret #say so in PID and wait for another process to reset it
+                            #     fprint("PID STOPPED", pid, internal_framecount)
                         fprint("the for loop structure is slow...", time.time()-timeoog)
                     afterqueuetime = time.time()
                     
@@ -625,7 +630,7 @@ def open_cvpipeline(*args):
                             analyzed_queueKEYS.put(raw_queueKEYS.get())
                             # fprint("blosc + queue timing?", time.time() - bloscthingy)
                         
-                        # fprint("so blosc compressing is probably the other half", time.time() - otherhalf)
+                        fprint("so blosc compressing is probably the other half", os.getpid(), time.time() - otherhalf, "last blosctime", time.time() - bloscthingy)
 
 
                         # #analyze all the frames and write to sharedmem:
@@ -1004,6 +1009,7 @@ class FCVA:
 
             bufferlen = 10
             # bufferlen = 20
+            # bufferlen = 40
             cvpartitions = 4
             #init shared dicts:
             for x in range(bufferlen):

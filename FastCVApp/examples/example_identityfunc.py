@@ -223,7 +223,7 @@ class mediapipeThread:
                         fixed_image = cv2.cvtColor(fixed_image, cv2.COLOR_RGB2BGR)
                         self.helperclassVAR.resultsq.put(fixed_image)
                         time2 = time.time()
-                        print("time???", time2-time1,os.getpid())
+                        # print("time???", time2-time1,os.getpid())
         except Exception as e:
             print("mediapipe update thread died!", e, flush=True)
             import traceback
@@ -468,7 +468,7 @@ def sepia_filter(*args): #basicmp
             # fixed_image = cv2.cvtColor(fixed_image, cv2.COLOR_RGB2BGR)
             answerqueue.put(fixed_image)
             time2 = time.time()
-            print("time???", len(results.pose_landmarks), time2-time1,os.getpid(), newint) 
+            # print("time???", len(results.pose_landmarks), time2-time1,os.getpid(), newint) 
         return answerqueue
 
     except Exception as e:
