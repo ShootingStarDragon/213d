@@ -161,6 +161,7 @@ FCVA_screen_manager: #remember to return a root widget
                         frame = blosc2.decompress(frame)
                         fprint("unpack time?", time.time() - oldtime)
                         frame = np.frombuffer(frame, np.uint8).copy().reshape(1080, 1920, 3)
+                        # frame = np.frombuffer(frame, np.uint8).copy().reshape(720, 1280, 3)
                         frame = cv2.flip(frame, 0)
                         buf = frame.tobytes()
                         if isinstance(frame,np.ndarray): #trying bytes
@@ -170,7 +171,6 @@ FCVA_screen_manager: #remember to return a root widget
                             # frame = cv2.flip(frame, 0) 
                             # frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
 
-                            # frame = np.frombuffer(frame, np.uint8).copy().reshape(720, 1280, 3)
                             # frame = np.frombuffer(frame, np.uint8).copy().reshape(480, 640, 3)
                             
                             # complicated way of safely checking if a value may or may not exist, then get that value:
@@ -431,7 +431,10 @@ def open_mediafile(*args):
                         ret, frame = sourcecap.read()
                         # frame = cv2.flip(frame, 0) 
                         # frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-                        frame = blosc2.pack(frame, filter=blosc2.Filter.SHUFFLE, codec=blosc2.Codec.LZ4)
+                        # frame = blosc2.pack(frame, filter=blosc2.Filter.SHUFFLE, codec=blosc2.Codec.LZ4)
+
+                        frame = blosc2.compress(frame.tobytes(),filter=blosc2.Filter.SHUFFLE, codec=blosc2.Codec.LZ4)
+
                         framemanipulation = time.time()
 
                         #how to write to correct frame???
@@ -570,7 +573,9 @@ def open_cvpipeline(*args):
                     #     if value_list == framelist:
                     #         for x in range(len(shared_rawdict)):
                     #             #assume frame is in blosc format so unpack it
-                    #             framedata = blosc2.unpack(shared_rawdict["frame" + str(x)])
+                    #             # framedata = blosc2.unpack(shared_rawdict["frame" + str(x)])
+                    #             # framedata = blosc2.decompress(shared_rawdict["frame" + str(x)])
+                    #             framedata = np.frombuffer(blosc2.decompress(shared_rawdict["frame" + str(x)]), np.uint8).copy().reshape(1080, 1920, 3)
                     #             internal_framecount = shared_rawKEYSdict["key" + str(x)]
                     #             raw_queue.put(framedata)
                     #             raw_queueKEYS.put(internal_framecount)
