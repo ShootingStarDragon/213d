@@ -68,10 +68,11 @@ NEW PROJECTED TIME:
             now I'm actually only reading 10 frames, compressed with blosc pack1: 
                 10*0.017 = 0.17 time
     after analyze time? 
+        1.1~1.5 sec
         2 parts: 
             0.7 (can't change this)
                 analyzing with mediapipe: 0.07 sec per frame > so 0.7 for all 10 frames
-            0.1
+            0.1 (already went to blosc, it's .4 to .6 but on the faster side)
             compressing with blosc pack1 for 10 frames
                 10 * 0.01
     after write time? similarly, write for 10 frames is 0.17
