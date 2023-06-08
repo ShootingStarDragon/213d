@@ -589,6 +589,14 @@ def open_cvpipeline(*args):
                     #            value_list, #shared_rawKEYSdict.values()
                     #            keysequence
                     #            )
+                    newwritestart = time.time()
+                    if analyzed_queue.qsize() == bufferlen and (max(shared_analyzedKeycountVAR.values()) <= current_framenumber or max(shared_analyzedKeycountVAR.values()) == -1):
+                        dictwritetime = time.time()
+                        for x in range(bufferlen):
+                            shared_analyzedVAR['frame'+str(x)] = analyzed_queue.get()
+                            shared_analyzedKeycountVAR['key'+str(x)] = analyzed_queueKEYS.get()
+                        # fprint("dictwritetime", time.time()-dictwritetime, os.getpid(), time.time())
+                    newwriteend = time.time()
                     
                     if raw_queue.qsize() == 0:
                         #get the right framecount:
@@ -624,8 +632,8 @@ def open_cvpipeline(*args):
                         #cv func returns a queue of frames
                         rtime = time.time()
                         resultqueue = appliedcv(open_cvpipeline_helper_instance, raw_queue, shared_globalindex_dictVAR, shared_metadata_dict, bufferlen, landmarker)
-                        fprint("resultqueue timing", time.time() - rtime, os.getpid(), time.time())
-                        fprint("#then get from the analyzed queue and apply blosc2", resultqueue.qsize())
+                        fprint("resultqueue timing (appliedcv)", os.getpid(), time.time() - rtime, time.time())
+                        # fprint("#then get from the analyzed queue and apply blosc2", resultqueue.qsize())
                         current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
                         otherhalf = time.time()
 
@@ -665,12 +673,13 @@ def open_cvpipeline(*args):
                     #        time.time()
                     #        )
                     # if analyzed_queue.qsize() == bufferlen and max(shared_analyzedKeycountVAR.values()) < current_framenumber:
-                    if analyzed_queue.qsize() == bufferlen and (max(shared_analyzedKeycountVAR.values()) <= current_framenumber or max(shared_analyzedKeycountVAR.values()) == -1):
-                        dictwritetime = time.time()
-                        for x in range(bufferlen):
-                            shared_analyzedVAR['frame'+str(x)] = analyzed_queue.get()
-                            shared_analyzedKeycountVAR['key'+str(x)] = analyzed_queueKEYS.get()
-                        # fprint("dictwritetime", time.time()-dictwritetime, os.getpid(), time.time())
+                    # 
+                    # if analyzed_queue.qsize() == bufferlen and (max(shared_analyzedKeycountVAR.values()) <= current_framenumber or max(shared_analyzedKeycountVAR.values()) == -1):
+                    #     dictwritetime = time.time()
+                    #     for x in range(bufferlen):
+                    #         shared_analyzedVAR['frame'+str(x)] = analyzed_queue.get()
+                    #         shared_analyzedKeycountVAR['key'+str(x)] = analyzed_queueKEYS.get()
+                    #     # fprint("dictwritetime", time.time()-dictwritetime, os.getpid(), time.time())
                     afterwritetime = time.time()
                     fprint("frame advantage END????", 
                             os.getpid(), 
@@ -682,7 +691,8 @@ def open_cvpipeline(*args):
                             "total time?", time.time() - initial_time, 
                             "after initial queue time?", afterqueuetime - initial_time, 
                             "after analyze time?", afteranalyzetime -afterqueuetime, 
-                            "after write time?", afterwritetime - afteranalyzetime)
+                            # "after write time?", afterwritetime - afteranalyzetime,
+                            "after write time?", newwriteend - newwritestart,)
 
                     # print("what are analyzed keys?", shared_analyzedKeycountVAR.values(), flush = True)
     except Exception as e:
@@ -1013,11 +1023,12 @@ class FCVA:
             # https://stackoverflow.com/questions/31472155/python-opencv-cv2-cv-cv-cap-prop-frame-count-get-wrong-numbers
             # self.length = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
             self.length = 0
-            while True: 
-                ret, framevar = video.read()
-                if not ret:
-                    break
-                self.length += 1
+            # while True: 
+            #     ret, framevar = video.read()
+            #     if not ret:
+            #         break
+            #     self.length += 1
+            self.length += 11222333
             video.release()
 
             bufferlen = 10
