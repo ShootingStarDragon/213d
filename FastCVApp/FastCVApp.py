@@ -161,8 +161,8 @@ FCVA_screen_manager: #remember to return a root widget
                         # frame = blosc2.unpack(frame)
                         frame = blosc2.decompress(frame)
                         # fprint("unpack time?", time.time() - oldtime)
-                        frame = np.frombuffer(frame, np.uint8).copy().reshape(1080, 1920, 3)
-                        # frame = np.frombuffer(frame, np.uint8).copy().reshape(720, 1280, 3)
+                        # frame = np.frombuffer(frame, np.uint8).copy().reshape(1080, 1920, 3)
+                        frame = np.frombuffer(frame, np.uint8).copy().reshape(720, 1280, 3)
                         frame = cv2.flip(frame, 0)
                         buf = frame.tobytes()
                         if isinstance(frame,np.ndarray): #trying bytes
@@ -521,8 +521,8 @@ def open_cvpipeline(*args):
         import mediapipe as mp
         from mediapipe.tasks import python
         from mediapipe.tasks.python import vision
-        # with open('I:\CODING\FastCVApp\FastCVApp\examples\creativecommonsmedia\pose_landmarker_full.task', 'rb') as f:
-        with open('I:\CODING\FastCVApp\FastCVApp\examples\creativecommonsmedia\pose_landmarker_lite.task', 'rb') as f:
+        with open('I:\CODING\FastCVApp\FastCVApp\examples\creativecommonsmedia\pose_landmarker_full.task', 'rb') as f:
+        # with open('I:\CODING\FastCVApp\FastCVApp\examples\creativecommonsmedia\pose_landmarker_lite.task', 'rb') as f:
                     modelbytes = f.read()
                     base_options = python.BaseOptions(model_asset_buffer=modelbytes)
                     VisionRunningMode = mp.tasks.vision.RunningMode
@@ -605,7 +605,8 @@ def open_cvpipeline(*args):
                     #so wait just until frame 
                     #at 720p write 10 frames is 0.08 sec, so waiting at +8 is correct,  (2 more frames to read is 0.6 sec, slightly faster than 0.08)
                     # if analyzed_queue.qsize() == bufferlen and (min(shared_analyzedKeycountVAR.values())+8 <= current_framenumber or max(shared_analyzedKeycountVAR.values()) == -1):
-                    if len(analyzed_queue) == bufferlen and (min(shared_analyzedKeycountVAR.values())+8 <= current_framenumber or max(shared_analyzedKeycountVAR.values()) == -1):
+                    # if len(analyzed_queue) == bufferlen and (min(shared_analyzedKeycountVAR.values())+8 <= current_framenumber or max(shared_analyzedKeycountVAR.values()) == -1):
+                    if len(analyzed_queue) == bufferlen and (max(shared_analyzedKeycountVAR.values()) <= current_framenumber or max(shared_analyzedKeycountVAR.values()) == -1):
                         dictwritetime = time.time()
                         for x in range(bufferlen):
                             # oldtimera = time.time()
@@ -678,7 +679,7 @@ def open_cvpipeline(*args):
                             #compare internal framecount to see if it's a frame that this subprocess is supposed to analyze
                             if ret and internal_framecount in framelist:
                                 # i might not be picking up a pose because the frame is being read upside down, flip it first before analyzing with mediapipe
-                                # framedata = cv2.resize(framedata, (1280, 720))
+                                framedata = cv2.resize(framedata, (1280, 720))
                                 # framedata = cv2.resize(framedata, (640, 480))
                                 # framedata = cv2.flip(framedata, 0) 
                                 # framedata = cv2.cvtColor(framedata, cv2.COLOR_RGB2BGR)
