@@ -161,8 +161,8 @@ FCVA_screen_manager: #remember to return a root widget
                         # frame = blosc2.unpack(frame)
                         frame = blosc2.decompress(frame)
                         # fprint("unpack time?", time.time() - oldtime)
-                        # frame = np.frombuffer(frame, np.uint8).copy().reshape(1080, 1920, 3)
-                        frame = np.frombuffer(frame, np.uint8).copy().reshape(720, 1280, 3)
+                        frame = np.frombuffer(frame, np.uint8).copy().reshape(1080, 1920, 3)
+                        # frame = np.frombuffer(frame, np.uint8).copy().reshape(720, 1280, 3)
                         frame = cv2.flip(frame, 0)
                         buf = frame.tobytes()
                         if isinstance(frame,np.ndarray): #trying bytes
@@ -503,21 +503,26 @@ def open_cvpipeline(*args):
         pid = os.getpid()
         shared_globalindex_dictVAR["subprocess" + str(pid)] = True
 
-        from queue import Queue
-        raw_queue = Queue(maxsize=bufferlen)
-        raw_queueKEYS = Queue(maxsize=bufferlen)
-        analyzed_queue = Queue(maxsize=bufferlen)
-        analyzed_queueKEYS = Queue(maxsize=bufferlen)
+        # from queue import Queue
+        from collections import deque
+        # raw_queue = Queue(maxsize=bufferlen)
+        # raw_queueKEYS = Queue(maxsize=bufferlen)
+        # analyzed_queue = Queue(maxsize=bufferlen)
+        # analyzed_queueKEYS = Queue(maxsize=bufferlen)
+        raw_queue = deque(maxlen=bufferlen)
+        raw_queueKEYS = deque(maxlen=bufferlen)
+        analyzed_queue = deque(maxlen=bufferlen)
+        analyzed_queueKEYS = deque(maxlen=bufferlen)
         
-        open_cvpipeline_helper_instance = open_cvpipeline_helper()
-        open_cvpipeline_helper_instance.resultsq = Queue(maxsize=bufferlen)
+        # open_cvpipeline_helper_instance = open_cvpipeline_helper()
+        # open_cvpipeline_helper_instance.resultsq = Queue(maxsize=bufferlen)
 
         #init mediapipe here so it spawns the right amt of processes
         import mediapipe as mp
         from mediapipe.tasks import python
         from mediapipe.tasks.python import vision
-        with open('I:\CODING\FastCVApp\FastCVApp\examples\creativecommonsmedia\pose_landmarker_full.task', 'rb') as f:
-        # with open('I:\CODING\FastCVApp\FastCVApp\examples\creativecommonsmedia\pose_landmarker_lite.task', 'rb') as f:
+        # with open('I:\CODING\FastCVApp\FastCVApp\examples\creativecommonsmedia\pose_landmarker_full.task', 'rb') as f:
+        with open('I:\CODING\FastCVApp\FastCVApp\examples\creativecommonsmedia\pose_landmarker_lite.task', 'rb') as f:
                     modelbytes = f.read()
                     base_options = python.BaseOptions(model_asset_buffer=modelbytes)
                     VisionRunningMode = mp.tasks.vision.RunningMode
@@ -592,22 +597,38 @@ def open_cvpipeline(*args):
                     #            )
                     newwritestart = time.time()
                     #safe route: wait for currentframe to have passed partitionblock
-                    if analyzed_queue.qsize() == bufferlen and (max(shared_analyzedKeycountVAR.values()) <= current_framenumber or max(shared_analyzedKeycountVAR.values()) == -1):
+                    # if analyzed_queue.qsize() == bufferlen and (max(shared_analyzedKeycountVAR.values()) <= current_framenumber or max(shared_analyzedKeycountVAR.values()) == -1):
                     #wait for currentframe to be at beginning of partitionblock + 2 frames
                     # if analyzed_queue.qsize() == bufferlen and (min(shared_analyzedKeycountVAR.values())+2 <= current_framenumber or max(shared_analyzedKeycountVAR.values()) == -1):
+                    #why +8? u know that time to read 10 frames: 0.3 sec
+                    #time to blit 10 blosc compressed frames: 0.15 sec
+                    #so wait just until frame 
+                    #at 720p write 10 frames is 0.08 sec, so waiting at +8 is correct,  (2 more frames to read is 0.6 sec, slightly faster than 0.08)
+                    # if analyzed_queue.qsize() == bufferlen and (min(shared_analyzedKeycountVAR.values())+8 <= current_framenumber or max(shared_analyzedKeycountVAR.values()) == -1):
+                    if len(analyzed_queue) == bufferlen and (min(shared_analyzedKeycountVAR.values())+8 <= current_framenumber or max(shared_analyzedKeycountVAR.values()) == -1):
                         dictwritetime = time.time()
                         for x in range(bufferlen):
-                            shared_analyzedVAR['frame'+str(x)] = analyzed_queue.get()
-                            shared_analyzedKeycountVAR['key'+str(x)] = analyzed_queueKEYS.get()
+                            # oldtimera = time.time()
+                            shared_analyzedVAR['frame'+str(x)] = analyzed_queue.popleft()
+                            shared_analyzedKeycountVAR['key'+str(x)] = analyzed_queueKEYS.popleft()
+                            # oldtimerb = time.time()
+
+                            # newtimera = time.time()
+                            # shared_analyzedVAR.update({'frame'+str(x):analyzed_queue.get()})
+                            # shared_analyzedKeycountVAR.update({'key'+str(x):analyzed_queueKEYS.get()})
+                            # newtimerb = time.time()
+
+                            # fprint("dictwritetime OLD method", oldtimerb - oldtimera, "new method:", newtimerb- newtimera)
                         # fprint("dictwritetime", time.time()-dictwritetime, os.getpid(), time.time())
                     newwriteend = time.time()
                     
                     afteranalyzetimestart = time.time()
-                    if raw_queue.qsize() > 0 and analyzed_queue.qsize() == 0:
+                    # if raw_queue.qsize() > 0 and analyzed_queue.qsize() == 0:
+                    if len(raw_queue) > 0 and len(analyzed_queue) == 0:
                         #give the queue to the cv func
                         #cv func returns a queue of frames
                         rtime = time.time()
-                        resultqueue = appliedcv(open_cvpipeline_helper_instance, raw_queue, shared_globalindex_dictVAR, shared_metadata_dict, bufferlen, landmarker)
+                        resultqueue = appliedcv(raw_queue, shared_globalindex_dictVAR, shared_metadata_dict, bufferlen, landmarker)
                         fprint("resultqueue timing (appliedcv)", os.getpid(), time.time() - rtime, time.time())
                         # fprint("#then get from the analyzed queue and apply blosc2", resultqueue.qsize())
                         current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
@@ -617,14 +638,15 @@ def open_cvpipeline(*args):
                         future_time = shared_globalindex_dictVAR["starttime"] + ((1/fps)*internal_framecount)
 
                         # fprint("frame advantage????", os.getpid(), internal_framecount, current_framenumber, future_time-time.time())
-                        for x in range(resultqueue.qsize()):
+                        # for x in range(resultqueue.qsize()):
+                        for x in range(len(resultqueue)):
                             bloscthingy = time.time()
                             # result_compressed = blosc2.pack_array2(resultqueue.get())
                             # result_compressed = blosc2.pack(resultqueue.get(),filter=blosc2.Filter.SHUFFLE, codec=blosc2.Codec.LZ4)
-                            result_compressed = resultqueue.get().tobytes()
+                            result_compressed = resultqueue.popleft().tobytes()
                             result_compressed = blosc2.compress(result_compressed,filter=blosc2.Filter.SHUFFLE, codec=blosc2.Codec.LZ4)
-                            analyzed_queue.put(result_compressed)
-                            analyzed_queueKEYS.put(raw_queueKEYS.get())
+                            analyzed_queue.append(result_compressed)
+                            analyzed_queueKEYS.append(raw_queueKEYS.popleft())
                             # fprint("blosc + queue timing?", time.time() - bloscthingy)
                         
                         fprint("so blosc compressing is probably the other half", os.getpid(), time.time() - otherhalf, "last blosctime", time.time() - bloscthingy)
@@ -641,7 +663,8 @@ def open_cvpipeline(*args):
                         #     analyzed_queueKEYS.put(raw_queueKEYS.get())
                     
                     afterqueuetimestart = time.time()
-                    if raw_queue.qsize() == 0:
+                    # if raw_queue.qsize() == 0:
+                    if len(raw_queue) == 0:
                         #get the right framecount:
                         framelist = frameblock(partitionnumber,instance_count,bufferlen,maxpartitions)
                         # fprint("says true for some reason?", shared_globalindex_dictVAR["subprocess" + str(pid)])
@@ -655,12 +678,12 @@ def open_cvpipeline(*args):
                             #compare internal framecount to see if it's a frame that this subprocess is supposed to analyze
                             if ret and internal_framecount in framelist:
                                 # i might not be picking up a pose because the frame is being read upside down, flip it first before analyzing with mediapipe
-                                framedata = cv2.resize(framedata, (1280, 720))
+                                # framedata = cv2.resize(framedata, (1280, 720))
                                 # framedata = cv2.resize(framedata, (640, 480))
                                 # framedata = cv2.flip(framedata, 0) 
                                 # framedata = cv2.cvtColor(framedata, cv2.COLOR_RGB2BGR)
-                                raw_queue.put(framedata) #im not giving bytes, yikes? # 0 time
-                                raw_queueKEYS.put(framelist[x % bufferlen]) # 0 time
+                                raw_queue.append(framedata) #im not giving bytes, yikes? # 0 time
+                                raw_queueKEYS.append(framelist[x % bufferlen]) # 0 time
                             internal_framecount += 1
                             # fprint("ret, queue, keys, internal",ret, type(framedata), framelist[x % bufferlen], internal_framecount)
                             # current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))

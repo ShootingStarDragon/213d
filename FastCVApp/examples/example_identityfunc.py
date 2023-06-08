@@ -424,14 +424,17 @@ import time
 def sepia_filter(*args): #basicmp
     try:
         import mediapipe as mp
-        from queue import Queue
-        inputqueue = args[1]
-        bufferlenVAR = args[4]
-        answerqueue = Queue(maxsize=bufferlenVAR)
-        landmarkerVAR = args[5]
-        while inputqueue.qsize() > 0:
+        # from queue import Queue
+        from collections import deque
+        inputqueue = args[0]
+        bufferlenVAR = args[3]
+        # answerqueue = Queue(maxsize=bufferlenVAR)
+        answerqueue = deque(maxlen=bufferlenVAR)
+        landmarkerVAR = args[4]
+        # while inputqueue.qsize() > 0:
+        while len(inputqueue) > 0:
             time1 = time.time()
-            image = inputqueue.get()
+            image = inputqueue.popleft()
             # print("did i get?",type(image), flush=True)
             # image = cv2.flip(image, 0) 
             
@@ -476,7 +479,7 @@ def sepia_filter(*args): #basicmp
             
             #maybe the colors are messed up from ffmpeg, try converting color at the beginning as well (where u also flip the image)
             # fixed_image = cv2.cvtColor(fixed_image, cv2.COLOR_RGB2BGR)
-            answerqueue.put(fixed_image)
+            answerqueue.append(fixed_image)
             time2 = time.time()
             # print("time???", len(results.pose_landmarks), time2-time1,os.getpid(), newint) 
         return answerqueue
