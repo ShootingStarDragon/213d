@@ -111,7 +111,8 @@ FCVA_screen_manager: #remember to return a root widget
                 self.index = int((time.time() - self.starttime)/self.spf)
                 if self.index < 0:
                     self.index = 0
-                fprint("is cv subprocess keeping up?", self.index, self.shared_analyzedAKeycountVAR.values(),self.shared_analyzedBKeycountVAR.values(),self.shared_analyzedCKeycountVAR.values(),self.shared_analyzedDKeycountVAR.values())
+                #this is helpful but is very good at locking up the shared dicts...
+                # fprint("is cv subprocess keeping up?", self.index, self.shared_analyzedAKeycountVAR.values(),self.shared_analyzedBKeycountVAR.values(),self.shared_analyzedCKeycountVAR.values(),self.shared_analyzedDKeycountVAR.values())
                 #cheat for rn, just get current frame:
                 #know the current framenumber
                 #get the right shareddict https://www.geeksforgeeks.org/python-get-key-from-value-in-dictionary/#
@@ -590,7 +591,8 @@ def open_cvpipeline(*args):
                     #            keysequence
                     #            )
                     newwritestart = time.time()
-                    if analyzed_queue.qsize() == bufferlen and (max(shared_analyzedKeycountVAR.values()) <= current_framenumber or max(shared_analyzedKeycountVAR.values()) == -1):
+                    # if analyzed_queue.qsize() == bufferlen and (max(shared_analyzedKeycountVAR.values()) <= current_framenumber or max(shared_analyzedKeycountVAR.values()) == -1):
+                    if analyzed_queue.qsize() == bufferlen and (min(shared_analyzedKeycountVAR.values())+2 <= current_framenumber or max(shared_analyzedKeycountVAR.values()) == -1):
                         dictwritetime = time.time()
                         for x in range(bufferlen):
                             shared_analyzedVAR['frame'+str(x)] = analyzed_queue.get()
@@ -598,6 +600,45 @@ def open_cvpipeline(*args):
                         # fprint("dictwritetime", time.time()-dictwritetime, os.getpid(), time.time())
                     newwriteend = time.time()
                     
+                    afteranalyzetimestart = time.time()
+                    if raw_queue.qsize() > 0 and analyzed_queue.qsize() == 0:
+                        #give the queue to the cv func
+                        #cv func returns a queue of frames
+                        rtime = time.time()
+                        resultqueue = appliedcv(open_cvpipeline_helper_instance, raw_queue, shared_globalindex_dictVAR, shared_metadata_dict, bufferlen, landmarker)
+                        fprint("resultqueue timing (appliedcv)", os.getpid(), time.time() - rtime, time.time())
+                        # fprint("#then get from the analyzed queue and apply blosc2", resultqueue.qsize())
+                        current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
+                        otherhalf = time.time()
+
+                        #figure out future time
+                        future_time = shared_globalindex_dictVAR["starttime"] + ((1/fps)*internal_framecount)
+
+                        # fprint("frame advantage????", os.getpid(), internal_framecount, current_framenumber, future_time-time.time())
+                        for x in range(resultqueue.qsize()):
+                            bloscthingy = time.time()
+                            # result_compressed = blosc2.pack_array2(resultqueue.get())
+                            # result_compressed = blosc2.pack(resultqueue.get(),filter=blosc2.Filter.SHUFFLE, codec=blosc2.Codec.LZ4)
+                            result_compressed = resultqueue.get().tobytes()
+                            result_compressed = blosc2.compress(result_compressed,filter=blosc2.Filter.SHUFFLE, codec=blosc2.Codec.LZ4)
+                            analyzed_queue.put(result_compressed)
+                            analyzed_queueKEYS.put(raw_queueKEYS.get())
+                            # fprint("blosc + queue timing?", time.time() - bloscthingy)
+                        
+                        fprint("so blosc compressing is probably the other half", os.getpid(), time.time() - otherhalf, "last blosctime", time.time() - bloscthingy)
+                    afteranalyzetime = time.time()
+
+                        # #analyze all the frames and write to sharedmem:
+                        # for x in range(raw_queue.qsize()):
+                        #     result = appliedcv(
+                        #                 raw_queue.get(),
+                        #             )
+                        #     #compress the numpy array with blosc so that reading is not as bad of a bottleneck
+                        #     result_compressed = blosc2.pack_array2(result)
+                        #     analyzed_queue.put(result_compressed)
+                        #     analyzed_queueKEYS.put(raw_queueKEYS.get())
+                    
+                    afterqueuetimestart = time.time()
                     if raw_queue.qsize() == 0:
                         #get the right framecount:
                         framelist = frameblock(partitionnumber,instance_count,bufferlen,maxpartitions)
@@ -627,43 +668,7 @@ def open_cvpipeline(*args):
                         fprint("the for loop structure is slow...", time.time()-timeoog)
                     afterqueuetime = time.time()
                     
-                    if raw_queue.qsize() > 0 and analyzed_queue.qsize() == 0:
-                        #give the queue to the cv func
-                        #cv func returns a queue of frames
-                        rtime = time.time()
-                        resultqueue = appliedcv(open_cvpipeline_helper_instance, raw_queue, shared_globalindex_dictVAR, shared_metadata_dict, bufferlen, landmarker)
-                        fprint("resultqueue timing (appliedcv)", os.getpid(), time.time() - rtime, time.time())
-                        # fprint("#then get from the analyzed queue and apply blosc2", resultqueue.qsize())
-                        current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
-                        otherhalf = time.time()
-
-                        #figure out future time
-                        future_time = shared_globalindex_dictVAR["starttime"] + ((1/fps)*internal_framecount)
-
-                        # fprint("frame advantage????", os.getpid(), internal_framecount, current_framenumber, future_time-time.time())
-                        for x in range(resultqueue.qsize()):
-                            bloscthingy = time.time()
-                            # result_compressed = blosc2.pack_array2(resultqueue.get())
-                            # result_compressed = blosc2.pack(resultqueue.get(),filter=blosc2.Filter.SHUFFLE, codec=blosc2.Codec.LZ4)
-                            result_compressed = resultqueue.get().tobytes()
-                            result_compressed = blosc2.compress(result_compressed,filter=blosc2.Filter.SHUFFLE, codec=blosc2.Codec.LZ4)
-                            analyzed_queue.put(result_compressed)
-                            analyzed_queueKEYS.put(raw_queueKEYS.get())
-                            # fprint("blosc + queue timing?", time.time() - bloscthingy)
-                        
-                        fprint("so blosc compressing is probably the other half", os.getpid(), time.time() - otherhalf, "last blosctime", time.time() - bloscthingy)
-
-
-                        # #analyze all the frames and write to sharedmem:
-                        # for x in range(raw_queue.qsize()):
-                        #     result = appliedcv(
-                        #                 raw_queue.get(),
-                        #             )
-                        #     #compress the numpy array with blosc so that reading is not as bad of a bottleneck
-                        #     result_compressed = blosc2.pack_array2(result)
-                        #     analyzed_queue.put(result_compressed)
-                        #     analyzed_queueKEYS.put(raw_queueKEYS.get())
-                    afteranalyzetime = time.time()
+                    
                     current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
                     # fprint("when to write?",
                     #        os.getpid(),
@@ -689,10 +694,11 @@ def open_cvpipeline(*args):
                             future_time-time.time(), 
                             # time.time(), 
                             "total time?", time.time() - initial_time, 
-                            "after initial queue time?", afterqueuetime - initial_time, 
-                            "after analyze time?", afteranalyzetime -afterqueuetime, 
+                            "after write time?", newwriteend - newwritestart,
+                            "after analyze time?", afteranalyzetime -afteranalyzetimestart, 
+                            "after initial queue time?", afterqueuetime - afterqueuetimestart, 
                             # "after write time?", afterwritetime - afteranalyzetime,
-                            "after write time?", newwriteend - newwritestart,)
+                            )
 
                     # print("what are analyzed keys?", shared_analyzedKeycountVAR.values(), flush = True)
     except Exception as e:
