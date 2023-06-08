@@ -607,7 +607,8 @@ def open_cvpipeline(*args):
                     #at 720p write 10 frames is 0.08 sec, so waiting at +8 is correct,  (2 more frames to read is 0.6 sec, slightly faster than 0.08)
                     # if analyzed_queue.qsize() == bufferlen and (min(shared_analyzedKeycountVAR.values())+8 <= current_framenumber or max(shared_analyzedKeycountVAR.values()) == -1):
                     # if len(analyzed_queue) == bufferlen and (min(shared_analyzedKeycountVAR.values())+8 <= current_framenumber or max(shared_analyzedKeycountVAR.values()) == -1):
-                    if len(analyzed_queue) == bufferlen and (max(shared_analyzedKeycountVAR.values()) <= current_framenumber or max(shared_analyzedKeycountVAR.values()) == -1):
+                    # if len(analyzed_queue) == bufferlen and (max(shared_analyzedKeycountVAR.values()) <= current_framenumber or max(shared_analyzedKeycountVAR.values()) == -1):
+                    if len(analyzed_queue) == bufferlen and (min(shared_analyzedKeycountVAR.values())+8 <= current_framenumber or max(shared_analyzedKeycountVAR.values()) == -1):
                         dictwritetime = time.time()
                         for x in range(bufferlen):
                             # oldtimera = time.time()
