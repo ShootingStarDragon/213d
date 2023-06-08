@@ -121,7 +121,7 @@ FCVA_screen_manager: #remember to return a root widget
                 frame = None
                 if self.index in self.shared_analyzedAKeycountVAR.values():
                     correctkey = list(self.shared_analyzedAKeycountVAR.keys())[list(self.shared_analyzedAKeycountVAR.values()).index(self.index)]
-                    fprint("correctkey?", correctkey)
+                    # fprint("correctkey?", correctkey)
                     # if len(correctkey) > 0:
                     frameref = "frame" + correctkey.replace("key",'')
                     frame = self.shared_analyzedAVAR[frameref]
@@ -157,10 +157,10 @@ FCVA_screen_manager: #remember to return a root widget
                 try:
                     if frame != None:
                         # frame = blosc2.unpack_array2(frame)
-                        oldtime = time.time()
+                        # oldtime = time.time()
                         # frame = blosc2.unpack(frame)
                         frame = blosc2.decompress(frame)
-                        fprint("unpack time?", time.time() - oldtime)
+                        # fprint("unpack time?", time.time() - oldtime)
                         # frame = np.frombuffer(frame, np.uint8).copy().reshape(1080, 1920, 3)
                         frame = np.frombuffer(frame, np.uint8).copy().reshape(720, 1280, 3)
                         frame = cv2.flip(frame, 0)
@@ -562,7 +562,7 @@ def open_cvpipeline(*args):
                     initial_time = time.time()
                     future_time = shared_globalindex_dictVAR["starttime"] + ((1/fps)*internal_framecount)
                     current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
-                    fprint("frame advantage START????", os.getpid(), internal_framecount, current_framenumber, future_time-time.time(), time.time())
+                    # fprint("frame advantage START????", os.getpid(), internal_framecount, current_framenumber, future_time-time.time(), time.time())
                     
                     # if raw_queue.qsize() == 0:
                     #     framelist = frameblock(partitionnumber,instance_count,bufferlen,maxpartitions)
@@ -591,8 +591,10 @@ def open_cvpipeline(*args):
                     #            keysequence
                     #            )
                     newwritestart = time.time()
-                    # if analyzed_queue.qsize() == bufferlen and (max(shared_analyzedKeycountVAR.values()) <= current_framenumber or max(shared_analyzedKeycountVAR.values()) == -1):
-                    if analyzed_queue.qsize() == bufferlen and (min(shared_analyzedKeycountVAR.values())+2 <= current_framenumber or max(shared_analyzedKeycountVAR.values()) == -1):
+                    #safe route: wait for currentframe to have passed partitionblock
+                    if analyzed_queue.qsize() == bufferlen and (max(shared_analyzedKeycountVAR.values()) <= current_framenumber or max(shared_analyzedKeycountVAR.values()) == -1):
+                    #wait for currentframe to be at beginning of partitionblock + 2 frames
+                    # if analyzed_queue.qsize() == bufferlen and (min(shared_analyzedKeycountVAR.values())+2 <= current_framenumber or max(shared_analyzedKeycountVAR.values()) == -1):
                         dictwritetime = time.time()
                         for x in range(bufferlen):
                             shared_analyzedVAR['frame'+str(x)] = analyzed_queue.get()
@@ -698,6 +700,7 @@ def open_cvpipeline(*args):
                             "after analyze time?", afteranalyzetime -afteranalyzetimestart, 
                             "after initial queue time?", afterqueuetime - afterqueuetimestart, 
                             # "after write time?", afterwritetime - afteranalyzetime,
+                            shared_analyzedKeycountVAR.values()
                             )
 
                     # print("what are analyzed keys?", shared_analyzedKeycountVAR.values(), flush = True)
