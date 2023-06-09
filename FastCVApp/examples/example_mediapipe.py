@@ -16,95 +16,91 @@ else:
     else:
         # assume they're in main folder trying `python examples/example_backgroundsubtraction.py`
         sys.path.append("../FastCVApp")  # when running from main folder
-
 import FastCVApp
 
 app = FastCVApp.FCVA()
-
-# importing here means it's available to the subprocess as well. You can probably cut loading time by only loading mediapipe for the right subprocess.
-import mediapipe as mp
-
-mp_drawing = mp.solutions.drawing_utils  # Drawing helpers
-mp_holistic = mp.solutions.holistic  # Mediapipe Solutions
 import cv2
 
+# importing here means it's available to the subprocess as well. You can probably cut loading time by only loading mediapipe for the right subprocess.
 
-def open_mediapipe(*args):
+from mediapipe import solutions
+from mediapipe.framework.formats import landmark_pb2
+def draw_landmarks_on_image(annotated_image, detection_result):
     try:
-        image = args[0]
-        shared_analysis_dict = args[1]
-        shared_metadata_dict = args[2]
-        with mp_holistic.Holistic(
-            min_detection_confidence=0.5, min_tracking_confidence=0.5
-        ) as holistic:
-            while True:
-                if "kivy_run_state" in shared_metadata_dict.keys():
-                    if shared_metadata_dict["kivy_run_state"] == False:
-                        break
+        pose_landmarks_list = detection_result.pose_landmarks
+        
+        # Loop through the detected poses to visualize.
+        for idx in range(len(pose_landmarks_list)):
+            pose_landmarks = pose_landmarks_list[idx]
 
-                frame = shared_metadata_dict["latest_cap_frame"]
-                # print("how long to read frame?", timef2 - timef1)# first frame takes a while and subsequent frames are fast: 0.9233419895172119 -> 0.006009101867675781
-
-                # Recolor Feed
-                image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                image.flags.writeable = False  # I have read that writable false/true this makes things faster for mediapipe holistic
-
-                # Make Detections
-                results = holistic.process(image)
-
-                # Recolor image back to BGR for rendering
-                image.flags.writeable = True
-                image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-
-                # 2. Right hand
-                mp_drawing.draw_landmarks(
-                    image,
-                    results.right_hand_landmarks,
-                    mp_holistic.HAND_CONNECTIONS,
-                    mp_drawing.DrawingSpec(
-                        color=(80, 22, 10), thickness=2, circle_radius=4
-                    ),
-                    mp_drawing.DrawingSpec(
-                        color=(80, 44, 121), thickness=2, circle_radius=2
-                    ),
-                )
-
-                # 3. Left Hand
-                mp_drawing.draw_landmarks(
-                    image,
-                    results.left_hand_landmarks,
-                    mp_holistic.HAND_CONNECTIONS,
-                    mp_drawing.DrawingSpec(
-                        color=(121, 22, 76), thickness=2, circle_radius=4
-                    ),
-                    mp_drawing.DrawingSpec(
-                        color=(121, 44, 250), thickness=2, circle_radius=2
-                    ),
-                )
-
-                # 4. Pose Detections6
-                mp_drawing.draw_landmarks(
-                    image,
-                    results.pose_landmarks,
-                    mp_holistic.POSE_CONNECTIONS,
-                    mp_drawing.DrawingSpec(
-                        color=(245, 117, 66), thickness=2, circle_radius=4
-                    ),
-                    mp_drawing.DrawingSpec(
-                        color=(245, 66, 230), thickness=2, circle_radius=2
-                    ),
-                )
-
-                shared_analysis_dict[1] = cv2.flip(image, 0)
+            # Draw the pose landmarks.
+            pose_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
+            pose_landmarks_proto.landmark.extend([
+                landmark_pb2.NormalizedLandmark(x=landmark.x, y=landmark.y, z=landmark.z) for landmark in pose_landmarks
+            ])
+            solutions.drawing_utils.draw_landmarks(
+                annotated_image,
+                pose_landmarks_proto,
+                solutions.pose.POSE_CONNECTIONS,
+                solutions.drawing_styles.get_default_pose_landmarks_style())
+        # print("return typoe?", type(annotated_image), len(detection_result.pose_landmarks))
+        return annotated_image
     except Exception as e:
-        print("open_mediapipe died!", e, flush=True)
+        print("open_appliedcv died!", e)
+        import traceback
+        print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
+    
+import time
+def mediapipe(*args): #basicmp
+    try:
+        import mediapipe as mp
+        from collections import deque
+        inputqueue = args[0]
+        bufferlenVAR = args[3]
+        answerqueue = deque(maxlen=bufferlenVAR)
+        landmarkerVAR = args[4]
+
+        while len(inputqueue) > 0:
+            
+            image = inputqueue.popleft()
+            
+            ogimage = image.copy()
+            image = cv2.resize(image, (256, 144)) #interpolation = cv2.INTER_AREA makes mediapipe detect nothing...
+            # image = cv2.resize(image, (640, 360)) #interpolation = cv2.INTER_AREA makes mediapipe detect nothing...
+            # image = cv2.resize(image, (640, 480)) #interpolation = cv2.INTER_AREA makes mediapipe detect nothing...
+            #so mediapipe is probably legit RGB, but opencv is BGR so convert ONLY for the mediapipe code, but when u draw on the copy of the original things are ok
+            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+            
+            # Recolor Feed
+            image = mp.Image(image_format=mp.ImageFormat.SRGB, data=image)
+            # Make Detections
+            # results = detector.detect(image)
+            # results = landmarker.detect_for_video(image, int(cap.get(cv2.CAP_PROP_POS_MSEC)))
+            #time has this many digits: 1685543338.9065359, inconsistent digis
+            #int(str(time.time())[-10:])
+            timestr = str(time.time()).split(".")
+            newint = int(timestr[0][-4:]+timestr[1][:3]) #take last 4 of the whole number and first 3 of the decimal, idk if this matters tho
+            #time.time should work, i'm feeding them in sequence anyways
+            #just making sure they have only the first 3 digits from the decimal and it's an int
+            results = landmarkerVAR.detect_for_video(image, newint) 
+            # results = landmarkerVAR.detect(image) 
+            
+            #now draw on original image: 
+            fixed_image = draw_landmarks_on_image(ogimage, results)
+            answerqueue.append(fixed_image)
+        return answerqueue
+
+    except Exception as e:
+        print("mediapipe mpvar died!", e, flush=True)
+        import traceback
+        print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
 
 
-app.appliedcv = open_mediapipe
+app.appliedcv = mediapipe
 
 if __name__ == "__main__":
-    # / and \ works on windows, only / on mac tho
-    app.source = "examples/creativecommonsmedia/Elephants Dream charstart2.webm"
+    # / and \ works on windows, only / on mac tho 
+    app.source = "examples\creativecommonsmedia\Elephants Dream charstart2FULL.webm"
     app.fps = 1 / 30
     app.title = "Mediapipe example by Pengindoramu"
     app.run()
