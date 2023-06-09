@@ -627,6 +627,7 @@ def open_cvpipeline(*args):
                     
                     afteranalyzetimestart = time.time()
                     # if raw_queue.qsize() > 0 and analyzed_queue.qsize() == 0:
+                    # if len(raw_queue) > 0 and len(analyzed_queue) == 0:
                     if len(raw_queue) > 0 and len(analyzed_queue) == 0:
                         #give the queue to the cv func
                         #cv func returns a queue of frames
@@ -667,7 +668,8 @@ def open_cvpipeline(*args):
                     
                     afterqueuetimestart = time.time()
                     # if raw_queue.qsize() == 0:
-                    if len(raw_queue) == 0:
+                    # if len(raw_queue) == 0:
+                    if len(raw_queue) <= int(bufferlen/2):
                         #get the right framecount:
                         framelist = frameblock(partitionnumber,instance_count,bufferlen,maxpartitions)
                         # fprint("says true for some reason?", shared_globalindex_dictVAR["subprocess" + str(pid)])
