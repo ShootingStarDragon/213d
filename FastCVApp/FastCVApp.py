@@ -521,8 +521,8 @@ def open_cvpipeline(*args):
         import mediapipe as mp
         from mediapipe.tasks import python
         from mediapipe.tasks.python import vision
-        # with open('I:\CODING\FastCVApp\FastCVApp\examples\creativecommonsmedia\pose_landmarker_full.task', 'rb') as f:
-        with open('I:\CODING\FastCVApp\FastCVApp\examples\creativecommonsmedia\pose_landmarker_lite.task', 'rb') as f:
+        with open('I:\CODING\FastCVApp\FastCVApp\examples\creativecommonsmedia\pose_landmarker_full.task', 'rb') as f:
+        # with open('I:\CODING\FastCVApp\FastCVApp\examples\creativecommonsmedia\pose_landmarker_lite.task', 'rb') as f:
                     modelbytes = f.read()
                     base_options = python.BaseOptions(model_asset_buffer=modelbytes)
                     VisionRunningMode = mp.tasks.vision.RunningMode
