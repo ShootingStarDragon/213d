@@ -516,6 +516,8 @@ def open_cvpipeline(*args):
         
         # open_cvpipeline_helper_instance = open_cvpipeline_helper()
         # open_cvpipeline_helper_instance.resultsq = Queue(maxsize=bufferlen)
+        
+
 
         #init mediapipe here so it spawns the right amt of processes
         import mediapipe as mp
