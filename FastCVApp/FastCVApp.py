@@ -4,7 +4,12 @@ import time
 import os, sys
 import numpy as np
 from FCVAutils import fprint
-import blosc2
+# import blosc2
+if __name__ == "FastCVApp":
+    import multiprocessing as FCVA_mp
+    # this is so that only 1 window is run when packaging with pyinstaller
+    FCVA_mp.freeze_support()
+    import blosc2
 
 def open_kivy(*args):
     # infinite recursion bug when packaging with pyinstaller with no console: https://github.com/kivy/kivy/issues/8074#issuecomment-1364595283
@@ -48,15 +53,15 @@ def open_kivy(*args):
         id: mainBoxLayoutID
         Image:
             id: image_textureID
-        # Slider:
-        #     id: vidsliderID
-        #     min: 0
-        #     max: {self.framelength} #should be 30*total_seconds
-        #     step: 1
-        #     value_track: True
-        #     value_track_color: 1, 0, 0, 1
-        #     size_hint: (1, 0.1)
-        #     orientation: 'horizontal'
+        Slider:
+            id: vidsliderID
+            min: 0
+            max: {self.framelength} #should be 30*total_seconds
+            step: 1
+            value_track: True
+            value_track_color: 1, 0, 0, 1
+            size_hint: (1, 0.1)
+            orientation: 'horizontal'
         BoxLayout:
             id: subBoxLayoutID1
             orientation: 'horizontal'
@@ -510,10 +515,11 @@ class FCVA:
             fprint("a")
             # this is so that only 1 window is run when packaging with pyinstaller
             FCVA_mp.freeze_support()
+            import blosc2
 
             #blosc uses multiprocessing, call it after freeze support so exe doesn't hang
             #https://github.com/pyinstaller/pyinstaller/issues/7470#issuecomment-1448502333
-            import blosc2
+            
 
             shared_mem_manager = FCVA_mp.Manager()
             # shared_analysis_dict holds the actual frames
@@ -720,85 +726,85 @@ class FCVA:
             shared_rawD = shared_mem_manager.dict()
             shared_rawDKEYS = shared_mem_manager.dict()
 
-            # cv_subprocessA = FCVA_mp.Process(
-            #         target=open_cvpipeline,
-            #         args=(
-            #             shared_metadata_dict,
-            #             self.appliedcv,
-            #             shared_analyzedA,
-            #             shared_globalindex_dict,
-            #             shared_analyzedAKeycount,
-            #             self.source,
-            #             0, #partition #, starts at 0
-            #             0, #instance of the block of relevant frames
-            #             bufferlen, #bufferlen AKA how long the internal queues should be
-            #             cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
-            #             self.fps,
-            #             shared_rawA,
-            #             shared_rawAKEYS
-            #         ),
-            #     )
-            # cv_subprocessA.start()
+            cv_subprocessA = FCVA_mp.Process(
+                    target=open_cvpipeline,
+                    args=(
+                        shared_metadata_dict,
+                        self.appliedcv,
+                        shared_analyzedA,
+                        shared_globalindex_dict,
+                        shared_analyzedAKeycount,
+                        self.source,
+                        0, #partition #, starts at 0
+                        0, #instance of the block of relevant frames
+                        bufferlen, #bufferlen AKA how long the internal queues should be
+                        cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
+                        self.fps,
+                        shared_rawA,
+                        shared_rawAKEYS
+                    ),
+                )
+            cv_subprocessA.start()
 
-            # cv_subprocessB = FCVA_mp.Process(
-            #         target=open_cvpipeline,
-            #         args=(
-            #             shared_metadata_dict,
-            #             self.appliedcv,
-            #             shared_analyzedB,
-            #             shared_globalindex_dict,
-            #             shared_analyzedBKeycount,
-            #             self.source,
-            #             1, #partition #, starts at 0
-            #             0, #instance of the block of relevant frames
-            #             bufferlen, #bufferlen AKA how long the internal queues should be
-            #             cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
-            #             self.fps,
-            #             shared_rawB,
-            #             shared_rawBKEYS
-            #         ),
-            #     )
-            # cv_subprocessB.start()
+            cv_subprocessB = FCVA_mp.Process(
+                    target=open_cvpipeline,
+                    args=(
+                        shared_metadata_dict,
+                        self.appliedcv,
+                        shared_analyzedB,
+                        shared_globalindex_dict,
+                        shared_analyzedBKeycount,
+                        self.source,
+                        1, #partition #, starts at 0
+                        0, #instance of the block of relevant frames
+                        bufferlen, #bufferlen AKA how long the internal queues should be
+                        cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
+                        self.fps,
+                        shared_rawB,
+                        shared_rawBKEYS
+                    ),
+                )
+            cv_subprocessB.start()
 
-            # cv_subprocessC = FCVA_mp.Process(
-            #         target=open_cvpipeline,
-            #         args=(
-            #             shared_metadata_dict,
-            #             self.appliedcv,
-            #             shared_analyzedC,
-            #             shared_globalindex_dict,
-            #             shared_analyzedCKeycount,
-            #             self.source,
-            #             2, #partition #, starts at 0
-            #             0, #instance of the block of relevant frames
-            #             bufferlen, #bufferlen AKA how long the internal queues should be
-            #             cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
-            #             self.fps,
-            #             shared_rawC,
-            #             shared_rawCKEYS
-            #         ),
-            #     )
-            # cv_subprocessC.start()
+            cv_subprocessC = FCVA_mp.Process(
+                    target=open_cvpipeline,
+                    args=(
+                        shared_metadata_dict,
+                        self.appliedcv,
+                        shared_analyzedC,
+                        shared_globalindex_dict,
+                        shared_analyzedCKeycount,
+                        self.source,
+                        2, #partition #, starts at 0
+                        0, #instance of the block of relevant frames
+                        bufferlen, #bufferlen AKA how long the internal queues should be
+                        cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
+                        self.fps,
+                        shared_rawC,
+                        shared_rawCKEYS
+                    ),
+                )
+            cv_subprocessC.start()
 
-            # cv_subprocessD = FCVA_mp.Process(
-            #         target=open_cvpipeline,
-            #         args=(
-            #             shared_metadata_dict,
-            #             self.appliedcv,
-            #             shared_analyzedD,
-            #             shared_globalindex_dict,
-            #             shared_analyzedDKeycount,
-            #             self.source,
-            #             3, #partition #, starts at 0
-            #             0, #instance of the block of relevant frames
-            #             bufferlen, #bufferlen AKA how long the internal queues should be
-            #             cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
-            #             self.fps,
-            #             shared_rawD,
-            #             shared_rawDKEYS
-            #         ),
-            #     )
-            # cv_subprocessD.start()
+            cv_subprocessD = FCVA_mp.Process(
+                    target=open_cvpipeline,
+                    args=(
+                        shared_metadata_dict,
+                        self.appliedcv,
+                        shared_analyzedD,
+                        shared_globalindex_dict,
+                        shared_analyzedDKeycount,
+                        self.source,
+                        3, #partition #, starts at 0
+                        0, #instance of the block of relevant frames
+                        bufferlen, #bufferlen AKA how long the internal queues should be
+                        cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
+                        self.fps,
+                        shared_rawD,
+                        shared_rawDKEYS
+                    ),
+                )
+            cv_subprocessD.start()
             fprint("f")
 
             kivy_subprocess = FCVA_mp.Process(
@@ -813,10 +819,10 @@ class FCVA:
                 if shared_metadata_dict["kivy_run_state"] == False:
                     # when the while block is done, close all the subprocesses using .join to gracefully exit. also make sure opencv releases the video.
                     # mediaread_subprocess.join()
-                    # cv_subprocessA.join()
-                    # cv_subprocessB.join()
-                    # cv_subprocessC.join()
-                    # cv_subprocessD.join()
+                    cv_subprocessA.join()
+                    cv_subprocessB.join()
+                    cv_subprocessC.join()
+                    cv_subprocessD.join()
                     kivy_subprocess.join()
                     fprint("g")
                     break

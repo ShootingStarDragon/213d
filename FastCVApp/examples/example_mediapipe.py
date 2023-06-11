@@ -23,32 +23,32 @@ import cv2
 
 # importing here means it's available to the subprocess as well. You can probably cut loading time by only loading mediapipe for the right subprocess.
 
-# from mediapipe import solutions
-# from mediapipe.framework.formats import landmark_pb2
-# def draw_landmarks_on_image(annotated_image, detection_result):
-#     try:
-#         pose_landmarks_list = detection_result.pose_landmarks
+from mediapipe import solutions
+from mediapipe.framework.formats import landmark_pb2
+def draw_landmarks_on_image(annotated_image, detection_result):
+    try:
+        pose_landmarks_list = detection_result.pose_landmarks
         
-#         # Loop through the detected poses to visualize.
-#         for idx in range(len(pose_landmarks_list)):
-#             pose_landmarks = pose_landmarks_list[idx]
+        # Loop through the detected poses to visualize.
+        for idx in range(len(pose_landmarks_list)):
+            pose_landmarks = pose_landmarks_list[idx]
 
-#             # Draw the pose landmarks.
-#             pose_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
-#             pose_landmarks_proto.landmark.extend([
-#                 landmark_pb2.NormalizedLandmark(x=landmark.x, y=landmark.y, z=landmark.z) for landmark in pose_landmarks
-#             ])
-#             solutions.drawing_utils.draw_landmarks(
-#                 annotated_image,
-#                 pose_landmarks_proto,
-#                 solutions.pose.POSE_CONNECTIONS,
-#                 solutions.drawing_styles.get_default_pose_landmarks_style())
-#         # print("return typoe?", type(annotated_image), len(detection_result.pose_landmarks))
-#         return annotated_image
-#     except Exception as e:
-#         print("open_appliedcv died!", e)
-#         import traceback
-#         print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
+            # Draw the pose landmarks.
+            pose_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
+            pose_landmarks_proto.landmark.extend([
+                landmark_pb2.NormalizedLandmark(x=landmark.x, y=landmark.y, z=landmark.z) for landmark in pose_landmarks
+            ])
+            solutions.drawing_utils.draw_landmarks(
+                annotated_image,
+                pose_landmarks_proto,
+                solutions.pose.POSE_CONNECTIONS,
+                solutions.drawing_styles.get_default_pose_landmarks_style())
+        # print("return typoe?", type(annotated_image), len(detection_result.pose_landmarks))
+        return annotated_image
+    except Exception as e:
+        print("open_appliedcv died!", e)
+        import traceback
+        print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
     
 import time
 def mediapipe(*args): #basicmp
