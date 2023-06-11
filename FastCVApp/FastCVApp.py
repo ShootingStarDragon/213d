@@ -4,6 +4,7 @@ import time
 import os, sys
 import numpy as np
 from FCVAutils import fprint
+import blosc2
 
 def open_kivy(*args):
     # infinite recursion bug when packaging with pyinstaller with no console: https://github.com/kivy/kivy/issues/8074#issuecomment-1364595283
