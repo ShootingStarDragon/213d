@@ -33,4 +33,3 @@ binaries = collect_dynamic_libs("blosc2", ".")
 # hiddenimports = ['numpy.core._dtype_ctypes']
 hiddenimports = ['blosc2.blosc2_ext']
 
-
