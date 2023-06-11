@@ -9,11 +9,6 @@ def get_mediapipe_path():
     mediapipe_path = mediapipe.__path__[0]
     return mediapipe_path
 
-def get_blosc2_path():
-    import blosc2
-    blosc2_path = blosc2.__path__[0]
-    return blosc2_path
-
 basedir = "I:\\CODING\\FastCVApp\\FastCVApp\\" # replace basedir with the location of "FastCVApp" folder
 
 a = Analysis(
@@ -21,7 +16,7 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[(basedir + "FastCVApp.py", "."), (basedir + "FCVAutils.py", "."), (basedir + "examples\\creativecommonsmedia\\", "examples\\creativecommonsmedia")],
-    hiddenimports=['kivy', 'blosc2'], # mediapipe 
+    hiddenimports=['kivy', 'blosc2', 'kivy.modules'], # mediapipe 
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -36,10 +31,6 @@ pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 mediapipe_tree = Tree(get_mediapipe_path(), prefix='mediapipe', excludes=["*.pyc"])
 a.datas += mediapipe_tree
 a.binaries = filter(lambda x: 'mediapipe' not in x[0], a.binaries)
-
-blosc2_tree = Tree(get_blosc2_path(), prefix='blosc2', excludes=["*.pyc"])
-a.datas += blosc2_tree
-a.binaries = filter(lambda x: 'blosc' not in x[0], a.binaries)
 
 exe = EXE(
     pyz,
