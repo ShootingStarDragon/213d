@@ -498,7 +498,7 @@ def open_cvpipeline(*args):
                                 raw_queueKEYS.append(framelist[x % bufferlen]) # 0 time
                             internal_framecount += 1
                         fprint("the for loop structure is slow...", time.time()-timeoog)
-    except Exception as e:
+    except Exception as e: 
         print("open_appliedcv died!", e)
         import traceback
         print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
