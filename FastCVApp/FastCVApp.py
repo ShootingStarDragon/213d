@@ -497,7 +497,7 @@ def open_cvpipeline(*args):
                                 raw_queue.append(framedata) #im not giving bytes, yikes? # 0 time
                                 raw_queueKEYS.append(framelist[x % bufferlen]) # 0 time
                             internal_framecount += 1
-                        fprint("the for loop structure is slow...", time.time()-timeoog)
+                        # fprint("the for loop structure is slow...", time.time()-timeoog)
     except Exception as e: 
         print("open_appliedcv died!", e)
         import traceback
