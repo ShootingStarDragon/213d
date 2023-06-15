@@ -2,7 +2,11 @@ import sys
 
 if hasattr(sys, "_MEIPASS"):
     # if file is frozen by pyinstaller add the MEIPASS folder to path:
-    sys.path.append(sys._MEIPASS)
+    sys.path.append(sys._MEIPASS) 
+    #the path is duplicated, maybe that's why it's running twice?
+    #possibly pyinstaller updated
+    print("MMEIPAS APPENDED CORRECT?", sys._MEIPASS)
+    pass
 else:
     # if you're making your own app, you don't need this else block. This is just vanity code so I can run this from main FastCVApp folder or from the examples subfolder.
     # this example is importing from a higher level package if running from cmd: https://stackoverflow.com/a/41575089
@@ -16,9 +20,6 @@ else:
     else:
         # assume they're in main folder trying `python examples/example_backgroundsubtraction.py`
         sys.path.append("../FastCVApp")  # when running from main folder
-import FastCVApp
-
-app = FastCVApp.FCVA()
 import cv2
 
 # importing here means it's available to the subprocess as well. You can probably cut loading time by only loading mediapipe for the right subprocess.
@@ -95,13 +96,21 @@ def mediapipe(*args): #basicmp
         import traceback
         print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
 
-
-app.appliedcv = mediapipe
+print("location of file base?", __file__, "name vs main", __name__ )
 
 if __name__ == "__main__":
-    # / and \ works on windows, only / on mac tho 
+    import multiprocessing 
+    multiprocessing.freeze_support()
+    print("location of file if name main?", __file__, os.getpid() )
+    print("paths??", sys.path)
+    import FastCVApp
+    app = FastCVApp.FCVA()
+    app.appliedcv = mediapipe
+
+    # # / and \ works on windows, only / on mac tho 
     app.source = "examples\creativecommonsmedia\Elephants Dream charstart2.webm"
     app.fps = 1 / 30
     app.title = "Mediapipe example by Pengindoramu"
-    print("starting?", os.getcwd(), os.path.exists(app.source), flush = True)
+    # print("starting?", os.getcwd(), os.path.exists(app.source), flush = True)
+    time.sleep(30)
     app.run()

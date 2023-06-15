@@ -4,12 +4,12 @@ import time
 import os, sys
 import numpy as np
 from FCVAutils import fprint
-# import blosc2
-if __name__ == "FastCVApp":
-    import multiprocessing as FCVA_mp
-    # this is so that only 1 window is run when packaging with pyinstaller
-    FCVA_mp.freeze_support()
-    import blosc2
+import blosc2
+# if __name__ == "FastCVApp":
+#     import multiprocessing as FCVA_mp
+#     # this is so that only 1 window is run when packaging with pyinstaller
+#     FCVA_mp.freeze_support()
+#     import blosc2
 
 def open_kivy(*args):
     # infinite recursion bug when packaging with pyinstaller with no console: https://github.com/kivy/kivy/issues/8074#issuecomment-1364595283
@@ -20,7 +20,7 @@ def open_kivy(*args):
     from kivy.uix.screenmanager import ScreenManager, Screen
     from kivy.graphics.texture import Texture
     from kivy.clock import Clock
-    from kivy.modules import inspector
+    # from kivy.modules import inspector
     from kivy.core.window import Window
     from kivy.uix.button import Button
 
@@ -79,7 +79,7 @@ FCVA_screen_manager: #remember to return a root widget
             self.title = self.shared_metadata_dictVAR["title"]
             build_app_from_kv = Builder.load_string(self.KV_string)
             button = Button(text="Test")
-            inspector.create_inspector(Window, button)
+            # inspector.create_inspector(Window, button)
             return build_app_from_kv
 
         def on_start(self):
@@ -509,6 +509,7 @@ class FCVA:
         self.appliedcv = None
 
     def run(self):
+        fprint("when compiled, what is __name__?", __name__, "file?", __file__)
         if __name__ == "FastCVApp":
             import multiprocessing as FCVA_mp
 
@@ -813,6 +814,8 @@ class FCVA:
                 # 
             )
             kivy_subprocess.start()
+
+            time.sleep(30)
 
             # this try except block holds the main process open so the subprocesses aren't cleared when the main process exits early.
             while "kivy_run_state" in shared_metadata_dict.keys():
