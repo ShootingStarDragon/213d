@@ -638,7 +638,10 @@ class FCVA:
                 # analyze_pool_count = 4
                 # for x in range(analyze_pool_count):
                 #     #init analyzed/keycount dicts
+                #     #init raw dicts
                 #     shared_pool_meta_dict[x] = 
+                #     #start the subprocesses
+                #     #give kivy the list of subprocesses 
 
                 shared_analyzedA = shared_mem_manager.dict()
                 shared_analyzedAKeycount = shared_mem_manager.dict()
