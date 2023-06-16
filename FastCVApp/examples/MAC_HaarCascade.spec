@@ -1,19 +1,15 @@
 # -*- mode: python ; coding: utf-8 -*-
-#reference for adding mediapipe with pyinstaller https://stackoverflow.com/questions/67887088/issues-compiling-mediapipe-with-pyinstaller-on-macos
+
 
 block_cipher = None
 
-def get_mediapipe_path():
-    import mediapipe
-    mediapipe_path = mediapipe.__path__[0]
-    return mediapipe_path
-
+import cv2
 a = Analysis(
-    ['examples/example_mediapipe.py'],
+    ['examples/example_haarcascade.py'],
     pathex=[],
     binaries=[],
-    datas=[('FastCVApp.py', '.'), ('examples//creativecommonsmedia//','examples//creativecommonsmedia')],
-    hiddenimports=[],
+    datas=[('FastCVApp.py', '.'), ('examples//creativecommonsmedia//','examples//creativecommonsmedia'), (cv2.data.haarcascades+'haarcascade_frontalface_default.xml', ".")],
+    hiddenimports=['kivy'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -25,10 +21,6 @@ a = Analysis(
 )
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
-mediapipe_tree = Tree(get_mediapipe_path(), prefix='mediapipe', excludes=["*.pyc"])
-a.datas += mediapipe_tree
-a.binaries = filter(lambda x: 'mediapipe' not in x[0], a.binaries)
-
 exe = EXE(
     pyz,
     a.scripts,
@@ -36,7 +28,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='MediapipeMAC',
+    name='HaarCascadeMAC',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -53,7 +45,7 @@ exe = EXE(
 # https://pyinstaller.org/en/stable/spec-files.html#spec-file-options-for-a-macos-bundle
 app = BUNDLE(
     exe,
-    name='MediapipeMAC.app',
+    name='HaarCascadeMAC.app',
     icon=None,
     bundle_identifier=None,
 )
