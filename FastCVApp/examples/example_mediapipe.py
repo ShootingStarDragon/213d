@@ -27,7 +27,7 @@ else:
 
 from FCVAutils import sysupdate
 #udpate paths here
-sysupdate(sourcelocation)
+sysupdate(sourcelocation=sourcelocation)
 
 # importing here means it's available to the subprocess as well. You can probably cut loading time by only loading mediapipe for the right subprocess.
 

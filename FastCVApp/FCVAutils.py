@@ -4,12 +4,11 @@ import time
 def fprint(*args):
 	print(os.getpid(), time.time(), *args, flush = True)
 
-def sysupdate(*args):
+def sysupdate(*args, sourcelocation = False):
 	'''
 	this is to update paths, for example when an app is packaged with pyinstaller
 	'''
 	import sys
-	sourcelocation = args[0]
 	if hasattr(sys, "_MEIPASS"):
 		# if file is frozen by pyinstaller add the MEIPASS folder to path:
 		sys.path.append(sys._MEIPASS) 
@@ -17,14 +16,15 @@ def sysupdate(*args):
 		#possibly pyinstaller updated
 		print("MMEIPAS APPENDED CORRECT?", sys._MEIPASS)
 		#solution: when u run the exe, check for the file/folder and if it's there or not > then if not copy it from tmpdir
-		tempsource = sys._MEIPASS + os.sep + sourcelocation
-		actualsource = os.getcwd() + os.sep + sourcelocation
-		print("what is tempsource?", tempsource, not os.path.isfile(actualsource), "actual", actualsource)
-		if not os.path.isfile(actualsource):
-			#copy to current directory:
-			import shutil
-			tempsourcefolder = os.path.join(*tempsource.split(os.sep)[:-1]) 
-			# actualsourcefolder = os.path.join(*actualsource.split(os.sep)[:-1]) 
-			actualsourcefolder = os.path.join(*sourcelocation.split(os.sep)[:-1]) 
-			shutil.copytree(tempsourcefolder, actualsourcefolder, dirs_exist_ok = True)
-			# print("copyanything", tempsourcefolder, actualsourcefolder)
+		if sourcelocation:
+			tempsource = sys._MEIPASS + os.sep + sourcelocation
+			actualsource = os.getcwd() + os.sep + sourcelocation
+			print("what is tempsource?", tempsource, not os.path.isfile(actualsource), "actual", actualsource)
+			if not os.path.isfile(actualsource):
+				#copy to current directory:
+				import shutil
+				tempsourcefolder = os.path.join(*tempsource.split(os.sep)[:-1]) 
+				# actualsourcefolder = os.path.join(*actualsource.split(os.sep)[:-1]) 
+				actualsourcefolder = os.path.join(*sourcelocation.split(os.sep)[:-1]) 
+				shutil.copytree(tempsourcefolder, actualsourcefolder, dirs_exist_ok = True)
+				# print("copyanything", tempsourcefolder, actualsourcefolder)
