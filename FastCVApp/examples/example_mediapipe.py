@@ -126,5 +126,4 @@ if __name__ == "__main__":
     app.fps = 1 / 30
     app.title = "Mediapipe example by Pengindoramu"
     # print("starting?", os.getcwd(), os.path.exists(app.source), flush = True)
-    time.sleep(30)
     app.run()
