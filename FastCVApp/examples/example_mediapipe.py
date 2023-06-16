@@ -1,12 +1,25 @@
 import sys
 
+sourcelocation = "examples\creativecommonsmedia\Elephants Dream charstart2.webm"
+
 if hasattr(sys, "_MEIPASS"):
     # if file is frozen by pyinstaller add the MEIPASS folder to path:
     sys.path.append(sys._MEIPASS) 
     #the path is duplicated, maybe that's why it's running twice?
     #possibly pyinstaller updated
     print("MMEIPAS APPENDED CORRECT?", sys._MEIPASS)
-    pass
+    #solution: when u run the exe, check for the file/folder and if it's there or not > then if not copy it from tmpdir
+    tempsource = sys._MEIPASS + os.sep + sourcelocation
+    actualsource = os.getcwd() + os.sep + sourcelocation
+    print("what is tempsource?", tempsource, not os.path.isfile(actualsource), "actual", actualsource)
+    if not os.path.isfile(actualsource):
+        #copy to current directory:
+        import shutil
+        tempsourcefolder = os.path.join(*tempsource.split(os.sep)[:-1]) 
+        # actualsourcefolder = os.path.join(*actualsource.split(os.sep)[:-1]) 
+        actualsourcefolder = os.path.join(*sourcelocation.split(os.sep)[:-1]) 
+        shutil.copytree(tempsourcefolder, actualsourcefolder)
+        # print("copyanything", tempsourcefolder, actualsourcefolder)
 else:
     # if you're making your own app, you don't need this else block. This is just vanity code so I can run this from main FastCVApp folder or from the examples subfolder.
     # this example is importing from a higher level package if running from cmd: https://stackoverflow.com/a/41575089
@@ -108,7 +121,7 @@ if __name__ == "__main__":
     app.appliedcv = mediapipe
 
     # # / and \ works on windows, only / on mac tho 
-    app.source = "examples\creativecommonsmedia\Elephants Dream charstart2.webm"
+    app.source = sourcelocation
     app.fps = 1 / 30
     app.title = "Mediapipe example by Pengindoramu"
     # print("starting?", os.getcwd(), os.path.exists(app.source), flush = True)
