@@ -20,7 +20,7 @@ def open_kivy(*args):
     from kivy.uix.screenmanager import ScreenManager, Screen
     from kivy.graphics.texture import Texture
     from kivy.clock import Clock
-    # from kivy.modules import inspector
+    from kivy.modules import inspector
     from kivy.core.window import Window
     from kivy.uix.button import Button
 
@@ -79,7 +79,7 @@ FCVA_screen_manager: #remember to return a root widget
             self.title = self.shared_metadata_dictVAR["title"]
             build_app_from_kv = Builder.load_string(self.KV_string)
             button = Button(text="Test")
-            # inspector.create_inspector(Window, button)
+            inspector.create_inspector(Window, button)
             return build_app_from_kv
 
         def on_start(self):
