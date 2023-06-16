@@ -9,7 +9,17 @@ def get_mediapipe_path():
     mediapipe_path = mediapipe.__path__[0]
     return mediapipe_path
 
-basedir = "I:\\CODING\\FastCVApp\\FastCVApp\\" # replace basedir with the location of "FastCVApp" folder
+#assume the file structure is like this:
+#FastCVApp
+#   \examples <--- this is where spec, example py files are 
+#        \creativecommonsmedia  <-- this is where media and .task files are
+#basedir = "I:\\CODING\\FastCVApp\\FastCVApp\\" # replace basedir with the location of "FastCVApp" folder
+#from pathlib import Path
+#import os
+#basedir = os.path.join(os.sep, os.getcwd().split(os.path.sep)[0] + os.sep, *Path(__file__).absolute().split(os.path.sep)[:-1])
+#cursed as __file__ doesn't work here, just do an os.getcwd() hack...
+basedir = os.path.join(os.sep, os.getcwd().split(os.path.sep)[0] + os.sep, *os.getcwd().split(os.path.sep)[:-1]) + os.path.sep
+print("file location?", basedir)
 
 a = Analysis(
     ['example_mediapipe.py'],

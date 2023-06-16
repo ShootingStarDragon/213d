@@ -396,8 +396,24 @@ def open_cvpipeline(*args):
         from mediapipe.tasks.python import vision
         # with open('I:\CODING\FastCVApp\FastCVApp\examples\creativecommonsmedia\pose_landmarker_full.task', 'rb') as f:
         # os.getcwd() + ""
-        with open('I:\CODING\FastCVApp\FastCVApp\examples\creativecommonsmedia\pose_landmarker_full.task', 'rb') as f:
-        # with open('I:\CODING\FastCVApp\FastCVApp\examples\creativecommonsmedia\pose_landmarker_lite.task', 'rb') as f:
+        #assume this file structure:
+        # this file\examples\creativecommonsmedia\pose_landmarker_full.task is the location
+        # https://stackoverflow.com/a/50098973
+        from pathlib import Path
+
+        print("file location?", Path(__file__).absolute())
+        print("cwd???", os.getcwd())
+        if "examples" in os.getcwd().split(os.path.sep):
+            # tasklocation = os.getcwd().split(os.path.sep)[0] + os.path.sep + os.path.join(*os.getcwd().split(os.path.sep)[1:], "creativecommonsmedia", "pose_landmarker_full.task")
+            # https://stackoverflow.com/a/51276165
+            tasklocation = os.path.join(os.sep, os.getcwd().split(os.path.sep)[0] + os.sep, *os.getcwd().split(os.path.sep), "creativecommonsmedia", "pose_landmarker_full.task")
+        else:
+            tasklocation = 'examples\creativecommonsmedia\pose_landmarker_full.task'
+        fprint("tasklocation?", tasklocation) 
+
+        with open(tasklocation, 'rb') as f:
+        # with open('examples\creativecommonsmedia\pose_landmarker_full.task', 'rb') as f:
+        # with open('examples\creativecommonsmedia\pose_landmarker_lite.task', 'rb') as f:
                     modelbytes = f.read()
                     base_options = python.BaseOptions(model_asset_buffer=modelbytes)
                     VisionRunningMode = mp.tasks.vision.RunningMode
