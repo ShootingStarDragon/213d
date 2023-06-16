@@ -4,8 +4,11 @@ import time
 import os, sys
 import numpy as np
 from FCVAutils import fprint
+#blosc uses multiprocessing, call it after freeze support so exe doesn't hang
+#https://github.com/pyinstaller/pyinstaller/issues/7470#issuecomment-1448502333
+#I immediately call multiprocessing.freeze_support() in example_mediapipe but it's not good for abstraction, think about it
 import blosc2
-
+            
 
 def open_kivy(*args):
     try:
@@ -498,329 +501,330 @@ class FCVA:
         self.appliedcv = None
 
     def run(self):
-        fprint("when compiled, what is __name__?", __name__, "file?", __file__)
-        if __name__ == "FastCVApp":
-            import multiprocessing as FCVA_mp
+        try:
+            fprint("when compiled, what is __name__?", __name__, "file?", __file__)
+            if __name__ == "FastCVApp":
+                import multiprocessing as FCVA_mp
 
-            fprint("a")
-            # this is so that only 1 window is run when packaging with pyinstaller
-            FCVA_mp.freeze_support()
+                fprint("a")
+                # this is so that only 1 window is run when packaging with pyinstaller
+                FCVA_mp.freeze_support()
 
-            #blosc uses multiprocessing, call it after freeze support so exe doesn't hang
-            #https://github.com/pyinstaller/pyinstaller/issues/7470#issuecomment-1448502333
-            
+                shared_mem_manager = FCVA_mp.Manager()
+                # shared_analysis_dict holds the actual frames
+                shared_analysis_dict = shared_mem_manager.dict()
+                # shared_metadata_dict holds keys about run states so things don't error by reading something that doesn't exist
+                shared_metadata_dict = shared_mem_manager.dict()
+                # FEAR OF USING SHARED METADATA DICT TOO MUCH: too many processes lock up the memory too much....
+                # 2nd shared metadata dict: shared global index, knows: current frame, paused time, idk what else...
+                shared_globalindex_dict = shared_mem_manager.dict()
+                shared_globalindex_dict["curframe"] = 0
+                fprint("b")
 
-            shared_mem_manager = FCVA_mp.Manager()
-            # shared_analysis_dict holds the actual frames
-            shared_analysis_dict = shared_mem_manager.dict()
-            # shared_metadata_dict holds keys about run states so things don't error by reading something that doesn't exist
-            shared_metadata_dict = shared_mem_manager.dict()
-            # FEAR OF USING SHARED METADATA DICT TOO MUCH: too many processes lock up the memory too much....
-            # 2nd shared metadata dict: shared global index, knows: current frame, paused time, idk what else...
-            shared_globalindex_dict = shared_mem_manager.dict()
-            shared_globalindex_dict["curframe"] = 0
-            fprint("b")
+                # shared_poolmeta_dict = shared_mem_manager.dict()
+                # analyze_pool_count = 3
+                # for x in range(analyze_pool_count):
+                #     shared_poolmeta_dict[x] = 
 
+                shared_analyzedA = shared_mem_manager.dict()
+                shared_analyzedAKeycount = shared_mem_manager.dict()
+                shared_analyzedB = shared_mem_manager.dict()
+                shared_analyzedBKeycount = shared_mem_manager.dict()
+                shared_analyzedC = shared_mem_manager.dict()
+                shared_analyzedCKeycount = shared_mem_manager.dict()
+                shared_analyzedD = shared_mem_manager.dict()
+                shared_analyzedDKeycount = shared_mem_manager.dict()
 
-            # shared_poolmeta_dict = shared_mem_manager.dict()
-            # analyze_pool_count = 3
-            # for x in range(analyze_pool_count):
-            #     shared_poolmeta_dict[x] = 
+                shared_rawA = shared_mem_manager.dict()
+                shared_rawAKEYS = shared_mem_manager.dict()
+                shared_rawB = shared_mem_manager.dict()
+                shared_rawBKEYS = shared_mem_manager.dict()
+                shared_rawC = shared_mem_manager.dict()
+                shared_rawCKEYS = shared_mem_manager.dict()
+                shared_rawD = shared_mem_manager.dict()
+                shared_rawDKEYS = shared_mem_manager.dict()
+                
+                fprint("c")
+                # set metadata kivy_run_state to true so cv subprocess will run and not get an error by reading uninstantiated shared memory.
+                shared_metadata_dict["kivy_run_state"] = True
 
-            shared_analyzedA = shared_mem_manager.dict()
-            shared_analyzedAKeycount = shared_mem_manager.dict()
-            shared_analyzedB = shared_mem_manager.dict()
-            shared_analyzedBKeycount = shared_mem_manager.dict()
-            shared_analyzedC = shared_mem_manager.dict()
-            shared_analyzedCKeycount = shared_mem_manager.dict()
-            shared_analyzedD = shared_mem_manager.dict()
-            shared_analyzedDKeycount = shared_mem_manager.dict()
+                # reference: https://stackoverflow.com/questions/8220108/how-do-i-check-the-operating-system-in-python
+                from sys import platform
 
-            shared_rawA = shared_mem_manager.dict()
-            shared_rawAKEYS = shared_mem_manager.dict()
-            shared_rawB = shared_mem_manager.dict()
-            shared_rawBKEYS = shared_mem_manager.dict()
-            shared_rawC = shared_mem_manager.dict()
-            shared_rawCKEYS = shared_mem_manager.dict()
-            shared_rawD = shared_mem_manager.dict()
-            shared_rawDKEYS = shared_mem_manager.dict()
-            
-            fprint("c")
-
-            # set metadata kivy_run_state to true so cv subprocess will run and not get an error by reading uninstantiated shared memory.
-            shared_metadata_dict["kivy_run_state"] = True
-
-            # reference: https://stackoverflow.com/questions/8220108/how-do-i-check-the-operating-system-in-python
-            from sys import platform
-
-            if platform == "linux" or platform == "linux2":
-                # linux
-                pass
-            elif platform == "darwin_old":
-                # OS X, need to change filepath so pyinstaller exe will work
-                mac_path = (
-                    os.path.sep.join(sys.argv[0].split(os.path.sep)[:-1]) + os.path.sep
-                )
-                print("mac option", mac_path)
-                print("what is self source then?", self.source)
-                # vanity code so example works from main file or from examples folder
-                if "examples" in mac_path:
-                    mac_source = self.source
-                else:
-                    mac_source = mac_path + self.source
-
-                # check if file exists in dir, if not then check tmp folder, if nothing, raise error:
-                # reference: https://stackoverflow.com/questions/54837659/python-pyinstaller-on-mac-current-directory-problem
-                if os.path.isfile(mac_source):
-                    print("file exists in dir ", mac_source)
-                    self.source = mac_source
-                elif not os.path.isfile(mac_source):
-                    print(
-                        "File not in .dmg directory, location failed isfile check, checking tmp dir: ",
-                        mac_source,
-                    )
-
-                # checking tempfolder
-                if hasattr(sys, "_MEIPASS"):
-                    # if file is frozen by pyinstaller add the MEIPASS folder to path:
-                    sys.path.append(sys._MEIPASS)
-                    tempsource = sys._MEIPASS + os.sep + self.source
-
-                    if os.path.isfile(tempsource):
-                        self.source = tempsource
-                    elif not os.path.isfile(tempsource):
-                        raise Exception(
-                            "Source failed isfile check: " + str(tempsource)
-                        )
-
-            elif platform == "win32" or platform == "darwin":
-                # Windows...
-                # check current directory, then check tmpfolder, then complain:
-
-                # if you're in examples folder, path is gonna be wrong, so fix it:
-                dirlist = os.getcwd().split(os.path.sep)
-                if "examples" in dirlist[-1]:
-                    # pathjoin is weird: https://stackoverflow.com/questions/2422798/python-os-path-join-on-windows
-                    dirlist_source = (
-                        dirlist[0]
-                        + os.path.sep
-                        + os.path.join(*dirlist[1 : len(dirlist) - 1])
-                        + os.path.sep
-                        + self.source
-                    )
-                    if not os.path.isfile(dirlist_source):
-                        print("not a playable file: ??", dirlist_source)
-                    else:
-                        self.source = dirlist_source
-                # NOW check current directory:
-                elif os.path.isfile(self.source):
-                    print("file loaded:", os.getcwd() + os.sep + self.source)
-                elif not os.path.isfile(self.source):
-                    print(
-                        "Source failed isfile check for current directory: "
-                        + str(os.path.isfile(self.source))
-                        + ". Checking location: "
-                        + str(os.path.join(os.getcwd(), self.source))
-                        + " Checking tmpdir next:"
-                    )
-
-                # print("#check sys attr:", hasattr(sys, '_MEIPASS'))
-                if hasattr(sys, "_MEIPASS"):
-                    # if file is frozen by pyinstaller add the MEIPASS folder to path:
-                    sys.path.append(sys._MEIPASS)
-                    tempsource = sys._MEIPASS + os.sep + self.source
-
-                    if os.path.isfile(tempsource):
-                        self.source = tempsource
-                    # checked everything, now complain:
-                    elif not os.path.isfile(tempsource):
-                        raise Exception(
-                            "Source failed isfile check: " + str(tempsource)
-                        )
-            fprint("d")
-
-            # read just to get the fps
-            video = cv2.VideoCapture(self.source)
-            self.fps = video.get(cv2.CAP_PROP_FPS)
-            #opencv is accurately guessing, read through everything for accuracy:
-            # https://stackoverflow.com/questions/31472155/python-opencv-cv2-cv-cv-cap-prop-frame-count-get-wrong-numbers
-            # self.length = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
-            self.length = 0
-            # while True: 
-            #     ret, framevar = video.read()
-            #     if not ret:
-            #         break
-            #     self.length += 1
-            self.length += 11222333
-            video.release()
-
-            bufferlen = 10
-            # bufferlen = 20
-            # bufferlen = 40
-            cvpartitions = 4
-            #init shared dicts:
-            fprint("e")
-            for x in range(bufferlen):
-                shared_analyzedA["frame" + str(x)] = -1
-                shared_analyzedAKeycount["key" + str(x)] = -1
-
-                shared_analyzedB["frame" + str(x)] = -1
-                shared_analyzedBKeycount["key" + str(x)] = -1
-
-                shared_analyzedC["frame" + str(x)] = -1
-                shared_analyzedCKeycount["key" + str(x)] = -1
-
-                shared_analyzedD["frame" + str(x)] = -1
-                shared_analyzedDKeycount["key" + str(x)] = -1
-
-                shared_rawA["frame" + str(x)] = -1
-                shared_rawAKEYS["key" + str(x)] = -1
-
-                shared_rawB["frame" + str(x)] = -1
-                shared_rawBKEYS["key" + str(x)] = -1
-
-                shared_rawC["frame" + str(x)] = -1
-                shared_rawCKEYS["key" + str(x)] = -1
-
-                shared_rawD["frame" + str(x)] = -1
-                shared_rawDKEYS["key" + str(x)] = -1
-
-            #sanity checks
-            if not hasattr(self, "fps"):
-                # default to 30fps, else set blit buffer speed to 1/30 sec
-                self.fps = 1 / 30
-            if not hasattr(self, "title"):
-                shared_metadata_dict[
-                    "title"
-                ] = "Fast CV App Example v0.1.0 by Pengindoramu"
-            else:
-                shared_metadata_dict["title"] = self.title
-            if hasattr(self, "colorfmt"):
-                shared_metadata_dict["colorfmt"] = self.colorfmt
-            if hasattr(self, "kvstring"):
-                shared_metadata_dict["kvstring"] = self.kvstring
-            if self.appliedcv == None:
-                print(
-                    "FCVA.appliedcv is currently None. Not starting the CV subprocess."
-                )
-            
-            #start the subprocesses
-            
-            shared_rawA = shared_mem_manager.dict()
-            shared_rawAKEYS = shared_mem_manager.dict()
-            shared_rawB = shared_mem_manager.dict()
-            shared_rawBKEYS = shared_mem_manager.dict()
-            shared_rawC = shared_mem_manager.dict()
-            shared_rawCKEYS = shared_mem_manager.dict()
-            shared_rawD = shared_mem_manager.dict()
-            shared_rawDKEYS = shared_mem_manager.dict()
-
-            cv_subprocessA = FCVA_mp.Process(
-                    target=open_cvpipeline,
-                    args=(
-                        shared_metadata_dict,
-                        self.appliedcv,
-                        shared_analyzedA,
-                        shared_globalindex_dict,
-                        shared_analyzedAKeycount,
-                        self.source,
-                        0, #partition #, starts at 0
-                        0, #instance of the block of relevant frames
-                        bufferlen, #bufferlen AKA how long the internal queues should be
-                        cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
-                        self.fps,
-                        shared_rawA,
-                        shared_rawAKEYS
-                    ),
-                )
-            cv_subprocessA.start()
-
-            cv_subprocessB = FCVA_mp.Process(
-                    target=open_cvpipeline,
-                    args=(
-                        shared_metadata_dict,
-                        self.appliedcv,
-                        shared_analyzedB,
-                        shared_globalindex_dict,
-                        shared_analyzedBKeycount,
-                        self.source,
-                        1, #partition #, starts at 0
-                        0, #instance of the block of relevant frames
-                        bufferlen, #bufferlen AKA how long the internal queues should be
-                        cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
-                        self.fps,
-                        shared_rawB,
-                        shared_rawBKEYS
-                    ),
-                )
-            cv_subprocessB.start()
-
-            cv_subprocessC = FCVA_mp.Process(
-                    target=open_cvpipeline,
-                    args=(
-                        shared_metadata_dict,
-                        self.appliedcv,
-                        shared_analyzedC,
-                        shared_globalindex_dict,
-                        shared_analyzedCKeycount,
-                        self.source,
-                        2, #partition #, starts at 0
-                        0, #instance of the block of relevant frames
-                        bufferlen, #bufferlen AKA how long the internal queues should be
-                        cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
-                        self.fps,
-                        shared_rawC,
-                        shared_rawCKEYS
-                    ),
-                )
-            cv_subprocessC.start()
-
-            cv_subprocessD = FCVA_mp.Process(
-                    target=open_cvpipeline,
-                    args=(
-                        shared_metadata_dict,
-                        self.appliedcv,
-                        shared_analyzedD,
-                        shared_globalindex_dict,
-                        shared_analyzedDKeycount,
-                        self.source,
-                        3, #partition #, starts at 0
-                        0, #instance of the block of relevant frames
-                        bufferlen, #bufferlen AKA how long the internal queues should be
-                        cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
-                        self.fps,
-                        shared_rawD,
-                        shared_rawDKEYS
-                    ),
-                )
-            cv_subprocessD.start()
-            fprint("f")
-
-            kivy_subprocess = FCVA_mp.Process(
-                target=open_kivy,
-                args=(shared_analysis_dict, shared_metadata_dict, self.fps, shared_globalindex_dict, shared_analyzedA, shared_analyzedB, shared_analyzedC,shared_analyzedAKeycount,shared_analyzedBKeycount, shared_analyzedCKeycount, (1/self.fps), bufferlen,cvpartitions, self.length, shared_analyzedD, shared_analyzedDKeycount)
-                # 
-            )
-            kivy_subprocess.start()
-
-            time.sleep(30)
-
-            # this try except block holds the main process open so the subprocesses aren't cleared when the main process exits early.
-            while "kivy_run_state" in shared_metadata_dict.keys():
-                if shared_metadata_dict["kivy_run_state"] == False:
-                    # when the while block is done, close all the subprocesses using .join to gracefully exit. also make sure opencv releases the video.
-                    # mediaread_subprocess.join()
-                    cv_subprocessA.join()
-                    cv_subprocessB.join()
-                    cv_subprocessC.join()
-                    cv_subprocessD.join()
-                    kivy_subprocess.join()
-                    fprint("g")
-                    break
-                try:
+                if platform == "linux" or platform == "linux2":
+                    # linux
                     pass
-                except Exception as e:
-                    print(
-                        "Error in run, make sure stream is set. Example: app.source = 0 (so opencv will open videocapture 0)",
-                        e,
+                elif platform == "darwin_old":
+                    # OS X, need to change filepath so pyinstaller exe will work
+                    mac_path = (
+                        os.path.sep.join(sys.argv[0].split(os.path.sep)[:-1]) + os.path.sep
                     )
+                    print("mac option", mac_path)
+                    print("what is self source then?", self.source)
+                    # vanity code so example works from main file or from examples folder
+                    if "examples" in mac_path:
+                        mac_source = self.source
+                    else:
+                        mac_source = mac_path + self.source
+
+                    # check if file exists in dir, if not then check tmp folder, if nothing, raise error:
+                    # reference: https://stackoverflow.com/questions/54837659/python-pyinstaller-on-mac-current-directory-problem
+                    if os.path.isfile(mac_source):
+                        print("file exists in dir ", mac_source)
+                        self.source = mac_source
+                    elif not os.path.isfile(mac_source):
+                        print(
+                            "File not in .dmg directory, location failed isfile check, checking tmp dir: ",
+                            mac_source,
+                        )
+
+                    # checking tempfolder
+                    if hasattr(sys, "_MEIPASS"):
+                        # if file is frozen by pyinstaller add the MEIPASS folder to path:
+                        sys.path.append(sys._MEIPASS)
+                        tempsource = sys._MEIPASS + os.sep + self.source
+
+                        if os.path.isfile(tempsource):
+                            self.source = tempsource
+                        elif not os.path.isfile(tempsource):
+                            raise Exception(
+                                "Source failed isfile check: " + str(tempsource)
+                            )
+
+                elif platform == "win32" or platform == "darwin":
+                    # Windows...
+                    # check current directory, then check tmpfolder, then complain:
+
+                    # if you're in examples folder, path is gonna be wrong, so fix it:
+                    dirlist = os.getcwd().split(os.path.sep)
+                    if "examples" in dirlist[-1]:
+                        # pathjoin is weird: https://stackoverflow.com/questions/2422798/python-os-path-join-on-windows
+                        dirlist_source = (
+                            dirlist[0]
+                            + os.path.sep
+                            + os.path.join(*dirlist[1 : len(dirlist) - 1])
+                            + os.path.sep
+                            + self.source
+                        )
+                        if not os.path.isfile(dirlist_source):
+                            print("not a playable file: ??", dirlist_source)
+                        else:
+                            self.source = dirlist_source
+                    # NOW check current directory:
+                    elif os.path.isfile(self.source):
+                        print("file loaded:", os.getcwd() + os.sep + self.source)
+                    elif not os.path.isfile(self.source):
+                        print(
+                            "Source failed isfile check for current directory: "
+                            + str(os.path.isfile(self.source))
+                            + ". Checking location: "
+                            + str(os.path.join(os.getcwd(), self.source))
+                            + " Checking tmpdir next:"
+                        )
+
+                    # print("#check sys attr:", hasattr(sys, '_MEIPASS'))
+                    if hasattr(sys, "_MEIPASS"):
+                        # if file is frozen by pyinstaller add the MEIPASS folder to path:
+                        sys.path.append(sys._MEIPASS)
+                        tempsource = sys._MEIPASS + os.sep + self.source
+
+                        if os.path.isfile(tempsource):
+                            self.source = tempsource
+                        # checked everything, now complain:
+                        elif not os.path.isfile(tempsource):
+                            raise Exception(
+                                "Source failed isfile check: " + str(tempsource)
+                            )
+                fprint("d")
+
+                # read just to get the fps
+                video = cv2.VideoCapture(self.source)
+                self.fps = video.get(cv2.CAP_PROP_FPS)
+                #opencv is accurately guessing, read through everything for accuracy:
+                # https://stackoverflow.com/questions/31472155/python-opencv-cv2-cv-cv-cap-prop-frame-count-get-wrong-numbers
+                # self.length = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
+                self.length = 0
+                # while True: 
+                #     ret, framevar = video.read()
+                #     if not ret:
+                #         break
+                #     self.length += 1
+                self.length += 11222333
+                video.release()
+
+                bufferlen = 10
+                cvpartitions = 4
+                #init shared dicts:
+                fprint("e")
+                for x in range(bufferlen):
+                    shared_analyzedA["frame" + str(x)] = -1
+                    shared_analyzedAKeycount["key" + str(x)] = -1
+
+                    shared_analyzedB["frame" + str(x)] = -1
+                    shared_analyzedBKeycount["key" + str(x)] = -1
+
+                    shared_analyzedC["frame" + str(x)] = -1
+                    shared_analyzedCKeycount["key" + str(x)] = -1
+
+                    shared_analyzedD["frame" + str(x)] = -1
+                    shared_analyzedDKeycount["key" + str(x)] = -1
+
+                    shared_rawA["frame" + str(x)] = -1
+                    shared_rawAKEYS["key" + str(x)] = -1
+
+                    shared_rawB["frame" + str(x)] = -1
+                    shared_rawBKEYS["key" + str(x)] = -1
+
+                    shared_rawC["frame" + str(x)] = -1
+                    shared_rawCKEYS["key" + str(x)] = -1
+
+                    shared_rawD["frame" + str(x)] = -1
+                    shared_rawDKEYS["key" + str(x)] = -1
+
+                #sanity checks
+                if not hasattr(self, "fps"):
+                    # default to 30fps, else set blit buffer speed to 1/30 sec
+                    self.fps = 1 / 30
+                if not hasattr(self, "title"):
+                    shared_metadata_dict[
+                        "title"
+                    ] = "Fast CV App Example v0.1.0 by Pengindoramu"
+                else:
+                    shared_metadata_dict["title"] = self.title
+                if hasattr(self, "colorfmt"):
+                    shared_metadata_dict["colorfmt"] = self.colorfmt
+                if hasattr(self, "kvstring"):
+                    shared_metadata_dict["kvstring"] = self.kvstring
+                if self.appliedcv == None:
+                    print(
+                        "FCVA.appliedcv is currently None. Not starting the CV subprocess."
+                    )
+                
+                #start the subprocesses
+                shared_rawA = shared_mem_manager.dict()
+                shared_rawAKEYS = shared_mem_manager.dict()
+                shared_rawB = shared_mem_manager.dict()
+                shared_rawBKEYS = shared_mem_manager.dict()
+                shared_rawC = shared_mem_manager.dict()
+                shared_rawCKEYS = shared_mem_manager.dict()
+                shared_rawD = shared_mem_manager.dict()
+                shared_rawDKEYS = shared_mem_manager.dict()
+
+                cv_subprocessA = FCVA_mp.Process(
+                        target=open_cvpipeline,
+                        args=(
+                            shared_metadata_dict,
+                            self.appliedcv,
+                            shared_analyzedA,
+                            shared_globalindex_dict,
+                            shared_analyzedAKeycount,
+                            self.source,
+                            0, #partition #, starts at 0
+                            0, #instance of the block of relevant frames
+                            bufferlen, #bufferlen AKA how long the internal queues should be
+                            cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
+                            self.fps,
+                            shared_rawA,
+                            shared_rawAKEYS
+                        ),
+                    )
+                cv_subprocessA.start()
+
+                cv_subprocessB = FCVA_mp.Process(
+                        target=open_cvpipeline,
+                        args=(
+                            shared_metadata_dict,
+                            self.appliedcv,
+                            shared_analyzedB,
+                            shared_globalindex_dict,
+                            shared_analyzedBKeycount,
+                            self.source,
+                            1, #partition #, starts at 0
+                            0, #instance of the block of relevant frames
+                            bufferlen, #bufferlen AKA how long the internal queues should be
+                            cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
+                            self.fps,
+                            shared_rawB,
+                            shared_rawBKEYS
+                        ),
+                    )
+                cv_subprocessB.start()
+
+                cv_subprocessC = FCVA_mp.Process(
+                        target=open_cvpipeline,
+                        args=(
+                            shared_metadata_dict,
+                            self.appliedcv,
+                            shared_analyzedC,
+                            shared_globalindex_dict,
+                            shared_analyzedCKeycount,
+                            self.source,
+                            2, #partition #, starts at 0
+                            0, #instance of the block of relevant frames
+                            bufferlen, #bufferlen AKA how long the internal queues should be
+                            cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
+                            self.fps,
+                            shared_rawC,
+                            shared_rawCKEYS
+                        ),
+                    )
+                cv_subprocessC.start()
+
+                cv_subprocessD = FCVA_mp.Process(
+                        target=open_cvpipeline,
+                        args=(
+                            shared_metadata_dict,
+                            self.appliedcv,
+                            shared_analyzedD,
+                            shared_globalindex_dict,
+                            shared_analyzedDKeycount,
+                            self.source,
+                            3, #partition #, starts at 0
+                            0, #instance of the block of relevant frames
+                            bufferlen, #bufferlen AKA how long the internal queues should be
+                            cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
+                            self.fps,
+                            shared_rawD,
+                            shared_rawDKEYS
+                        ),
+                    )
+                cv_subprocessD.start()
+                fprint("f")
+
+                kivy_subprocess = FCVA_mp.Process(
+                    target=open_kivy,
+                    args=(
+                        shared_analysis_dict, 
+                        shared_metadata_dict, 
+                        self.fps, 
+                        shared_globalindex_dict, 
+                        shared_analyzedA, 
+                        shared_analyzedB, 
+                        shared_analyzedC,
+                        shared_analyzedAKeycount,
+                        shared_analyzedBKeycount, 
+                        shared_analyzedCKeycount, 
+                        (1/self.fps), 
+                        bufferlen,
+                        cvpartitions, 
+                        self.length, 
+                        shared_analyzedD, 
+                        shared_analyzedDKeycount))
+                kivy_subprocess.start()
+
+                # this try except block holds the main process open so the subprocesses aren't cleared when the main process exits early.
+                while "kivy_run_state" in shared_metadata_dict.keys():
+                    if shared_metadata_dict["kivy_run_state"] == False:
+                        # when the while block is done, close all the subprocesses using .join to gracefully exit. also make sure opencv releases the video.
+                        # mediaread_subprocess.join()
+                        cv_subprocessA.join()
+                        cv_subprocessB.join()
+                        cv_subprocessC.join()
+                        cv_subprocessD.join()
+                        kivy_subprocess.join()
+                        fprint("g")
+                        break
+        except Exception as e: 
+            print("FCVA run died!", e, flush=True)
+            import traceback
+            print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
