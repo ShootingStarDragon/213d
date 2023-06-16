@@ -6,6 +6,7 @@ def fprint(*args):
 
 def sysupdate(*args, sourcelocation = False):
 	'''
+	#keyword argument notes: https://treyhunner.com/2018/04/keyword-arguments-in-python/#What_are_keyword_arguments? 
 	this is to update paths, for example when an app is packaged with pyinstaller
 	'''
 	import sys
