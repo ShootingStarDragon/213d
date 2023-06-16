@@ -406,7 +406,8 @@ def open_cvpipeline(*args):
         if "examples" in os.getcwd().split(os.path.sep):
             # tasklocation = os.getcwd().split(os.path.sep)[0] + os.path.sep + os.path.join(*os.getcwd().split(os.path.sep)[1:], "creativecommonsmedia", "pose_landmarker_full.task")
             # https://stackoverflow.com/a/51276165
-            tasklocation = os.path.join(os.sep, os.getcwd().split(os.path.sep)[0] + os.sep, *os.getcwd().split(os.path.sep), "creativecommonsmedia", "pose_landmarker_full.task")
+            # tasklocation = os.path.join(os.sep, os.getcwd().split(os.path.sep)[0] + os.sep, *os.getcwd().split(os.path.sep), "creativecommonsmedia", "pose_landmarker_full.task")
+            tasklocation = os.path.join(os.sep, os.getcwd().split(os.path.sep)[0] + os.sep, *os.getcwd().split(os.path.sep), "creativecommonsmedia", "pose_landmarker_lite.task")
         else:
             tasklocation = 'examples\creativecommonsmedia\pose_landmarker_full.task'
         fprint("tasklocation?", tasklocation) 
