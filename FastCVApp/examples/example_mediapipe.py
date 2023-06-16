@@ -19,7 +19,7 @@ if hasattr(sys, "_MEIPASS"):
         tempsourcefolder = os.path.join(*tempsource.split(os.sep)[:-1]) 
         # actualsourcefolder = os.path.join(*actualsource.split(os.sep)[:-1]) 
         actualsourcefolder = os.path.join(*sourcelocation.split(os.sep)[:-1]) 
-        shutil.copytree(tempsourcefolder, actualsourcefolder)
+        shutil.copytree(tempsourcefolder, actualsourcefolder, dirs_exist_ok = True)
         # print("copyanything", tempsourcefolder, actualsourcefolder)
 else:
     # if you're making your own app, you don't need this else block. This is just vanity code so I can run this from main FastCVApp folder or from the examples subfolder.
