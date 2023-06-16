@@ -5,16 +5,11 @@ import os, sys
 import numpy as np
 from FCVAutils import fprint
 import blosc2
-# if __name__ == "FastCVApp":
-#     import multiprocessing as FCVA_mp
-#     # this is so that only 1 window is run when packaging with pyinstaller
-#     FCVA_mp.freeze_support()
-#     import blosc2
+
 
 def open_kivy(*args):
     try:
         # infinite recursion bug when packaging with pyinstaller with no console: https://github.com/kivy/kivy/issues/8074#issuecomment-1364595283
-        #print("wut wut", sys.__stdout__, sys.__stderr__)
         os.environ["KIVY_NO_CONSOLELOG"] = "1" #logging errs on laptop for some reason
         # if sys.__stdout__ is None or sys.__stderr__ is None:
         #     os.environ["KIVY_NO_CONSOLELOG"] = "1"
@@ -121,7 +116,6 @@ FCVA_screen_manager: #remember to return a root widget
                         self.index = 0
                     #this is helpful but is very good at locking up the shared dicts...
                     # fprint("is cv subprocess keeping up?", self.index, self.shared_analyzedAKeycountVAR.values(),self.shared_analyzedBKeycountVAR.values(),self.shared_analyzedCKeycountVAR.values(),self.shared_analyzedDKeycountVAR.values())
-                    #cheat for rn, just get current frame:
                     #know the current framenumber
                     #get the right shareddict https://www.geeksforgeeks.org/python-get-key-from-value-in-dictionary/#
                     # https://stackoverflow.com/questions/8023306/get-key-by-value-in-dictionary
@@ -129,16 +123,12 @@ FCVA_screen_manager: #remember to return a root widget
                     frame = None
                     if self.index in self.shared_analyzedAKeycountVAR.values():
                         correctkey = list(self.shared_analyzedAKeycountVAR.keys())[list(self.shared_analyzedAKeycountVAR.values()).index(self.index)]
-                        # fprint("correctkey?", correctkey)
-                        # if len(correctkey) > 0:
                         frameref = "frame" + correctkey.replace("key",'')
                         frame = self.shared_analyzedAVAR[frameref]
                     
                     # fprint("index in values?B",  self.index, self.shared_analyzedBKeycountVAR.values(), self.index in self.shared_analyzedBKeycountVAR.values())
                     if self.index in self.shared_analyzedBKeycountVAR.values():
                         correctkey = list(self.shared_analyzedBKeycountVAR.keys())[list(self.shared_analyzedBKeycountVAR.values()).index(self.index)]
-                        # fprint("correctkey?", correctkey)
-                        # if len(correctkey) > 0:
                         frameref = "frame" + correctkey.replace("key",'')
                         timeax = time.time()
                         frame = self.shared_analyzedBVAR[frameref]
@@ -148,15 +138,11 @@ FCVA_screen_manager: #remember to return a root widget
                     # fprint("index in values?C",  self.index, self.shared_analyzedCKeycountVAR.values(), self.index in self.shared_analyzedCKeycountVAR.values())
                     if self.index in self.shared_analyzedCKeycountVAR.values():
                         correctkey = list(self.shared_analyzedCKeycountVAR.keys())[list(self.shared_analyzedCKeycountVAR.values()).index(self.index)]
-                        # fprint("correctkey?", correctkey)
-                        # if len(correctkey) > 0:
                         frameref = "frame" + correctkey.replace("key",'')
                         frame = self.shared_analyzedCVAR[frameref]
 
                     if self.index in self.shared_analyzedDKeycountVAR.values():
                         correctkey = list(self.shared_analyzedDKeycountVAR.keys())[list(self.shared_analyzedDKeycountVAR.values()).index(self.index)]
-                        # fprint("correctkey?", correctkey)
-                        # if len(correctkey) > 0:
                         frameref = "frame" + correctkey.replace("key",'')
                         frame = self.shared_analyzedDVAR[frameref]
 
@@ -164,25 +150,14 @@ FCVA_screen_manager: #remember to return a root widget
                     # https://stackoverflow.com/questions/43748991/how-to-check-if-a-variable-is-either-a-python-list-numpy-array-or-pandas-series
                     try:
                         if frame != None:
-                            # frame = blosc2.unpack_array2(frame)
-                            # oldtime = time.time()
-                            # frame = blosc2.unpack(frame)
                             frame = blosc2.decompress(frame)
-                            # fprint("unpack time?", time.time() - oldtime)
                             frame = np.frombuffer(frame, np.uint8).copy().reshape(1080, 1920, 3)
                             # frame = np.frombuffer(frame, np.uint8).copy().reshape(720, 1280, 3)
+                            # frame = np.frombuffer(frame, np.uint8).copy().reshape(480, 640, 3)
                             frame = cv2.flip(frame, 0)
                             buf = frame.tobytes()
                             if isinstance(frame,np.ndarray): #trying bytes
-                                # buf = frame.tobytes() 
-                                # frame = np.frombuffer(frame, np.uint8).copy().reshape(1080, 1920, 3)
-                                #fix the frame
-                                # frame = cv2.flip(frame, 0) 
-                                # frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-
-                                # frame = np.frombuffer(frame, np.uint8).copy().reshape(480, 640, 3)
-                                
-                                # complicated way of safely checking if a value may or may not exist, then get that value:
+                                #complicated way of safely checking if a value may or may not exist, then get that value:
                                 #quickly checked this, time is 0...
                                 existence_check = [
                                     frame.shape[x] for x in range(0, len(frame.shape)) if x == 2
@@ -297,13 +272,10 @@ FCVA_screen_manager: #remember to return a root widget
                         #init starttime:
                         # self.starttime = time.time() + 1
                         # self.starttime = time.time() + 2
-                        self.starttime = time.time() + 3
+                        self.starttime = time.time() + 3 #wait 3 seconds
                         # self.starttime = time.time() + 8
                         self.shared_globalindex_dictVAR["starttime"] = self.starttime
                 else:
-                    # self.shared_metadata_dictVAR[
-                    #     "toggleCV"
-                    # ] = not self.shared_metadata_dictVAR["toggleCV"]
                     #pop it to remove, that way I can make the time critical stuff faster:
                     self.shared_metadata_dictVAR.pop("toggleCV")
 
@@ -386,12 +358,7 @@ def open_cvpipeline(*args):
         pid = os.getpid()
         shared_globalindex_dictVAR["subprocess" + str(pid)] = True
 
-        # from queue import Queue
         from collections import deque
-        # raw_queue = Queue(maxsize=bufferlen)
-        # raw_queueKEYS = Queue(maxsize=bufferlen)
-        # analyzed_queue = Queue(maxsize=bufferlen)
-        # analyzed_queueKEYS = Queue(maxsize=bufferlen)
         raw_queue = deque(maxlen=bufferlen)
         raw_queueKEYS = deque(maxlen=bufferlen)
         analyzed_queue = deque(maxlen=bufferlen)
@@ -401,8 +368,6 @@ def open_cvpipeline(*args):
         import mediapipe as mp
         from mediapipe.tasks import python
         from mediapipe.tasks.python import vision
-        # with open('I:\CODING\FastCVApp\FastCVApp\examples\creativecommonsmedia\pose_landmarker_full.task', 'rb') as f:
-        # os.getcwd() + ""
         #assume this file structure:
         # this file\examples\creativecommonsmedia\pose_landmarker_full.task is the location
         # https://stackoverflow.com/a/50098973
@@ -411,7 +376,6 @@ def open_cvpipeline(*args):
         print("file location?", Path(__file__).absolute())
         print("cwd???", os.getcwd())
         if "examples" in os.getcwd().split(os.path.sep):
-            # tasklocation = os.getcwd().split(os.path.sep)[0] + os.path.sep + os.path.join(*os.getcwd().split(os.path.sep)[1:], "creativecommonsmedia", "pose_landmarker_full.task")
             # https://stackoverflow.com/a/51276165
             # tasklocation = os.path.join(os.sep, os.getcwd().split(os.path.sep)[0] + os.sep, *os.getcwd().split(os.path.sep), "creativecommonsmedia", "pose_landmarker_full.task")
             tasklocation = os.path.join(os.sep, os.getcwd().split(os.path.sep)[0] + os.sep, *os.getcwd().split(os.path.sep), "creativecommonsmedia", "pose_landmarker_lite.task")
@@ -420,19 +384,17 @@ def open_cvpipeline(*args):
         fprint("tasklocation?", tasklocation) 
 
         with open(tasklocation, 'rb') as f:
-        # with open('examples\creativecommonsmedia\pose_landmarker_full.task', 'rb') as f:
-        # with open('examples\creativecommonsmedia\pose_landmarker_lite.task', 'rb') as f:
-                    modelbytes = f.read()
-                    base_options = python.BaseOptions(model_asset_buffer=modelbytes)
-                    VisionRunningMode = mp.tasks.vision.RunningMode
-                    options = vision.PoseLandmarkerOptions(
-                        base_options=base_options,
-                        running_mode=VisionRunningMode.VIDEO,
-                        # model_complexity = 0,
-                        #these were old settings, maybe it's too strict and not giving me poses
-                        # min_pose_detection_confidence=0.6, min_tracking_confidence=0.6,
-                        min_pose_detection_confidence=0.5, min_tracking_confidence=0.5,
-                        )
+            modelbytes = f.read()
+            base_options = python.BaseOptions(model_asset_buffer=modelbytes)
+            VisionRunningMode = mp.tasks.vision.RunningMode
+            options = vision.PoseLandmarkerOptions(
+                base_options=base_options,
+                running_mode=VisionRunningMode.VIDEO,
+                # model_complexity = 0,
+                #these were old settings, maybe it's too strict and not giving me poses
+                # min_pose_detection_confidence=0.6, min_tracking_confidence=0.6,
+                min_pose_detection_confidence=0.5, min_tracking_confidence=0.5,
+                )
         landmarker = mp.tasks.vision.PoseLandmarker.create_from_options(options)
 
         while True:
@@ -441,7 +403,7 @@ def open_cvpipeline(*args):
                     print("exiting open_appliedcv", os.getpid(), flush=True)
                     break
                 '''
-                NEW PLAN:
+                PLAN:
                 Init shared dicts at the beginning instead of checking every while loop
                 
                 use 3 subprocesses(A,B,C) to use opencv to get frames from 1 file simultaneously (pray it works and there's no file hold...)
@@ -453,13 +415,16 @@ def open_cvpipeline(*args):
 
                 LOOP:
                     3 actions: 
+                    Write
+                        Write to shared dict if init OR frames are old                    
+                    Analyze
+                        Analyze all the time (if analyze queue is empty and there is a framequeue)
                     Read
                         request the RIGHT 10 frames (0-10 or 11-20 or 21-30)
                         Load raw frames only if analyze queue is empty (this implicitly checks for time, keeps frames loaded, and stops u from loading too much)
-                    Analyze
-                        Analyze all the time (if analyze queue is empty and there is a framequeue)
-                    Write
-                        Write to shared dict if init OR frames are old
+                Why write>analyze>read?
+                    you want to write out the analyzed frames first
+                    there is some downtime where kivy reads from a shareddict, in that time I would ideally read/analyze frames (something that doesn't lock the shared dict)
                 '''
                 #make sure things have started AND this processess is not stopped:
                 if "starttime" in shared_globalindex_dictVAR and shared_globalindex_dictVAR["subprocess" + str(pid)]:
@@ -540,7 +505,6 @@ class FCVA:
             fprint("a")
             # this is so that only 1 window is run when packaging with pyinstaller
             FCVA_mp.freeze_support()
-            import blosc2
 
             #blosc uses multiprocessing, call it after freeze support so exe doesn't hang
             #https://github.com/pyinstaller/pyinstaller/issues/7470#issuecomment-1448502333
