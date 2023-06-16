@@ -521,29 +521,6 @@ class FCVA:
                 shared_globalindex_dict["curframe"] = 0
                 fprint("b")
 
-                # shared_poolmeta_dict = shared_mem_manager.dict()
-                # analyze_pool_count = 3
-                # for x in range(analyze_pool_count):
-                #     shared_poolmeta_dict[x] = 
-
-                shared_analyzedA = shared_mem_manager.dict()
-                shared_analyzedAKeycount = shared_mem_manager.dict()
-                shared_analyzedB = shared_mem_manager.dict()
-                shared_analyzedBKeycount = shared_mem_manager.dict()
-                shared_analyzedC = shared_mem_manager.dict()
-                shared_analyzedCKeycount = shared_mem_manager.dict()
-                shared_analyzedD = shared_mem_manager.dict()
-                shared_analyzedDKeycount = shared_mem_manager.dict()
-
-                shared_rawA = shared_mem_manager.dict()
-                shared_rawAKEYS = shared_mem_manager.dict()
-                shared_rawB = shared_mem_manager.dict()
-                shared_rawBKEYS = shared_mem_manager.dict()
-                shared_rawC = shared_mem_manager.dict()
-                shared_rawCKEYS = shared_mem_manager.dict()
-                shared_rawD = shared_mem_manager.dict()
-                shared_rawDKEYS = shared_mem_manager.dict()
-                
                 fprint("c")
                 # set metadata kivy_run_state to true so cv subprocess will run and not get an error by reading uninstantiated shared memory.
                 shared_metadata_dict["kivy_run_state"] = True
@@ -656,6 +633,31 @@ class FCVA:
                 cvpartitions = 4
                 #init shared dicts:
                 fprint("e")
+
+                # shared_pool_meta_dict = shared_mem_manager.dict()
+                # analyze_pool_count = 4
+                # for x in range(analyze_pool_count):
+                #     #init analyzed/keycount dicts
+                #     shared_pool_meta_dict[x] = 
+
+                shared_analyzedA = shared_mem_manager.dict()
+                shared_analyzedAKeycount = shared_mem_manager.dict()
+                shared_analyzedB = shared_mem_manager.dict()
+                shared_analyzedBKeycount = shared_mem_manager.dict()
+                shared_analyzedC = shared_mem_manager.dict()
+                shared_analyzedCKeycount = shared_mem_manager.dict()
+                shared_analyzedD = shared_mem_manager.dict()
+                shared_analyzedDKeycount = shared_mem_manager.dict()
+
+                shared_rawA = shared_mem_manager.dict()
+                shared_rawAKEYS = shared_mem_manager.dict()
+                shared_rawB = shared_mem_manager.dict()
+                shared_rawBKEYS = shared_mem_manager.dict()
+                shared_rawC = shared_mem_manager.dict()
+                shared_rawCKEYS = shared_mem_manager.dict()
+                shared_rawD = shared_mem_manager.dict()
+                shared_rawDKEYS = shared_mem_manager.dict()
+
                 for x in range(bufferlen):
                     shared_analyzedA["frame" + str(x)] = -1
                     shared_analyzedAKeycount["key" + str(x)] = -1
@@ -701,15 +703,6 @@ class FCVA:
                     )
                 
                 #start the subprocesses
-                shared_rawA = shared_mem_manager.dict()
-                shared_rawAKEYS = shared_mem_manager.dict()
-                shared_rawB = shared_mem_manager.dict()
-                shared_rawBKEYS = shared_mem_manager.dict()
-                shared_rawC = shared_mem_manager.dict()
-                shared_rawCKEYS = shared_mem_manager.dict()
-                shared_rawD = shared_mem_manager.dict()
-                shared_rawDKEYS = shared_mem_manager.dict()
-
                 cv_subprocessA = FCVA_mp.Process(
                         target=open_cvpipeline,
                         args=(
