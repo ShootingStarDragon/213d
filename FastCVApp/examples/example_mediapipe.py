@@ -1,6 +1,7 @@
 import sys
 
-sourcelocation = "examples\creativecommonsmedia\Elephants Dream charstart2.webm"
+# sourcelocation = "examples\creativecommonsmedia\Elephants Dream charstart2.webm"
+sourcelocation = "examples\creativecommonsmedia\Elephants Dream charstart2FULL.webm"
 
 if hasattr(sys, "_MEIPASS"):
     # if file is frozen by pyinstaller add the MEIPASS folder to path:
@@ -65,10 +66,10 @@ def draw_landmarks_on_image(annotated_image, detection_result):
         print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
     
 import time
+import mediapipe as mp
+from collections import deque
 def mediapipe(*args): #basicmp
     try:
-        import mediapipe as mp
-        from collections import deque
         inputqueue = args[0]
         bufferlenVAR = args[3]
         answerqueue = deque(maxlen=bufferlenVAR)
