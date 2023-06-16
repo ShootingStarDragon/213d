@@ -1,2 +1,4 @@
+import os
+import time
 def fprint(*args):
-	print(*args, flush = True)
+	print(os.getpid(), time.time(), *args, flush = True)
