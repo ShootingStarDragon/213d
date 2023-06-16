@@ -1,30 +1,20 @@
 import sys
+import os
+import cv2
+import mediapipe as mp
+from mediapipe import solutions
+from mediapipe.framework.formats import landmark_pb2
+import time
+from collections import deque
 
 # sourcelocation = "examples\creativecommonsmedia\Elephants Dream charstart2.webm"
 sourcelocation = "examples\creativecommonsmedia\Elephants Dream charstart2FULL.webm"
 
 if hasattr(sys, "_MEIPASS"):
-    # if file is frozen by pyinstaller add the MEIPASS folder to path:
-    sys.path.append(sys._MEIPASS) 
-    #the path is duplicated, maybe that's why it's running twice?
-    #possibly pyinstaller updated
-    print("MMEIPAS APPENDED CORRECT?", sys._MEIPASS)
-    #solution: when u run the exe, check for the file/folder and if it's there or not > then if not copy it from tmpdir
-    tempsource = sys._MEIPASS + os.sep + sourcelocation
-    actualsource = os.getcwd() + os.sep + sourcelocation
-    print("what is tempsource?", tempsource, not os.path.isfile(actualsource), "actual", actualsource)
-    if not os.path.isfile(actualsource):
-        #copy to current directory:
-        import shutil
-        tempsourcefolder = os.path.join(*tempsource.split(os.sep)[:-1]) 
-        # actualsourcefolder = os.path.join(*actualsource.split(os.sep)[:-1]) 
-        actualsourcefolder = os.path.join(*sourcelocation.split(os.sep)[:-1]) 
-        shutil.copytree(tempsourcefolder, actualsourcefolder, dirs_exist_ok = True)
-        # print("copyanything", tempsourcefolder, actualsourcefolder)
+    pass
 else:
-    # if you're making your own app, you don't need this else block. This is just vanity code so I can run this from main FastCVApp folder or from the examples subfolder.
+    # if you're making your own app, you don't need this if-else block. This is just vanity code so this file can be run from main FastCVApp folder or from the examples subfolder.
     # this example is importing from a higher level package if running from cmd: https://stackoverflow.com/a/41575089
-    import os
 
     # add the right path depending on if you're running from examples or from main folder:
     if "examples" in os.getcwd().split(os.path.sep)[-1]:
@@ -34,12 +24,15 @@ else:
     else:
         # assume they're in main folder trying `python examples/example_backgroundsubtraction.py`
         sys.path.append("../FastCVApp")  # when running from main folder
-import cv2
+
+from FCVAutils import sysupdate
+#udpate paths here
+sysupdate(sourcelocation)
 
 # importing here means it's available to the subprocess as well. You can probably cut loading time by only loading mediapipe for the right subprocess.
 
-from mediapipe import solutions
-from mediapipe.framework.formats import landmark_pb2
+# from mediapipe import solutions
+# from mediapipe.framework.formats import landmark_pb2
 def draw_landmarks_on_image(annotated_image, detection_result):
     try:
         pose_landmarks_list = detection_result.pose_landmarks
@@ -65,9 +58,6 @@ def draw_landmarks_on_image(annotated_image, detection_result):
         import traceback
         print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
     
-import time
-import mediapipe as mp
-from collections import deque
 def mediapipe(*args): #basicmp
     try:
         inputqueue = args[0]
