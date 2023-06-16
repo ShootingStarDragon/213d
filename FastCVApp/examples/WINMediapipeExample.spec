@@ -1,4 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
+from kivy_deps import sdl2, glew
 #reference for adding mediapipe with pyinstaller https://stackoverflow.com/questions/67887088/issues-compiling-mediapipe-with-pyinstaller-on-macos
 
 block_cipher = None
@@ -8,12 +9,14 @@ def get_mediapipe_path():
     mediapipe_path = mediapipe.__path__[0]
     return mediapipe_path
 
+basedir = "I:\\CODING\\FastCVApp\\FastCVApp\\" # replace basedir with the location of "FastCVApp" folder
+
 a = Analysis(
-    ['examples/example_mediapipe.py'],
+    ['example_mediapipe.py'],
     pathex=[],
     binaries=[],
-    datas=[('FastCVApp.py', '.'), ('examples//creativecommonsmedia//','examples//creativecommonsmedia')],
-    hiddenimports=[],
+    datas=[(basedir + "FastCVApp.py", "."), (basedir + "FCVAutils.py", "."), (basedir + "examples\\creativecommonsmedia\\", "examples\\creativecommonsmedia")],
+    hiddenimports=['kivy', 'blosc2', 'kivy.modules'], # mediapipe 
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -35,8 +38,8 @@ exe = EXE(
     a.binaries,
     a.zipfiles,
     a.datas,
-    [],
-    name='MediapipeMAC',
+    *[Tree(p) for p in (sdl2.dep_bins + glew.dep_bins)],
+    name='MediapipeExample',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -49,11 +52,4 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-)
-# https://pyinstaller.org/en/stable/spec-files.html#spec-file-options-for-a-macos-bundle
-app = BUNDLE(
-    exe,
-    name='MediapipeMAC.app',
-    icon=None,
-    bundle_identifier=None,
 )
