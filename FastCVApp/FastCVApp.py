@@ -146,49 +146,49 @@ FCVA_screen_manager: #remember to return a root widget
                     #reminder, int to partition is w.r.t. the index and the shared dicts
                     
                     #THIS WORKED
-                    # shareddict_instance = int_to_partition(self.index,self.bufferlen,self.cvpartitions) 
-                    # # shared analyzed keycount is w.r.t. getting the right index when the index is self.cvpartitions-many of this sequence: shared_analyzedA, shared_analyzedAKeycount, shared_rawA, shared_rawAKEYS
-                    # shared_analyzedKeycountIndex = frameblock(1,shareddict_instance,1,self.cvpartitions)[0] #reminder that frameblock is a continuous BLOCK and shared_pool_meta_listVAR is alternating: 0 1 2 3, 0 1 2 3, etc... which is why bufferlen is 1
-                    # fprint("valtesting", self.index, shareddict_instance,shared_analyzedKeycountIndex, len(self.shared_pool_meta_listVAR))
-                    # shared_analyzedIndex = frameblock(0,shareddict_instance,1,self.cvpartitions)[0]
+                    shareddict_instance = int_to_partition(self.index,self.bufferlen,self.cvpartitions) 
+                    # shared analyzed keycount is w.r.t. getting the right index when the index is self.cvpartitions-many of this sequence: shared_analyzedA, shared_analyzedAKeycount, shared_rawA, shared_rawAKEYS
+                    shared_analyzedKeycountIndex = frameblock(1,shareddict_instance,1,self.cvpartitions)[0] #reminder that frameblock is a continuous BLOCK and shared_pool_meta_listVAR is alternating: 0 1 2 3, 0 1 2 3, etc... which is why bufferlen is 1
+                    fprint("valtesting", self.index, shareddict_instance,shared_analyzedKeycountIndex, len(self.shared_pool_meta_listVAR))
+                    shared_analyzedIndex = frameblock(0,shareddict_instance,1,self.cvpartitions)[0]
 
-                    # if self.index in self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values():
-                    #     correctkey = list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].keys())[list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values()).index(self.index)]
-                    #     frameref = "frame" + correctkey.replace("key",'')
-                    #     frame = self.shared_pool_meta_listVAR[shared_analyzedIndex][frameref]
+                    if self.index in self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values():
+                        correctkey = list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].keys())[list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values()).index(self.index)]
+                        frameref = "frame" + correctkey.replace("key",'')
+                        frame = self.shared_pool_meta_listVAR[shared_analyzedIndex][frameref]
                     #THIS WORKED
                     
                         
 
-                    if self.index in self.shared_analyzedAKeycountVAR.values():
-                        correctkey = list(self.shared_analyzedAKeycountVAR.keys())[list(self.shared_analyzedAKeycountVAR.values()).index(self.index)]
-                        frameref = "frame" + correctkey.replace("key",'')
-                        frame = self.shared_analyzedAVAR[frameref]
+                    # if self.index in self.shared_analyzedAKeycountVAR.values():
+                    #     correctkey = list(self.shared_analyzedAKeycountVAR.keys())[list(self.shared_analyzedAKeycountVAR.values()).index(self.index)]
+                    #     frameref = "frame" + correctkey.replace("key",'')
+                    #     frame = self.shared_analyzedAVAR[frameref]
 
-                    if self.index in self.shared_analyzedAKeycountVAR.values():
-                        correctkey = list(self.shared_analyzedAKeycountVAR.keys())[list(self.shared_analyzedAKeycountVAR.values()).index(self.index)]
-                        frameref = "frame" + correctkey.replace("key",'')
-                        frame = self.shared_analyzedAVAR[frameref]
+                    # if self.index in self.shared_analyzedAKeycountVAR.values():
+                    #     correctkey = list(self.shared_analyzedAKeycountVAR.keys())[list(self.shared_analyzedAKeycountVAR.values()).index(self.index)]
+                    #     frameref = "frame" + correctkey.replace("key",'')
+                    #     frame = self.shared_analyzedAVAR[frameref]
                     
-                    # fprint("index in values?B",  self.index, self.shared_analyzedBKeycountVAR.values(), self.index in self.shared_analyzedBKeycountVAR.values())
-                    if self.index in self.shared_analyzedBKeycountVAR.values():
-                        correctkey = list(self.shared_analyzedBKeycountVAR.keys())[list(self.shared_analyzedBKeycountVAR.values()).index(self.index)]
-                        frameref = "frame" + correctkey.replace("key",'')
-                        timeax = time.time()
-                        frame = self.shared_analyzedBVAR[frameref]
-                        framesizeguy = frame
-                        fprint("how long to load a frame from shared mem?", time.time()-timeax, "size?", sys.getsizeof(framesizeguy))
+                    # # fprint("index in values?B",  self.index, self.shared_analyzedBKeycountVAR.values(), self.index in self.shared_analyzedBKeycountVAR.values())
+                    # if self.index in self.shared_analyzedBKeycountVAR.values():
+                    #     correctkey = list(self.shared_analyzedBKeycountVAR.keys())[list(self.shared_analyzedBKeycountVAR.values()).index(self.index)]
+                    #     frameref = "frame" + correctkey.replace("key",'')
+                    #     timeax = time.time()
+                    #     frame = self.shared_analyzedBVAR[frameref]
+                    #     framesizeguy = frame
+                    #     fprint("how long to load a frame from shared mem?", time.time()-timeax, "size?", sys.getsizeof(framesizeguy))
 
-                    # fprint("index in values?C",  self.index, self.shared_analyzedCKeycountVAR.values(), self.index in self.shared_analyzedCKeycountVAR.values())
-                    if self.index in self.shared_analyzedCKeycountVAR.values():
-                        correctkey = list(self.shared_analyzedCKeycountVAR.keys())[list(self.shared_analyzedCKeycountVAR.values()).index(self.index)]
-                        frameref = "frame" + correctkey.replace("key",'')
-                        frame = self.shared_analyzedCVAR[frameref]
+                    # # fprint("index in values?C",  self.index, self.shared_analyzedCKeycountVAR.values(), self.index in self.shared_analyzedCKeycountVAR.values())
+                    # if self.index in self.shared_analyzedCKeycountVAR.values():
+                    #     correctkey = list(self.shared_analyzedCKeycountVAR.keys())[list(self.shared_analyzedCKeycountVAR.values()).index(self.index)]
+                    #     frameref = "frame" + correctkey.replace("key",'')
+                    #     frame = self.shared_analyzedCVAR[frameref]
 
-                    if self.index in self.shared_analyzedDKeycountVAR.values():
-                        correctkey = list(self.shared_analyzedDKeycountVAR.keys())[list(self.shared_analyzedDKeycountVAR.values()).index(self.index)]
-                        frameref = "frame" + correctkey.replace("key",'')
-                        frame = self.shared_analyzedDVAR[frameref]
+                    # if self.index in self.shared_analyzedDKeycountVAR.values():
+                    #     correctkey = list(self.shared_analyzedDKeycountVAR.keys())[list(self.shared_analyzedDKeycountVAR.values()).index(self.index)]
+                    #     frameref = "frame" + correctkey.replace("key",'')
+                    #     frame = self.shared_analyzedDVAR[frameref]
 
 
                     # https://stackoverflow.com/questions/43748991/how-to-check-if-a-variable-is-either-a-python-list-numpy-array-or-pandas-series
@@ -329,22 +329,22 @@ FCVA_screen_manager: #remember to return a root widget
         class StartScreen(Screen):
             pass
 
-        MainApp.shared_analysis_dictVAR = args[0]
-        MainApp.shared_metadata_dictVAR = args[1]
-        MainApp.fps = args[2]
-        MainApp.shared_globalindex_dictVAR = args[3]
-        MainApp.shared_analyzedAVAR = args[4]
-        MainApp.shared_analyzedBVAR = args[5]
-        MainApp.shared_analyzedCVAR = args[6]
-        MainApp.shared_analyzedAKeycountVAR = args[7]
-        MainApp.shared_analyzedBKeycountVAR = args[8]
-        MainApp.shared_analyzedCKeycountVAR = args[9]
-        MainApp.spf = args[10]
-        MainApp.bufferlen = args[11]
-        MainApp.cvpartitions = args[12]
-        MainApp.framelength = args[13]
-        MainApp.shared_analyzedDVAR = args[14]
-        MainApp.shared_analyzedDKeycountVAR = args[15]
+        # MainApp.shared_analysis_dictVAR = args[0]
+        # MainApp.shared_metadata_dictVAR = args[1]
+        # MainApp.fps = args[2]
+        # MainApp.shared_globalindex_dictVAR = args[3]
+        # MainApp.shared_analyzedAVAR = args[4]
+        # MainApp.shared_analyzedBVAR = args[5]
+        # MainApp.shared_analyzedCVAR = args[6]
+        # MainApp.shared_analyzedAKeycountVAR = args[7]
+        # MainApp.shared_analyzedBKeycountVAR = args[8]
+        # MainApp.shared_analyzedCKeycountVAR = args[9]
+        # MainApp.spf = args[10]
+        # MainApp.bufferlen = args[11]
+        # MainApp.cvpartitions = args[12]
+        # MainApp.framelength = args[13]
+        # MainApp.shared_analyzedDVAR = args[14]
+        # MainApp.shared_analyzedDKeycountVAR = args[15]
 
         # MainApp.shared_analyzedAVAR = args[4]
         # MainApp.shared_analyzedBVAR = args[5]
@@ -355,16 +355,16 @@ FCVA_screen_manager: #remember to return a root widget
         # MainApp.shared_analyzedDVAR = args[14]
         # MainApp.shared_analyzedDKeycountVAR = args[15]
 
-        # MainApp.shared_analysis_dictVAR = args[0]
-        # MainApp.shared_metadata_dictVAR = args[1]
-        # MainApp.fps = args[2]
-        # MainApp.shared_globalindex_dictVAR = args[3]
-        # MainApp.spf = args[4]
-        # MainApp.bufferlen = args[5]
-        # MainApp.cvpartitions = args[6]
-        # MainApp.framelength = args[7]
-        # MainApp.shared_pool_meta_listVAR = args[8]
-        # MainApp.dicts_per_subprocessVAR = args[9]
+        MainApp.shared_analysis_dictVAR = args[0]
+        MainApp.shared_metadata_dictVAR = args[1]
+        MainApp.fps = args[2]
+        MainApp.shared_globalindex_dictVAR = args[3]
+        MainApp.spf = args[4]
+        MainApp.bufferlen = args[5]
+        MainApp.cvpartitions = args[6]
+        MainApp.framelength = args[7]
+        MainApp.shared_pool_meta_listVAR = args[8]
+        MainApp.dicts_per_subprocessVAR = args[9]
         
         
         MainApp().run()
@@ -724,57 +724,57 @@ class FCVA:
                 # nested shared object
                 # https://stackoverflow.com/questions/68604215/how-do-you-create-nested-shared-objects-in-multi-processing-in-python
 
-                # # shared_pool_meta_list = shared_mem_manager.list()
-                # shared_pool_meta_list = [] 
                 # # the metalist (both shared and not shared) work but are slow: this is most likely because the nested shared dict defeats the purpose of using split shared dicts in that updates happen once instead of multiply at the same time
                 # # new approach: I'm not smart enough to do this w/o using exec, but generate code on the fly and exec it...
                 # # reference: https://stackoverflow.com/questions/70862189/how-to-create-variable-names-dynamically-and-assigning-values-in-python
                 # # reference: https://stackoverflow.com/questions/22558548/eval-syntaxerror-invalid-syntax-in-python
 
-                # analyze_pool_count = 4
-                # for x in range(analyze_pool_count):
-                #     #init analyzed/keycount dicts
-                #     shared_analyzedA = shared_mem_manager.dict()
-                #     shared_analyzedAKeycount = shared_mem_manager.dict()
-                #     shared_rawA = shared_mem_manager.dict()
-                #     shared_rawAKEYS = shared_mem_manager.dict()
+                shared_pool_meta_list = shared_mem_manager.list()
+                # shared_pool_meta_list = [] 
+                analyze_pool_count = 4
+                for x in range(analyze_pool_count):
+                    #init analyzed/keycount dicts
+                    shared_analyzedA = shared_mem_manager.dict()
+                    shared_analyzedAKeycount = shared_mem_manager.dict()
+                    shared_rawA = shared_mem_manager.dict()
+                    shared_rawAKEYS = shared_mem_manager.dict()
                     
-                #     #init dicts
-                #     for y in range(bufferlen):
-                #         shared_analyzedA["frame" + str(y)] = -1
-                #         shared_analyzedAKeycount["key" + str(y)] = -1
-                #         shared_rawA["frame" + str(y)] = -1
-                #         shared_rawAKEYS["key" + str(y)] = -1
+                    #init dicts
+                    for y in range(bufferlen):
+                        shared_analyzedA["frame" + str(y)] = -1
+                        shared_analyzedAKeycount["key" + str(y)] = -1
+                        shared_rawA["frame" + str(y)] = -1
+                        shared_rawAKEYS["key" + str(y)] = -1
                     
-                #     #start the subprocesses
-                #     cv_subprocessA = FCVA_mp.Process(
-                #         target=open_cvpipeline,
-                #         args=(
-                #             shared_metadata_dict,
-                #             self.appliedcv,
-                #             shared_analyzedA,
-                #             shared_globalindex_dict,
-                #             shared_analyzedAKeycount,
-                #             self.source,
-                #             x, #partition #, starts at 0 (now is x in this loop)
-                #             0, #instance of the block of relevant frames
-                #             bufferlen, #bufferlen AKA how long the internal queues should be
-                #             cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
-                #             self.fps,
-                #             shared_rawA,
-                #             shared_rawAKEYS
-                #         ),
-                #     )
-                #     cv_subprocessA.start()
-                #     #append everything at the end so kivy can start and know all the info
-                #     # thefguy = f'{"shared_analyzed" + str(x) + "OUTERVAR = "} shared_analyzedA'
-                #     # print("thefguy", thefguy)
-                #     # exec(thefguy)
-                #     shared_pool_meta_list.append(shared_analyzedA)
-                #     shared_pool_meta_list.append(shared_analyzedAKeycount)
-                #     shared_pool_meta_list.append(shared_rawA)
-                #     shared_pool_meta_list.append(shared_rawAKEYS)
-                #     dicts_per_subprocess = 4 #remember to update this....
+                    #start the subprocesses
+                    cv_subprocessA = FCVA_mp.Process(
+                        target=open_cvpipeline,
+                        args=(
+                            shared_metadata_dict,
+                            self.appliedcv,
+                            shared_analyzedA,
+                            shared_globalindex_dict,
+                            shared_analyzedAKeycount,
+                            self.source,
+                            x, #partition #, starts at 0 (now is x in this loop)
+                            0, #instance of the block of relevant frames
+                            bufferlen, #bufferlen AKA how long the internal queues should be
+                            cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
+                            self.fps,
+                            shared_rawA,
+                            shared_rawAKEYS
+                        ),
+                    )
+                    cv_subprocessA.start()
+                    #append everything at the end so kivy can start and know all the info
+                    # thefguy = f'{"shared_analyzed" + str(x) + "OUTERVAR = "} shared_analyzedA'
+                    # print("thefguy", thefguy)
+                    # exec(thefguy)
+                    shared_pool_meta_list.append(shared_analyzedA)
+                    shared_pool_meta_list.append(shared_analyzedAKeycount)
+                    shared_pool_meta_list.append(shared_rawA)
+                    shared_pool_meta_list.append(shared_rawAKEYS)
+                    dicts_per_subprocess = 4 #remember to update this....
                     
                     
                     #give kivy the list of subprocesses (at the end)
@@ -787,48 +787,48 @@ class FCVA:
                 #when you are done, send all the shared dicts to a list
                 #to give the shareddict to kivy subprocess, unpack that list and give the shareddict directly 
 
-                shared_analyzedA = shared_mem_manager.dict()
-                shared_analyzedAKeycount = shared_mem_manager.dict()
-                shared_analyzedB = shared_mem_manager.dict()
-                shared_analyzedBKeycount = shared_mem_manager.dict()
-                shared_analyzedC = shared_mem_manager.dict()
-                shared_analyzedCKeycount = shared_mem_manager.dict()
-                shared_analyzedD = shared_mem_manager.dict()
-                shared_analyzedDKeycount = shared_mem_manager.dict()
+                # shared_analyzedA = shared_mem_manager.dict()
+                # shared_analyzedAKeycount = shared_mem_manager.dict()
+                # shared_analyzedB = shared_mem_manager.dict()
+                # shared_analyzedBKeycount = shared_mem_manager.dict()
+                # shared_analyzedC = shared_mem_manager.dict()
+                # shared_analyzedCKeycount = shared_mem_manager.dict()
+                # shared_analyzedD = shared_mem_manager.dict()
+                # shared_analyzedDKeycount = shared_mem_manager.dict()
 
-                shared_rawA = shared_mem_manager.dict()
-                shared_rawAKEYS = shared_mem_manager.dict()
-                shared_rawB = shared_mem_manager.dict()
-                shared_rawBKEYS = shared_mem_manager.dict()
-                shared_rawC = shared_mem_manager.dict()
-                shared_rawCKEYS = shared_mem_manager.dict()
-                shared_rawD = shared_mem_manager.dict()
-                shared_rawDKEYS = shared_mem_manager.dict()
+                # shared_rawA = shared_mem_manager.dict()
+                # shared_rawAKEYS = shared_mem_manager.dict()
+                # shared_rawB = shared_mem_manager.dict()
+                # shared_rawBKEYS = shared_mem_manager.dict()
+                # shared_rawC = shared_mem_manager.dict()
+                # shared_rawCKEYS = shared_mem_manager.dict()
+                # shared_rawD = shared_mem_manager.dict()
+                # shared_rawDKEYS = shared_mem_manager.dict()
 
-                for x in range(bufferlen):
-                    shared_analyzedA["frame" + str(x)] = -1
-                    shared_analyzedAKeycount["key" + str(x)] = -1
+                # for x in range(bufferlen):
+                #     shared_analyzedA["frame" + str(x)] = -1
+                #     shared_analyzedAKeycount["key" + str(x)] = -1
 
-                    shared_analyzedB["frame" + str(x)] = -1
-                    shared_analyzedBKeycount["key" + str(x)] = -1
+                #     shared_analyzedB["frame" + str(x)] = -1
+                #     shared_analyzedBKeycount["key" + str(x)] = -1
 
-                    shared_analyzedC["frame" + str(x)] = -1
-                    shared_analyzedCKeycount["key" + str(x)] = -1
+                #     shared_analyzedC["frame" + str(x)] = -1
+                #     shared_analyzedCKeycount["key" + str(x)] = -1
 
-                    shared_analyzedD["frame" + str(x)] = -1
-                    shared_analyzedDKeycount["key" + str(x)] = -1
+                #     shared_analyzedD["frame" + str(x)] = -1
+                #     shared_analyzedDKeycount["key" + str(x)] = -1
 
-                    shared_rawA["frame" + str(x)] = -1
-                    shared_rawAKEYS["key" + str(x)] = -1
+                #     shared_rawA["frame" + str(x)] = -1
+                #     shared_rawAKEYS["key" + str(x)] = -1
 
-                    shared_rawB["frame" + str(x)] = -1
-                    shared_rawBKEYS["key" + str(x)] = -1
+                #     shared_rawB["frame" + str(x)] = -1
+                #     shared_rawBKEYS["key" + str(x)] = -1
 
-                    shared_rawC["frame" + str(x)] = -1
-                    shared_rawCKEYS["key" + str(x)] = -1
+                #     shared_rawC["frame" + str(x)] = -1
+                #     shared_rawCKEYS["key" + str(x)] = -1
 
-                    shared_rawD["frame" + str(x)] = -1
-                    shared_rawDKEYS["key" + str(x)] = -1
+                #     shared_rawD["frame" + str(x)] = -1
+                #     shared_rawDKEYS["key" + str(x)] = -1
 
                 #sanity checks
                 if not hasattr(self, "fps"):
@@ -850,109 +850,87 @@ class FCVA:
                     )
                 
                 #start the subprocesses
-                cv_subprocessA = FCVA_mp.Process(
-                        target=open_cvpipeline,
-                        args=(
-                            shared_metadata_dict,
-                            self.appliedcv,
-                            shared_analyzedA,
-                            shared_globalindex_dict,
-                            shared_analyzedAKeycount,
-                            self.source,
-                            0, #partition #, starts at 0
-                            0, #instance of the block of relevant frames
-                            bufferlen, #bufferlen AKA how long the internal queues should be
-                            cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
-                            self.fps,
-                            shared_rawA,
-                            shared_rawAKEYS
-                        ),
-                    )
-                cv_subprocessA.start()
+                # cv_subprocessA = FCVA_mp.Process(
+                #         target=open_cvpipeline,
+                #         args=(
+                #             shared_metadata_dict,
+                #             self.appliedcv,
+                #             shared_analyzedA,
+                #             shared_globalindex_dict,
+                #             shared_analyzedAKeycount,
+                #             self.source,
+                #             0, #partition #, starts at 0
+                #             0, #instance of the block of relevant frames
+                #             bufferlen, #bufferlen AKA how long the internal queues should be
+                #             cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
+                #             self.fps,
+                #             shared_rawA,
+                #             shared_rawAKEYS
+                #         ),
+                #     )
+                # cv_subprocessA.start()
 
-                cv_subprocessB = FCVA_mp.Process(
-                        target=open_cvpipeline,
-                        args=(
-                            shared_metadata_dict,
-                            self.appliedcv,
-                            shared_analyzedB,
-                            shared_globalindex_dict,
-                            shared_analyzedBKeycount,
-                            self.source,
-                            1, #partition #, starts at 0
-                            0, #instance of the block of relevant frames
-                            bufferlen, #bufferlen AKA how long the internal queues should be
-                            cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
-                            self.fps,
-                            shared_rawB,
-                            shared_rawBKEYS
-                        ),
-                    )
-                cv_subprocessB.start()
+                # cv_subprocessB = FCVA_mp.Process(
+                #         target=open_cvpipeline,
+                #         args=(
+                #             shared_metadata_dict,
+                #             self.appliedcv,
+                #             shared_analyzedB,
+                #             shared_globalindex_dict,
+                #             shared_analyzedBKeycount,
+                #             self.source,
+                #             1, #partition #, starts at 0
+                #             0, #instance of the block of relevant frames
+                #             bufferlen, #bufferlen AKA how long the internal queues should be
+                #             cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
+                #             self.fps,
+                #             shared_rawB,
+                #             shared_rawBKEYS
+                #         ),
+                #     )
+                # cv_subprocessB.start()
 
-                cv_subprocessC = FCVA_mp.Process(
-                        target=open_cvpipeline,
-                        args=(
-                            shared_metadata_dict,
-                            self.appliedcv,
-                            shared_analyzedC,
-                            shared_globalindex_dict,
-                            shared_analyzedCKeycount,
-                            self.source,
-                            2, #partition #, starts at 0
-                            0, #instance of the block of relevant frames
-                            bufferlen, #bufferlen AKA how long the internal queues should be
-                            cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
-                            self.fps,
-                            shared_rawC,
-                            shared_rawCKEYS
-                        ),
-                    )
-                cv_subprocessC.start()
+                # cv_subprocessC = FCVA_mp.Process(
+                #         target=open_cvpipeline,
+                #         args=(
+                #             shared_metadata_dict,
+                #             self.appliedcv,
+                #             shared_analyzedC,
+                #             shared_globalindex_dict,
+                #             shared_analyzedCKeycount,
+                #             self.source,
+                #             2, #partition #, starts at 0
+                #             0, #instance of the block of relevant frames
+                #             bufferlen, #bufferlen AKA how long the internal queues should be
+                #             cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
+                #             self.fps,
+                #             shared_rawC,
+                #             shared_rawCKEYS
+                #         ),
+                #     )
+                # cv_subprocessC.start()
 
-                cv_subprocessD = FCVA_mp.Process(
-                        target=open_cvpipeline,
-                        args=(
-                            shared_metadata_dict,
-                            self.appliedcv,
-                            shared_analyzedD,
-                            shared_globalindex_dict,
-                            shared_analyzedDKeycount,
-                            self.source,
-                            3, #partition #, starts at 0
-                            0, #instance of the block of relevant frames
-                            bufferlen, #bufferlen AKA how long the internal queues should be
-                            cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
-                            self.fps,
-                            shared_rawD,
-                            shared_rawDKEYS
-                        ),
-                    )
-                cv_subprocessD.start()
-                fprint("f")
+                # cv_subprocessD = FCVA_mp.Process(
+                #         target=open_cvpipeline,
+                #         args=(
+                #             shared_metadata_dict,
+                #             self.appliedcv,
+                #             shared_analyzedD,
+                #             shared_globalindex_dict,
+                #             shared_analyzedDKeycount,
+                #             self.source,
+                #             3, #partition #, starts at 0
+                #             0, #instance of the block of relevant frames
+                #             bufferlen, #bufferlen AKA how long the internal queues should be
+                #             cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
+                #             self.fps,
+                #             shared_rawD,
+                #             shared_rawDKEYS
+                #         ),
+                #     )
+                # cv_subprocessD.start()
+                # fprint("f")
 
-                kivy_subprocess = FCVA_mp.Process(
-                    target=open_kivy,
-                    args=(
-                        shared_analysis_dict, 
-                        shared_metadata_dict, 
-                        self.fps, 
-                        shared_globalindex_dict, 
-                        shared_analyzedA, 
-                        shared_analyzedB, 
-                        shared_analyzedC,
-                        shared_analyzedAKeycount,
-                        shared_analyzedBKeycount, 
-                        shared_analyzedCKeycount, 
-                        (1/self.fps), 
-                        bufferlen,
-                        cvpartitions, 
-                        self.length, 
-                        shared_analyzedD, 
-                        shared_analyzedDKeycount))
-                kivy_subprocess.start()
-                
-                
                 # kivy_subprocess = FCVA_mp.Process(
                 #     target=open_kivy,
                 #     args=(
@@ -960,13 +938,35 @@ class FCVA:
                 #         shared_metadata_dict, 
                 #         self.fps, 
                 #         shared_globalindex_dict, 
+                #         shared_analyzedA, 
+                #         shared_analyzedB, 
+                #         shared_analyzedC,
+                #         shared_analyzedAKeycount,
+                #         shared_analyzedBKeycount, 
+                #         shared_analyzedCKeycount, 
                 #         (1/self.fps), 
                 #         bufferlen,
                 #         cvpartitions, 
                 #         self.length, 
-                #         shared_pool_meta_list,
-                #         dicts_per_subprocess))
+                #         shared_analyzedD, 
+                #         shared_analyzedDKeycount))
                 # kivy_subprocess.start()
+                
+                
+                kivy_subprocess = FCVA_mp.Process(
+                    target=open_kivy,
+                    args=(
+                        shared_analysis_dict, 
+                        shared_metadata_dict, 
+                        self.fps, 
+                        shared_globalindex_dict, 
+                        (1/self.fps), 
+                        bufferlen,
+                        cvpartitions, 
+                        self.length, 
+                        shared_pool_meta_list,
+                        dicts_per_subprocess))
+                kivy_subprocess.start()
 
                 # this try except block holds the main process open so the subprocesses aren't cleared when the main process exits early.
                 while "kivy_run_state" in shared_metadata_dict.keys():
