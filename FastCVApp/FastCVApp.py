@@ -112,90 +112,90 @@ FCVA_screen_manager: #remember to return a root widget
                 texture.blit_buffer(buffervar)
             
             def blit_from_shared_memory(self, *args):
-                # try:
-                timeog = time.time()
-                if "toggleCV" in self.shared_metadata_dictVAR and self.shared_globalindex_dictVAR["starttime"] != None:
-                    self.index = int((time.time() - self.starttime)/self.spf)
-                    if self.index < 0:
-                        self.index = 0
-                    #this is helpful but is very good at locking up the shared dicts...
-                    # fprint("is cv subprocess keeping up?", self.index, self.shared_analyzedAKeycountVAR.values(),self.shared_analyzedBKeycountVAR.values(),self.shared_analyzedCKeycountVAR.values(),self.shared_analyzedDKeycountVAR.values())
-                    #know the current framenumber
-                    #get the right shareddict https://www.geeksforgeeks.org/python-get-key-from-value-in-dictionary/#
-                    # https://stackoverflow.com/questions/8023306/get-key-by-value-in-dictionary
-                    # fprint("index in values?A",  self.index, self.shared_analyzedAKeycountVAR.values(), self.index in self.shared_analyzedAKeycountVAR.values())
-                    frame = None
-                    #hint: u know self.dicts_per_subprocessVAR and self.cvpartitions
-                    #this is the nested shared list (containing shared dicts): shared_pool_meta_listVAR
-                    #so keycounts are always: 
-                    #frameblock(*args):
-                    #given partition #, instance, bufferlen, maxpartitions tells u the frames to get:
-                    #where partition is x in range(self.cvpartitions), instance is 0, bufferlen is 1, maxpartitions is given by self.cvpartitions
+                try:
+                    timeog = time.time()
+                    if "toggleCV" in self.shared_metadata_dictVAR and self.shared_globalindex_dictVAR["starttime"] != None:
+                        self.index = int((time.time() - self.starttime)/self.spf)
+                        if self.index < 0:
+                            self.index = 0
+                        #this is helpful but is very good at locking up the shared dicts...
+                        # fprint("is cv subprocess keeping up?", self.index, self.shared_analyzedAKeycountVAR.values(),self.shared_analyzedBKeycountVAR.values(),self.shared_analyzedCKeycountVAR.values(),self.shared_analyzedDKeycountVAR.values())
+                        #know the current framenumber
+                        #get the right shareddict https://www.geeksforgeeks.org/python-get-key-from-value-in-dictionary/#
+                        # https://stackoverflow.com/questions/8023306/get-key-by-value-in-dictionary
+                        # fprint("index in values?A",  self.index, self.shared_analyzedAKeycountVAR.values(), self.index in self.shared_analyzedAKeycountVAR.values())
+                        frame = None
+                        #hint: u know self.dicts_per_subprocessVAR and self.cvpartitions
+                        #this is the nested shared list (containing shared dicts): shared_pool_meta_listVAR
+                        #so keycounts are always: 
+                        #frameblock(*args):
+                        #given partition #, instance, bufferlen, maxpartitions tells u the frames to get:
+                        #where partition is x in range(self.cvpartitions), instance is 0, bufferlen is 1, maxpartitions is given by self.cvpartitions
 
-                    # for partitionint in range(self.cvpartitions):
-                    #     #note TO FUTURE SELF, THIS LOOKS WRONG, it's it frameblock(partitionint,0,1,self.cvpartitions???) > it's correct, it's a group of 4 and u want the guy in the 1st index (shared_analyzedKeycountIndex)
-                    #     shared_analyzedKeycountIndex = frameblock(1,partitionint,1,self.cvpartitions)[0]
-                    #     fprint("err here, check numbers","instance",partitionint, "index:", shared_analyzedKeycountIndex,"metalist len", len(self.shared_pool_meta_listVAR))
-                    #     fprint("correct index for analyzedkeycount?", self.index, self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values())
-                    #     shared_analyzedIndex = frameblock(0,partitionint,1,self.cvpartitions)[0]
-                    #     if self.index in self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values():
-                    #         correctkey = list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].keys())[list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values()).index(self.index)]
-                    #         frameref = "frame" + correctkey.replace("key",'')
-                    #         frame = self.shared_pool_meta_listVAR[shared_analyzedIndex][frameref]
-                    #         break
-                    #this doesn't have to be a for loop since u know what index it should be in...
-                    #reminder, int to partition is w.r.t. the index and the shared dicts
-                    
-                    #THIS WORKED
-                    shareddict_instance = int_to_partition(self.index,self.bufferlen,self.cvpartitions) 
-                    # shared analyzed keycount is w.r.t. getting the right index when the index is self.cvpartitions-many of this sequence: shared_analyzedA, shared_analyzedAKeycount, shared_rawA, shared_rawAKEYS
-                    shared_analyzedKeycountIndex = frameblock(1,shareddict_instance,1,self.cvpartitions)[0] #reminder that frameblock is a continuous BLOCK and shared_pool_meta_listVAR is alternating: 0 1 2 3, 0 1 2 3, etc... which is why bufferlen is 1
-                    # fprint("valtesting", self.index, shareddict_instance,shared_analyzedKeycountIndex, len(self.shared_pool_meta_listVAR))
-                    shared_analyzedIndex = frameblock(0,shareddict_instance,1,self.cvpartitions)[0]
-                    # fprint("valtesting2", self.index, self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values())
-
-                    if self.index in self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values():
-                        fprint("valtesting3", self.index, list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values()))
-                        correctkey = list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].keys())[list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values()).index(self.index)]
-                        frameref = "frame" + correctkey.replace("key",'')
-                        frame = self.shared_pool_meta_listVAR[shared_analyzedIndex][frameref]
-                    #THIS WORKED
-                    
+                        # for partitionint in range(self.cvpartitions):
+                        #     #note TO FUTURE SELF, THIS LOOKS WRONG, it's it frameblock(partitionint,0,1,self.cvpartitions???) > it's correct, it's a group of 4 and u want the guy in the 1st index (shared_analyzedKeycountIndex)
+                        #     shared_analyzedKeycountIndex = frameblock(1,partitionint,1,self.cvpartitions)[0]
+                        #     fprint("err here, check numbers","instance",partitionint, "index:", shared_analyzedKeycountIndex,"metalist len", len(self.shared_pool_meta_listVAR))
+                        #     fprint("correct index for analyzedkeycount?", self.index, self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values())
+                        #     shared_analyzedIndex = frameblock(0,partitionint,1,self.cvpartitions)[0]
+                        #     if self.index in self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values():
+                        #         correctkey = list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].keys())[list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values()).index(self.index)]
+                        #         frameref = "frame" + correctkey.replace("key",'')
+                        #         frame = self.shared_pool_meta_listVAR[shared_analyzedIndex][frameref]
+                        #         break
+                        #this doesn't have to be a for loop since u know what index it should be in...
+                        #reminder, int to partition is w.r.t. the index and the shared dicts
                         
+                        #THIS WORKED
+                        shareddict_instance = int_to_partition(self.index,self.bufferlen,self.cvpartitions) 
+                        # shared analyzed keycount is w.r.t. getting the right index when the index is self.cvpartitions-many of this sequence: shared_analyzedA, shared_analyzedAKeycount, shared_rawA, shared_rawAKEYS
+                        shared_analyzedKeycountIndex = frameblock(1,shareddict_instance,1,self.cvpartitions)[0] #reminder that frameblock is a continuous BLOCK and shared_pool_meta_listVAR is alternating: 0 1 2 3, 0 1 2 3, etc... which is why bufferlen is 1
+                        # fprint("valtesting", self.index, shareddict_instance,shared_analyzedKeycountIndex, len(self.shared_pool_meta_listVAR))
+                        shared_analyzedIndex = frameblock(0,shareddict_instance,1,self.cvpartitions)[0]
+                        # fprint("valtesting2", self.index, self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values())
 
-                    # if self.index in self.shared_analyzedAKeycountVAR.values():
-                    #     correctkey = list(self.shared_analyzedAKeycountVAR.keys())[list(self.shared_analyzedAKeycountVAR.values()).index(self.index)]
-                    #     frameref = "frame" + correctkey.replace("key",'')
-                    #     frame = self.shared_analyzedAVAR[frameref]
+                        if self.index in self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values():
+                            fprint("valtesting3", self.index, list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values()))
+                            correctkey = list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].keys())[list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values()).index(self.index)]
+                            frameref = "frame" + correctkey.replace("key",'')
+                            frame = self.shared_pool_meta_listVAR[shared_analyzedIndex][frameref]
+                        #THIS WORKED
+                        
+                            
 
-                    # if self.index in self.shared_analyzedAKeycountVAR.values():
-                    #     correctkey = list(self.shared_analyzedAKeycountVAR.keys())[list(self.shared_analyzedAKeycountVAR.values()).index(self.index)]
-                    #     frameref = "frame" + correctkey.replace("key",'')
-                    #     frame = self.shared_analyzedAVAR[frameref]
-                    
-                    # # fprint("index in values?B",  self.index, self.shared_analyzedBKeycountVAR.values(), self.index in self.shared_analyzedBKeycountVAR.values())
-                    # if self.index in self.shared_analyzedBKeycountVAR.values():
-                    #     correctkey = list(self.shared_analyzedBKeycountVAR.keys())[list(self.shared_analyzedBKeycountVAR.values()).index(self.index)]
-                    #     frameref = "frame" + correctkey.replace("key",'')
-                    #     timeax = time.time()
-                    #     frame = self.shared_analyzedBVAR[frameref]
-                    #     framesizeguy = frame
-                    #     fprint("how long to load a frame from shared mem?", time.time()-timeax, "size?", sys.getsizeof(framesizeguy))
+                        # if self.index in self.shared_analyzedAKeycountVAR.values():
+                        #     correctkey = list(self.shared_analyzedAKeycountVAR.keys())[list(self.shared_analyzedAKeycountVAR.values()).index(self.index)]
+                        #     frameref = "frame" + correctkey.replace("key",'')
+                        #     frame = self.shared_analyzedAVAR[frameref]
 
-                    # # fprint("index in values?C",  self.index, self.shared_analyzedCKeycountVAR.values(), self.index in self.shared_analyzedCKeycountVAR.values())
-                    # if self.index in self.shared_analyzedCKeycountVAR.values():
-                    #     correctkey = list(self.shared_analyzedCKeycountVAR.keys())[list(self.shared_analyzedCKeycountVAR.values()).index(self.index)]
-                    #     frameref = "frame" + correctkey.replace("key",'')
-                    #     frame = self.shared_analyzedCVAR[frameref]
+                        # if self.index in self.shared_analyzedAKeycountVAR.values():
+                        #     correctkey = list(self.shared_analyzedAKeycountVAR.keys())[list(self.shared_analyzedAKeycountVAR.values()).index(self.index)]
+                        #     frameref = "frame" + correctkey.replace("key",'')
+                        #     frame = self.shared_analyzedAVAR[frameref]
+                        
+                        # # fprint("index in values?B",  self.index, self.shared_analyzedBKeycountVAR.values(), self.index in self.shared_analyzedBKeycountVAR.values())
+                        # if self.index in self.shared_analyzedBKeycountVAR.values():
+                        #     correctkey = list(self.shared_analyzedBKeycountVAR.keys())[list(self.shared_analyzedBKeycountVAR.values()).index(self.index)]
+                        #     frameref = "frame" + correctkey.replace("key",'')
+                        #     timeax = time.time()
+                        #     frame = self.shared_analyzedBVAR[frameref]
+                        #     framesizeguy = frame
+                        #     fprint("how long to load a frame from shared mem?", time.time()-timeax, "size?", sys.getsizeof(framesizeguy))
 
-                    # if self.index in self.shared_analyzedDKeycountVAR.values():
-                    #     correctkey = list(self.shared_analyzedDKeycountVAR.keys())[list(self.shared_analyzedDKeycountVAR.values()).index(self.index)]
-                    #     frameref = "frame" + correctkey.replace("key",'')
-                    #     frame = self.shared_analyzedDVAR[frameref]
+                        # # fprint("index in values?C",  self.index, self.shared_analyzedCKeycountVAR.values(), self.index in self.shared_analyzedCKeycountVAR.values())
+                        # if self.index in self.shared_analyzedCKeycountVAR.values():
+                        #     correctkey = list(self.shared_analyzedCKeycountVAR.keys())[list(self.shared_analyzedCKeycountVAR.values()).index(self.index)]
+                        #     frameref = "frame" + correctkey.replace("key",'')
+                        #     frame = self.shared_analyzedCVAR[frameref]
+
+                        # if self.index in self.shared_analyzedDKeycountVAR.values():
+                        #     correctkey = list(self.shared_analyzedDKeycountVAR.keys())[list(self.shared_analyzedDKeycountVAR.values()).index(self.index)]
+                        #     frameref = "frame" + correctkey.replace("key",'')
+                        #     frame = self.shared_analyzedDVAR[frameref]
 
 
-                    # https://stackoverflow.com/questions/43748991/how-to-check-if-a-variable-is-either-a-python-list-numpy-array-or-pandas-series
-                    try:
+                        # https://stackoverflow.com/questions/43748991/how-to-check-if-a-variable-is-either-a-python-list-numpy-array-or-pandas-series
+                        
                         if frame != None:
                             frame = blosc2.decompress(frame)
                             # frame = np.frombuffer(frame, np.uint8).copy().reshape(1080, 1920, 3)
@@ -277,15 +277,15 @@ FCVA_screen_manager: #remember to return a root widget
                         else:
                             if self.index != 0:
                                 fprint("missed frame#", self.index)
-                    except Exception as e: 
-                        print("blitting died!", e, flush=True)
-                        import traceback
-                        print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
-                self.newt = time.time()
-                if hasattr(self, 'newt'):
-                    if self.newt - timeog > 0 and (1/(self.newt- timeog)) < 200:
-                        # print("blit fps?", 1/(self.newt- timeog))
-                        pass
+                    self.newt = time.time()
+                    if hasattr(self, 'newt'):
+                        if self.newt - timeog > 0 and (1/(self.newt- timeog)) < 200:
+                            # print("blit fps?", 1/(self.newt- timeog))
+                            pass
+                except Exception as e: 
+                    print("blitting died!", e, flush=True)
+                    import traceback
+                    print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
             
             def toggleCV(self, *args):
                 # fprint("what are args, do I have widget?, nope, do the search strat", args)
