@@ -478,7 +478,7 @@ def open_cvpipeline(*args):
         else:
             tasklocation = 'examples\creativecommonsmedia\pose_landmarker_full.task'
             # tasklocation = 'examples\creativecommonsmedia\pose_landmarker_lite.task'
-        fprint("tasklocation?", tasklocation) 
+        fprint("tasklocation?", tasklocation)
 
         with open(tasklocation, 'rb') as f:
             modelbytes = f.read()
