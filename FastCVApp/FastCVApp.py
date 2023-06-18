@@ -8,6 +8,13 @@ from FCVAutils import fprint
 #https://github.com/pyinstaller/pyinstaller/issues/7470#issuecomment-1448502333
 #I immediately call multiprocessing.freeze_support() in example_mediapipe but it's not good for abstraction, think about it
 import blosc2
+
+# class FCVA_widget_manager(*args):
+#     #what does this do?
+#     #this lets you instantiate FCVA and the associated subprocesses as a drop in widget without having to follow this convention.
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+
             
 
 def open_kivy(*args):
@@ -34,6 +41,12 @@ def open_kivy(*args):
                     for x in shared_metadata_dict.keys()
                     if x == "kvstring"
                 ]
+
+                from kivy.uix.boxlayout import BoxLayout
+
+                class FCVAWidget(BoxLayout):
+                    pass
+
                 if len(kvstring_check) != 0:
                     self.KV_string = kvstring_check[0]
                 else:
@@ -49,30 +62,33 @@ def open_kivy(*args):
 
 <StartScreen>:
     id: start_screen_id
+    FCVAWidget:
+        id: FCVAWidget_id
+
+<FCVAWidget>:
+    orientation: 'vertical'
+    id: mainBoxLayoutID
+    Image:
+        id: image_textureID
+    Slider:
+        id: vidsliderID
+        min: 0
+        max: {self.framelength} #should be 30*total_seconds
+        step: 1
+        value_track: True
+        value_track_color: 1, 0, 0, 1
+        size_hint: (1, 0.1)
+        orientation: 'horizontal'
     BoxLayout:
-        orientation: 'vertical'
-        id: mainBoxLayoutID
-        Image:
-            id: image_textureID
-        Slider:
-            id: vidsliderID
-            min: 0
-            max: {self.framelength} #should be 30*total_seconds
-            step: 1
-            value_track: True
-            value_track_color: 1, 0, 0, 1
-            size_hint: (1, 0.1)
-            orientation: 'horizontal'
-        BoxLayout:
-            id: subBoxLayoutID1
-            orientation: 'horizontal'
-            size_hint: (1, 0.1)
-            Button:
-                id: StartScreenButtonID
-                text: "Play"
-                on_release: kivy.app.App.get_running_app().toggleCV()
-            Label:
-                text: str(vidsliderID.value) #convert slider label to a time
+        id: subBoxLayoutID1
+        orientation: 'horizontal'
+        size_hint: (1, 0.1)
+        Button:
+            id: StartScreenButtonID
+            text: "Play"
+            on_release: kivy.app.App.get_running_app().toggleCV()
+        Label:
+            text: str(vidsliderID.value) #convert slider label to a time
 
 FCVA_screen_manager: #remember to return a root widget
 """
@@ -272,7 +288,7 @@ FCVA_screen_manager: #remember to return a root widget
                                 self.texture1.blit_buffer(
                                     buf, colorfmt=self.colorfmtval, bufferfmt="ubyte"
                                 )
-                                App.get_running_app().root.get_screen("start_screen_name").ids[
+                                App.get_running_app().root.get_screen("start_screen_name").ids['FCVAWidget_id'].ids[
                                     "image_textureID"
                                 ].texture = self.texture1
                         else:
@@ -291,11 +307,11 @@ FCVA_screen_manager: #remember to return a root widget
             
             def toggleCV(self, *args):
                 # fprint("what are args, do I have widget?, nope, do the search strat", args)
-                # fprint("id searching", )
-                widgettext = App.get_running_app().root.get_screen('start_screen_name').ids['StartScreenButtonID'].text
+                # fprint("id searching", App.get_running_app().root.get_screen('start_screen_name').ids['FCVAWidget_id'].ids)
+                widgettext = App.get_running_app().root.get_screen('start_screen_name').ids['FCVAWidget_id'].ids['StartScreenButtonID'].text
                 fprint("widgettext is?", widgettext)
                 if "Play" in widgettext:
-                    App.get_running_app().root.get_screen('start_screen_name').ids['StartScreenButtonID'].text = "Pause"
+                    App.get_running_app().root.get_screen('start_screen_name').ids['FCVAWidget_id'].ids['StartScreenButtonID'].text = "Pause"
                     
                     #check if you have been paused already:
                     if "pausedtime" in self.shared_globalindex_dictVAR.keys() and isinstance(self.shared_globalindex_dictVAR["pausedtime"], float):
@@ -307,7 +323,7 @@ FCVA_screen_manager: #remember to return a root widget
                         self.shared_globalindex_dictVAR["starttime"] = self.shared_globalindex_dictVAR["starttime"] + (time.time() - self.shared_globalindex_dictVAR["pausedtime"])
                         self.shared_globalindex_dictVAR["pausedtime"] = False
                 else:
-                    App.get_running_app().root.get_screen('start_screen_name').ids['StartScreenButtonID'].text = "Play"
+                    App.get_running_app().root.get_screen('start_screen_name').ids['FCVAWidget_id'].ids['StartScreenButtonID'].text = "Play"
                     
                     self.shared_globalindex_dictVAR["pausedtime"] = time.time()
                     fprint("#pause all subprocesses (hope it's fast enough):")
