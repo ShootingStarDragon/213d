@@ -132,7 +132,7 @@ FCVA_screen_manager: #remember to return a root widget
                     #where partition is x in range(self.cvpartitions), instance is 0, bufferlen is 1, maxpartitions is given by self.cvpartitions
 
                     # for partitionint in range(self.cvpartitions):
-                    #     #NOTE TO FUTURE SELF, THIS LOOKS WRONG, it's it frameblock(partitionint,0,1,self.cvpartitions???) > it's correct, it's a group of 4 and u want the guy in the 1st index (shared_analyzedKeycountIndex)
+                    #     #note TO FUTURE SELF, THIS LOOKS WRONG, it's it frameblock(partitionint,0,1,self.cvpartitions???) > it's correct, it's a group of 4 and u want the guy in the 1st index (shared_analyzedKeycountIndex)
                     #     shared_analyzedKeycountIndex = frameblock(1,partitionint,1,self.cvpartitions)[0]
                     #     fprint("err here, check numbers","instance",partitionint, "index:", shared_analyzedKeycountIndex,"metalist len", len(self.shared_pool_meta_listVAR))
                     #     fprint("correct index for analyzedkeycount?", self.index, self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values())
@@ -145,18 +145,19 @@ FCVA_screen_manager: #remember to return a root widget
                     #this doesn't have to be a for loop since u know what index it should be in...
                     #reminder, int to partition is w.r.t. the index and the shared dicts
                     
-                    '''
-                    shareddict_instance = int_to_partition(self.index,self.bufferlen,self.cvpartitions) 
-                    # shared analyzed keycount is w.r.t. getting the right index when the index is self.cvpartitions-many of this sequence: shared_analyzedA, shared_analyzedAKeycount, shared_rawA, shared_rawAKEYS
-                    shared_analyzedKeycountIndex = frameblock(1,shareddict_instance,1,self.cvpartitions)[0] #reminder that frameblock is a continuous BLOCK and shared_pool_meta_listVAR is alternating: 0 1 2 3, 0 1 2 3, etc... which is why bufferlen is 1
-                    fprint("valtesting", self.index, shareddict_instance,shared_analyzedKeycountIndex, len(self.shared_pool_meta_listVAR))
-                    shared_analyzedIndex = frameblock(0,shareddict_instance,1,self.cvpartitions)[0]
+                    #THIS WORKED
+                    # shareddict_instance = int_to_partition(self.index,self.bufferlen,self.cvpartitions) 
+                    # # shared analyzed keycount is w.r.t. getting the right index when the index is self.cvpartitions-many of this sequence: shared_analyzedA, shared_analyzedAKeycount, shared_rawA, shared_rawAKEYS
+                    # shared_analyzedKeycountIndex = frameblock(1,shareddict_instance,1,self.cvpartitions)[0] #reminder that frameblock is a continuous BLOCK and shared_pool_meta_listVAR is alternating: 0 1 2 3, 0 1 2 3, etc... which is why bufferlen is 1
+                    # fprint("valtesting", self.index, shareddict_instance,shared_analyzedKeycountIndex, len(self.shared_pool_meta_listVAR))
+                    # shared_analyzedIndex = frameblock(0,shareddict_instance,1,self.cvpartitions)[0]
 
-                    if self.index in self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values():
-                        correctkey = list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].keys())[list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values()).index(self.index)]
-                        frameref = "frame" + correctkey.replace("key",'')
-                        frame = self.shared_pool_meta_listVAR[shared_analyzedIndex][frameref]
-                    '''
+                    # if self.index in self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values():
+                    #     correctkey = list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].keys())[list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values()).index(self.index)]
+                    #     frameref = "frame" + correctkey.replace("key",'')
+                    #     frame = self.shared_pool_meta_listVAR[shared_analyzedIndex][frameref]
+                    #THIS WORKED
+                    
                         
 
                     if self.index in self.shared_analyzedAKeycountVAR.values():
@@ -328,42 +329,42 @@ FCVA_screen_manager: #remember to return a root widget
         class StartScreen(Screen):
             pass
 
-        # MainApp.shared_analysis_dictVAR = args[0]
-        # MainApp.shared_metadata_dictVAR = args[1]
-        # MainApp.fps = args[2]
-        # MainApp.shared_globalindex_dictVAR = args[3]
-        # MainApp.shared_analyzedAVAR = args[4]
-        # MainApp.shared_analyzedBVAR = args[5]
-        # MainApp.shared_analyzedCVAR = args[6]
-        # MainApp.shared_analyzedAKeycountVAR = args[7]
-        # MainApp.shared_analyzedBKeycountVAR = args[8]
-        # MainApp.shared_analyzedCKeycountVAR = args[9]
-        # MainApp.spf = args[10]
-        # MainApp.bufferlen = args[11]
-        # MainApp.cvpartitions = args[12]
-        # MainApp.framelength = args[13]
-        # MainApp.shared_analyzedDVAR = args[14]
-        # MainApp.shared_analyzedDKeycountVAR = args[15]
-
-        # MainApp.shared_analyzedAVAR = args[4]
-        # MainApp.shared_analyzedBVAR = args[5]
-        # MainApp.shared_analyzedCVAR = args[6]
-        # MainApp.shared_analyzedAKeycountVAR = args[7]
-        # MainApp.shared_analyzedBKeycountVAR = args[8]
-        # MainApp.shared_analyzedCKeycountVAR = args[9]
-        # MainApp.shared_analyzedDVAR = args[14]
-        # MainApp.shared_analyzedDKeycountVAR = args[15]
-
         MainApp.shared_analysis_dictVAR = args[0]
         MainApp.shared_metadata_dictVAR = args[1]
         MainApp.fps = args[2]
         MainApp.shared_globalindex_dictVAR = args[3]
-        MainApp.spf = args[4]
-        MainApp.bufferlen = args[5]
-        MainApp.cvpartitions = args[6]
-        MainApp.framelength = args[7]
-        MainApp.shared_pool_meta_listVAR = args[8]
-        MainApp.dicts_per_subprocessVAR = args[9]
+        MainApp.shared_analyzedAVAR = args[4]
+        MainApp.shared_analyzedBVAR = args[5]
+        MainApp.shared_analyzedCVAR = args[6]
+        MainApp.shared_analyzedAKeycountVAR = args[7]
+        MainApp.shared_analyzedBKeycountVAR = args[8]
+        MainApp.shared_analyzedCKeycountVAR = args[9]
+        MainApp.spf = args[10]
+        MainApp.bufferlen = args[11]
+        MainApp.cvpartitions = args[12]
+        MainApp.framelength = args[13]
+        MainApp.shared_analyzedDVAR = args[14]
+        MainApp.shared_analyzedDKeycountVAR = args[15]
+
+        # MainApp.shared_analyzedAVAR = args[4]
+        # MainApp.shared_analyzedBVAR = args[5]
+        # MainApp.shared_analyzedCVAR = args[6]
+        # MainApp.shared_analyzedAKeycountVAR = args[7]
+        # MainApp.shared_analyzedBKeycountVAR = args[8]
+        # MainApp.shared_analyzedCKeycountVAR = args[9]
+        # MainApp.shared_analyzedDVAR = args[14]
+        # MainApp.shared_analyzedDKeycountVAR = args[15]
+
+        # MainApp.shared_analysis_dictVAR = args[0]
+        # MainApp.shared_metadata_dictVAR = args[1]
+        # MainApp.fps = args[2]
+        # MainApp.shared_globalindex_dictVAR = args[3]
+        # MainApp.spf = args[4]
+        # MainApp.bufferlen = args[5]
+        # MainApp.cvpartitions = args[6]
+        # MainApp.framelength = args[7]
+        # MainApp.shared_pool_meta_listVAR = args[8]
+        # MainApp.dicts_per_subprocessVAR = args[9]
         
         
         MainApp().run()
