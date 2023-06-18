@@ -428,7 +428,8 @@ def open_cvpipeline(*args):
             # tasklocation = os.path.join(os.sep, os.getcwd().split(os.path.sep)[0] + os.sep, *os.getcwd().split(os.path.sep), "creativecommonsmedia", "pose_landmarker_full.task")
             tasklocation = os.path.join(os.sep, os.getcwd().split(os.path.sep)[0] + os.sep, *os.getcwd().split(os.path.sep), "creativecommonsmedia", "pose_landmarker_lite.task")
         else:
-            tasklocation = 'examples\creativecommonsmedia\pose_landmarker_full.task'
+            # tasklocation = 'examples\creativecommonsmedia\pose_landmarker_full.task'
+            tasklocation = 'examples\creativecommonsmedia\pose_landmarker_lite.task'
         fprint("tasklocation?", tasklocation) 
 
         with open(tasklocation, 'rb') as f:
@@ -680,7 +681,13 @@ class FCVA:
                 # nested shared object
                 # https://stackoverflow.com/questions/68604215/how-do-you-create-nested-shared-objects-in-multi-processing-in-python
 
-                shared_pool_meta_list = shared_mem_manager.list()
+                # shared_pool_meta_list = shared_mem_manager.list()
+                # shared_pool_meta_list = [] 
+                # the metalist (both shared and not shared) work but are slow: this is most likely because the nested shared dict defeats the purpose of using split shared dicts in that updates happen once instead of multiply at the same time
+                # new approach: I'm not smart enough to do this w/o using exec, but generate code on the fly and exec it...
+                # reference: https://stackoverflow.com/questions/70862189/how-to-create-variable-names-dynamically-and-assigning-values-in-python
+                # reference: https://stackoverflow.com/questions/22558548/eval-syntaxerror-invalid-syntax-in-python
+
                 analyze_pool_count = 4
                 dicts_per_subprocess = 4
                 for x in range(analyze_pool_count):
