@@ -729,8 +729,8 @@ class FCVA:
                 # # reference: https://stackoverflow.com/questions/70862189/how-to-create-variable-names-dynamically-and-assigning-values-in-python
                 # # reference: https://stackoverflow.com/questions/22558548/eval-syntaxerror-invalid-syntax-in-python
 
-                shared_pool_meta_list = shared_mem_manager.list()
-                # shared_pool_meta_list = [] 
+                # shared_pool_meta_list = shared_mem_manager.list()
+                shared_pool_meta_list = [] #IMO this is faster, i think since it doesn't have to propagate changes down the nested dict structure
                 analyze_pool_count = 4
                 for x in range(analyze_pool_count):
                     #init analyzed/keycount dicts
