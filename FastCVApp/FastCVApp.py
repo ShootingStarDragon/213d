@@ -149,10 +149,11 @@ FCVA_screen_manager: #remember to return a root widget
                         #THIS WORKED
                         shareddict_instance = int_to_partition(self.index,self.bufferlen,self.cvpartitions) 
                         # shared analyzed keycount is w.r.t. getting the right index when the index is self.cvpartitions-many of this sequence: shared_analyzedA, shared_analyzedAKeycount, shared_rawA, shared_rawAKEYS
-                        shared_analyzedKeycountIndex = frameblock(1,shareddict_instance,1,self.cvpartitions)[0] #reminder that frameblock is a continuous BLOCK and shared_pool_meta_listVAR is alternating: 0 1 2 3, 0 1 2 3, etc... which is why bufferlen is 1
-                        # fprint("valtesting", self.index, shareddict_instance,shared_analyzedKeycountIndex, len(self.shared_pool_meta_listVAR))
-                        shared_analyzedIndex = frameblock(0,shareddict_instance,1,self.cvpartitions)[0]
+                        shared_analyzedKeycountIndex = frameblock(1,shareddict_instance,1,self.dicts_per_subprocessVAR)[0] #reminder that frameblock is a continuous BLOCK and shared_pool_meta_listVAR is alternating: 0 1 2 3, 0 1 2 3, etc... which is why bufferlen is 1
+                        shared_analyzedIndex = frameblock(0,shareddict_instance,1,self.dicts_per_subprocessVAR)[0]
+                        fprint("valtesting", self.index, shareddict_instance,shared_analyzedKeycountIndex, len(self.shared_pool_meta_listVAR), shared_analyzedIndex)
                         # fprint("valtesting2", self.index, self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values())
+                        # fprint("valtesting2", self.index, shared_analyzedKeycountIndex)
 
                         if self.index in self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values():
                             fprint("valtesting3", self.index, list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values()))
@@ -276,6 +277,7 @@ FCVA_screen_manager: #remember to return a root widget
                                 ].texture = self.texture1
                         else:
                             if self.index != 0:
+                                # fprint("missed frame#", self.index, self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values())
                                 fprint("missed frame#", self.index)
                     self.newt = time.time()
                     if hasattr(self, 'newt'):
@@ -535,6 +537,7 @@ def open_cvpipeline(*args):
                         for x in range(bufferlen):
                             shared_analyzedVAR['frame'+str(x)] = analyzed_queue.popleft()
                             shared_analyzedKeycountVAR['key'+str(x)] = analyzed_queueKEYS.popleft()
+                        fprint("updated shareddict", shared_analyzedKeycountVAR.values())
                     newwriteend = time.time()
                     
                     afteranalyzetimestart = time.time()
@@ -718,7 +721,7 @@ class FCVA:
                 video.release()
 
                 bufferlen = 10
-                cvpartitions = 4
+                cvpartitions = 3
                 #init shared dicts:
 
                 #nested shared obj works:
@@ -734,8 +737,7 @@ class FCVA:
 
                 # shared_pool_meta_list = shared_mem_manager.list()
                 shared_pool_meta_list = [] #IMO this is faster, i think since it doesn't have to propagate changes down the nested dict structure
-                analyze_pool_count = 4
-                for x in range(analyze_pool_count):
+                for x in range(cvpartitions):
                     #init analyzed/keycount dicts
                     shared_analyzedA = shared_mem_manager.dict()
                     shared_analyzedAKeycount = shared_mem_manager.dict()
