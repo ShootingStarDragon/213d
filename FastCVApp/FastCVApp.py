@@ -17,382 +17,7 @@ import blosc2
 
             
 
-def open_kivy(*args):
-    try:
-        # infinite recursion bug when packaging with pyinstaller with no console: https://github.com/kivy/kivy/issues/8074#issuecomment-1364595283
-        os.environ["KIVY_NO_CONSOLELOG"] = "1" #logging errs on laptop for some reason
-        # if sys.__stdout__ is None or sys.__stderr__ is None:
-        #     os.environ["KIVY_NO_CONSOLELOG"] = "1"
-        from kivy.app import App
-        from kivy.lang import Builder
-        from kivy.uix.screenmanager import ScreenManager, Screen
-        from kivy.graphics.texture import Texture
-        from kivy.clock import Clock
-        from kivy.modules import inspector
-        from kivy.core.window import Window
-        from kivy.uix.button import Button
 
-        class MainApp(App):
-            def __init__(self, *args, **kwargs):
-                super().__init__(*args, **kwargs)
-                shared_metadata_dict = self.shared_metadata_dictVAR
-                kvstring_check = [
-                    shared_metadata_dict[x]
-                    for x in shared_metadata_dict.keys()
-                    if x == "kvstring"
-                ]
-
-                from kivy.uix.boxlayout import BoxLayout
-
-                class FCVAWidget(BoxLayout):
-                    pass
-
-                if len(kvstring_check) != 0:
-                    self.KV_string = kvstring_check[0]
-                else:
-                    # remember that the KV string IS THE ACTUAL FILE AND MUST BE INDENTED PROPERLY TO THE LEFT!
-                    self.KV_string = f"""
-#:import kivy.app kivy.app
-<FCVA_screen_manager>:
-    id: FCVA_screen_managerID
-    StartScreen:
-        id: start_screen_id
-        name: 'start_screen_name'
-        manager: 'FCVA_screen_managerID'
-
-<StartScreen>:
-    id: start_screen_id
-    FCVAWidget:
-        id: FCVAWidget_id
-
-<FCVAWidget>:
-    orientation: 'vertical'
-    id: mainBoxLayoutID
-    Image:
-        id: image_textureID
-    Slider:
-        id: vidsliderID
-        min: 0
-        max: {self.framelength} #should be 30*total_seconds
-        step: 1
-        value_track: True
-        value_track_color: 1, 0, 0, 1
-        size_hint: (1, 0.1)
-        orientation: 'horizontal'
-    BoxLayout:
-        id: subBoxLayoutID1
-        orientation: 'horizontal'
-        size_hint: (1, 0.1)
-        Button:
-            id: StartScreenButtonID
-            text: "Play"
-            on_release: kivy.app.App.get_running_app().toggleCV()
-        Label:
-            text: str(vidsliderID.value) #convert slider label to a time
-
-FCVA_screen_manager: #remember to return a root widget
-"""
-            def build(self):
-                self.title = self.shared_metadata_dictVAR["title"]
-                build_app_from_kv = Builder.load_string(self.KV_string)
-                button = Button(text="Test")
-                inspector.create_inspector(Window, button)
-                return build_app_from_kv
-
-            def on_start(self):
-                # start blitting. 1/30 always works because it will always blit the latest image from open_appliedcv subprocess, but kivy itself will be at 30 fps
-                self.index = 0
-                print("fps wtf", self.fps)
-                from queue import Queue
-                self.frameQ = Queue(maxsize=self.bufferlen*self.cvpartitions)
-                self.internal_framecount = 0
-                Clock.schedule_interval(self.blit_from_shared_memory, (1/self.fps))
-                self.starttime = None
-
-            def on_request_close(self, *args):
-                Clock.unschedule(self.blit_from_shared_memory)
-                print("#kivy subprocess closed END!", flush=True)
-
-            def run(self):
-                """Launches the app in standalone mode.
-                reference:
-                how to run kivy as a subprocess (so the main code can run neural networks like mediapipe without any delay)
-                https://stackoverflow.com/questions/31458331/running-multiple-kivy-apps-at-same-time-that-communicate-with-each-other
-                """
-                self._run_prepare()
-                from kivy.base import runTouchApp
-                runTouchApp()
-                self.shared_metadata_dictVAR["kivy_run_state"] = False
-
-            def populate_texture(self, texture, buffervar):
-                texture.blit_buffer(buffervar)
-            
-            def blit_from_shared_memory(self, *args):
-                try:
-                    timeog = time.time()
-                    if "toggleCV" in self.shared_metadata_dictVAR and self.shared_globalindex_dictVAR["starttime"] != None:
-                        self.index = int((time.time() - self.starttime)/self.spf)
-                        if self.index < 0:
-                            self.index = 0
-                        #this is helpful but is very good at locking up the shared dicts...
-                        # fprint("is cv subprocess keeping up?", self.index, self.shared_analyzedAKeycountVAR.values(),self.shared_analyzedBKeycountVAR.values(),self.shared_analyzedCKeycountVAR.values(),self.shared_analyzedDKeycountVAR.values())
-                        #know the current framenumber
-                        #get the right shareddict https://www.geeksforgeeks.org/python-get-key-from-value-in-dictionary/#
-                        # https://stackoverflow.com/questions/8023306/get-key-by-value-in-dictionary
-                        # fprint("index in values?A",  self.index, self.shared_analyzedAKeycountVAR.values(), self.index in self.shared_analyzedAKeycountVAR.values())
-                        frame = None
-                        #hint: u know self.dicts_per_subprocessVAR and self.cvpartitions
-                        #this is the nested shared list (containing shared dicts): shared_pool_meta_listVAR
-                        #so keycounts are always: 
-                        #frameblock(*args):
-                        #given partition #, instance, bufferlen, maxpartitions tells u the frames to get:
-                        #where partition is x in range(self.cvpartitions), instance is 0, bufferlen is 1, maxpartitions is given by self.cvpartitions
-
-                        # for partitionint in range(self.cvpartitions):
-                        #     #note TO FUTURE SELF, THIS LOOKS WRONG, it's it frameblock(partitionint,0,1,self.cvpartitions???) > it's correct, it's a group of 4 and u want the guy in the 1st index (shared_analyzedKeycountIndex)
-                        #     shared_analyzedKeycountIndex = frameblock(1,partitionint,1,self.cvpartitions)[0]
-                        #     fprint("err here, check numbers","instance",partitionint, "index:", shared_analyzedKeycountIndex,"metalist len", len(self.shared_pool_meta_listVAR))
-                        #     fprint("correct index for analyzedkeycount?", self.index, self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values())
-                        #     shared_analyzedIndex = frameblock(0,partitionint,1,self.cvpartitions)[0]
-                        #     if self.index in self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values():
-                        #         correctkey = list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].keys())[list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values()).index(self.index)]
-                        #         frameref = "frame" + correctkey.replace("key",'')
-                        #         frame = self.shared_pool_meta_listVAR[shared_analyzedIndex][frameref]
-                        #         break
-                        #this doesn't have to be a for loop since u know what index it should be in...
-                        #reminder, int to partition is w.r.t. the index and the shared dicts
-                        
-                        #THIS WORKED
-                        shareddict_instance = int_to_partition(self.index,self.bufferlen,self.cvpartitions) 
-                        # shared analyzed keycount is w.r.t. getting the right index when the index is self.cvpartitions-many of this sequence: shared_analyzedA, shared_analyzedAKeycount, shared_rawA, shared_rawAKEYS
-                        shared_analyzedKeycountIndex = frameblock(1,shareddict_instance,1,self.dicts_per_subprocessVAR)[0] #reminder that frameblock is a continuous BLOCK and shared_pool_meta_listVAR is alternating: 0 1 2 3, 0 1 2 3, etc... which is why bufferlen is 1
-                        shared_analyzedIndex = frameblock(0,shareddict_instance,1,self.dicts_per_subprocessVAR)[0]
-                        fprint("valtesting", self.index, shareddict_instance,shared_analyzedKeycountIndex, len(self.shared_pool_meta_listVAR), shared_analyzedIndex)
-                        # fprint("valtesting2", self.index, self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values())
-                        # fprint("valtesting2", self.index, shared_analyzedKeycountIndex)
-
-                        if self.index in self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values():
-                            fprint("valtesting3", self.index, list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values()))
-                            correctkey = list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].keys())[list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values()).index(self.index)]
-                            frameref = "frame" + correctkey.replace("key",'')
-                            frame = self.shared_pool_meta_listVAR[shared_analyzedIndex][frameref]
-                        #THIS WORKED
-                        
-                            
-
-                        # if self.index in self.shared_analyzedAKeycountVAR.values():
-                        #     correctkey = list(self.shared_analyzedAKeycountVAR.keys())[list(self.shared_analyzedAKeycountVAR.values()).index(self.index)]
-                        #     frameref = "frame" + correctkey.replace("key",'')
-                        #     frame = self.shared_analyzedAVAR[frameref]
-
-                        # if self.index in self.shared_analyzedAKeycountVAR.values():
-                        #     correctkey = list(self.shared_analyzedAKeycountVAR.keys())[list(self.shared_analyzedAKeycountVAR.values()).index(self.index)]
-                        #     frameref = "frame" + correctkey.replace("key",'')
-                        #     frame = self.shared_analyzedAVAR[frameref]
-                        
-                        # # fprint("index in values?B",  self.index, self.shared_analyzedBKeycountVAR.values(), self.index in self.shared_analyzedBKeycountVAR.values())
-                        # if self.index in self.shared_analyzedBKeycountVAR.values():
-                        #     correctkey = list(self.shared_analyzedBKeycountVAR.keys())[list(self.shared_analyzedBKeycountVAR.values()).index(self.index)]
-                        #     frameref = "frame" + correctkey.replace("key",'')
-                        #     timeax = time.time()
-                        #     frame = self.shared_analyzedBVAR[frameref]
-                        #     framesizeguy = frame
-                        #     fprint("how long to load a frame from shared mem?", time.time()-timeax, "size?", sys.getsizeof(framesizeguy))
-
-                        # # fprint("index in values?C",  self.index, self.shared_analyzedCKeycountVAR.values(), self.index in self.shared_analyzedCKeycountVAR.values())
-                        # if self.index in self.shared_analyzedCKeycountVAR.values():
-                        #     correctkey = list(self.shared_analyzedCKeycountVAR.keys())[list(self.shared_analyzedCKeycountVAR.values()).index(self.index)]
-                        #     frameref = "frame" + correctkey.replace("key",'')
-                        #     frame = self.shared_analyzedCVAR[frameref]
-
-                        # if self.index in self.shared_analyzedDKeycountVAR.values():
-                        #     correctkey = list(self.shared_analyzedDKeycountVAR.keys())[list(self.shared_analyzedDKeycountVAR.values()).index(self.index)]
-                        #     frameref = "frame" + correctkey.replace("key",'')
-                        #     frame = self.shared_analyzedDVAR[frameref]
-
-
-                        # https://stackoverflow.com/questions/43748991/how-to-check-if-a-variable-is-either-a-python-list-numpy-array-or-pandas-series
-                        
-                        if frame != None:
-                            frame = blosc2.decompress(frame)
-                            # frame = np.frombuffer(frame, np.uint8).copy().reshape(1080, 1920, 3)
-                            frame = np.frombuffer(frame, np.uint8).copy().reshape(720, 1280, 3)
-                            # frame = np.frombuffer(frame, np.uint8).copy().reshape(480, 640, 3)
-                            frame = cv2.flip(frame, 0)
-                            buf = frame.tobytes()
-                            if isinstance(frame,np.ndarray): #trying bytes
-                                #complicated way of safely checking if a value may or may not exist, then get that value:
-                                #quickly checked this, time is 0...
-                                existence_check = [
-                                    frame.shape[x] for x in range(0, len(frame.shape)) if x == 2
-                                ]
-                                # only valid dimensions are if pixels are 3 (RGB) or 4 (RGBA, but u have to also set the colorfmt)
-                                if [x for x in existence_check if x == 3 or x == 4] == []:
-                                    raise Exception(
-                                        "check your numpy dimensions! should be (height, width, 3 for RGB/ 4 for RGBA): like  (1920,1080,3): ",
-                                        frame.shape, frame
-                                    )
-                                
-                                # # check for existence of colorfmt in shared_metadata_dict, then if so, set colorfmt:
-                                # formatoption = [
-                                #     shared_metadata_dict[x]
-                                #     for x in shared_metadata_dict.keys()
-                                #     if x == "colorfmt"
-                                # ]
-                                # if len(formatoption) != 0:
-                                #     self.colorfmtval = formatoption[0]
-                                # else:
-                                #     # default to bgr
-                                #     self.colorfmtval = "bgr"
-
-                                self.colorfmtval = "bgr"
-
-                                # texture documentation: https://github.com/kivy/kivy/blob/master/kivy/graphics/texture.pyx
-                                # blit to texture
-                                # blit buffer example: https://stackoverflow.com/questions/61122285/kivy-camera-application-with-opencv-in-android-shows-black-screen
-
-                                # I think creating a new texture is lagging the app, opencv reads the file faster than the video ends
-                                # reference this, u need a reload observer: https://stackoverflow.com/questions/51546327/in-kivy-is-there-a-way-to-dynamically-change-the-shape-of-a-texture
-                                # for later, if I need to clear a texture this is the reference: https://stackoverflow.com/questions/55099463/how-to-update-a-texture-from-array-in-kivy
-
-                                # if hasattr(self, "texture1"):
-                                #     print("texture size?", self.texture1.size[0] != frame.shape[1] and self.texture1.size[1] != frame.shape[0])
-                                #     if (
-                                #         self.texture1.size[0] != frame.shape[1]
-                                #         and self.texture1.size[1] != frame.shape[0]
-                                #     ):
-                                #         print("texture size changed!", self.texture1.size)
-                                #         self.texture1 = Texture.create(
-                                #             size=(frame.shape[1], frame.shape[0]),
-                                #             colorfmt=self.colorfmtval,
-                                #         )
-                                #         self.texture1.add_reload_observer(self.populate_texture)
-                                #     else:
-                                #         print("populating ok texture", flush= True)
-                                #         self.populate_texture(self.texture1, buf)
-                                # else:
-                                #     print("notexture", flush= True)
-                                #     self.texture1 = Texture.create(
-                                #         size=(frame.shape[1], frame.shape[0]), colorfmt=self.colorfmtval
-                                #     )
-                                #     self.texture1.blit_buffer(
-                                #         buf, colorfmt=self.colorfmtval, bufferfmt="ubyte"
-                                #     )
-                                #     self.texture1.add_reload_observer(self.populate_texture)
-
-                                # print("blitting to texture index:", self.index)
-
-                                self.texture1 = Texture.create(
-                                    size=(frame.shape[1], frame.shape[0]), colorfmt=self.colorfmtval
-                                )
-                                self.texture1.blit_buffer(
-                                    buf, colorfmt=self.colorfmtval, bufferfmt="ubyte"
-                                )
-                                App.get_running_app().root.get_screen("start_screen_name").ids['FCVAWidget_id'].ids[
-                                    "image_textureID"
-                                ].texture = self.texture1
-                        else:
-                            if self.index != 0:
-                                # fprint("missed frame#", self.index, self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values())
-                                fprint("missed frame#", self.index)
-                    self.newt = time.time()
-                    if hasattr(self, 'newt'):
-                        if self.newt - timeog > 0 and (1/(self.newt- timeog)) < 200:
-                            # print("blit fps?", 1/(self.newt- timeog))
-                            pass
-                except Exception as e: 
-                    print("blitting died!", e, flush=True)
-                    import traceback
-                    print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
-            
-            def toggleCV(self, *args):
-                # fprint("what are args, do I have widget?, nope, do the search strat", args)
-                # fprint("id searching", App.get_running_app().root.get_screen('start_screen_name').ids['FCVAWidget_id'].ids)
-                widgettext = App.get_running_app().root.get_screen('start_screen_name').ids['FCVAWidget_id'].ids['StartScreenButtonID'].text
-                fprint("widgettext is?", widgettext)
-                if "Play" in widgettext:
-                    App.get_running_app().root.get_screen('start_screen_name').ids['FCVAWidget_id'].ids['StartScreenButtonID'].text = "Pause"
-                    
-                    #check if you have been paused already:
-                    if "pausedtime" in self.shared_globalindex_dictVAR.keys() and isinstance(self.shared_globalindex_dictVAR["pausedtime"], float):
-                        #start all subprocesses (hope it's fast enough):
-                        subprocess_list = [x for x in self.shared_globalindex_dictVAR.keys() if "subprocess" in x]
-                        for x in subprocess_list:
-                            self.shared_globalindex_dictVAR[x] = True
-                        #clear pausedtime and adjust starttime by elapsed time from last pause:
-                        self.shared_globalindex_dictVAR["starttime"] = self.shared_globalindex_dictVAR["starttime"] + (time.time() - self.shared_globalindex_dictVAR["pausedtime"])
-                        self.shared_globalindex_dictVAR["pausedtime"] = False
-                else:
-                    App.get_running_app().root.get_screen('start_screen_name').ids['FCVAWidget_id'].ids['StartScreenButtonID'].text = "Play"
-                    
-                    self.shared_globalindex_dictVAR["pausedtime"] = time.time()
-                    fprint("#pause all subprocesses (hope it's fast enough):")
-                    subprocess_list = [x for x in self.shared_globalindex_dictVAR.keys() if "subprocess" in x]
-                    for x in subprocess_list:
-                        self.shared_globalindex_dictVAR[x] = False
-                    
-                if "toggleCV" not in self.shared_metadata_dictVAR.keys():
-                    self.shared_metadata_dictVAR["toggleCV"] = True
-                    if self.starttime == None:
-                        #init starttime:
-                        # self.starttime = time.time() + 1
-                        # self.starttime = time.time() + 2
-                        self.starttime = time.time() + 3 #wait 3 seconds
-                        # self.starttime = time.time() + 8
-                        self.shared_globalindex_dictVAR["starttime"] = self.starttime
-                else:
-                    #pop it to remove, that way I can make the time critical stuff faster:
-                    self.shared_metadata_dictVAR.pop("toggleCV")
-
-        class FCVA_screen_manager(ScreenManager):
-            pass
-
-        class StartScreen(Screen):
-            pass
-
-        # MainApp.shared_analysis_dictVAR = args[0]
-        # MainApp.shared_metadata_dictVAR = args[1]
-        # MainApp.fps = args[2]
-        # MainApp.shared_globalindex_dictVAR = args[3]
-        # MainApp.shared_analyzedAVAR = args[4]
-        # MainApp.shared_analyzedBVAR = args[5]
-        # MainApp.shared_analyzedCVAR = args[6]
-        # MainApp.shared_analyzedAKeycountVAR = args[7]
-        # MainApp.shared_analyzedBKeycountVAR = args[8]
-        # MainApp.shared_analyzedCKeycountVAR = args[9]
-        # MainApp.spf = args[10]
-        # MainApp.bufferlen = args[11]
-        # MainApp.cvpartitions = args[12]
-        # MainApp.framelength = args[13]
-        # MainApp.shared_analyzedDVAR = args[14]
-        # MainApp.shared_analyzedDKeycountVAR = args[15]
-
-        # MainApp.shared_analyzedAVAR = args[4]
-        # MainApp.shared_analyzedBVAR = args[5]
-        # MainApp.shared_analyzedCVAR = args[6]
-        # MainApp.shared_analyzedAKeycountVAR = args[7]
-        # MainApp.shared_analyzedBKeycountVAR = args[8]
-        # MainApp.shared_analyzedCKeycountVAR = args[9]
-        # MainApp.shared_analyzedDVAR = args[14]
-        # MainApp.shared_analyzedDKeycountVAR = args[15]
-
-        MainApp.shared_analysis_dictVAR = args[0]
-        MainApp.shared_metadata_dictVAR = args[1]
-        MainApp.fps = args[2]
-        MainApp.shared_globalindex_dictVAR = args[3]
-        MainApp.spf = args[4]
-        MainApp.bufferlen = args[5]
-        MainApp.cvpartitions = args[6]
-        MainApp.framelength = args[7]
-        MainApp.shared_pool_meta_listVAR = args[8]
-        MainApp.dicts_per_subprocessVAR = args[9]
-        
-        
-        MainApp().run()
-    except Exception as e: 
-        print("kivy subprocess died!", e, flush=True)
-        import traceback
-        print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
 
 def frameblock(*args):
     '''
@@ -976,9 +601,8 @@ class FCVA:
                 #         shared_analyzedDKeycount))
                 # kivy_subprocess.start()
                 
-                
                 kivy_subprocess = FCVA_mp.Process(
-                    target=open_kivy,
+                    target=self.open_kivy,
                     args=(
                         shared_analysis_dict, 
                         shared_metadata_dict, 
@@ -1008,5 +632,383 @@ class FCVA:
                         break
         except Exception as e: 
             print("FCVA run died!", e, flush=True)
+            import traceback
+            print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
+
+    def open_kivy(*args):
+        try:
+            # infinite recursion bug when packaging with pyinstaller with no console: https://github.com/kivy/kivy/issues/8074#issuecomment-1364595283
+            os.environ["KIVY_NO_CONSOLELOG"] = "1" #logging errs on laptop for some reason
+            # if sys.__stdout__ is None or sys.__stderr__ is None:
+            #     os.environ["KIVY_NO_CONSOLELOG"] = "1"
+            from kivy.app import App
+            from kivy.lang import Builder
+            from kivy.uix.screenmanager import ScreenManager, Screen
+            from kivy.graphics.texture import Texture
+            from kivy.clock import Clock
+            from kivy.modules import inspector
+            from kivy.core.window import Window
+            from kivy.uix.button import Button
+
+            class MainApp(App):
+                def __init__(self, *args, **kwargs):
+                    super().__init__(*args, **kwargs)
+                    shared_metadata_dict = self.shared_metadata_dictVAR
+                    kvstring_check = [
+                        shared_metadata_dict[x]
+                        for x in shared_metadata_dict.keys()
+                        if x == "kvstring"
+                    ]
+
+                    from kivy.uix.boxlayout import BoxLayout
+
+                    class FCVAWidget(BoxLayout):
+                        pass
+
+                    if len(kvstring_check) != 0:
+                        self.KV_string = kvstring_check[0]
+                    else:
+                        # remember that the KV string IS THE ACTUAL FILE AND MUST BE INDENTED PROPERLY TO THE LEFT!
+                        self.KV_string = f"""
+#:import kivy.app kivy.app
+<FCVA_screen_manager>:
+    id: FCVA_screen_managerID
+    StartScreen:
+        id: start_screen_id
+        name: 'start_screen_name'
+        manager: 'FCVA_screen_managerID'
+
+<StartScreen>:
+    id: start_screen_id
+    FCVAWidget:
+        id: FCVAWidget_id
+
+<FCVAWidget>:
+    orientation: 'vertical'
+    id: mainBoxLayoutID
+    Image:
+        id: image_textureID
+    Slider:
+        id: vidsliderID
+        min: 0
+        max: {self.framelength} #should be 30*total_seconds
+        step: 1
+        value_track: True
+        value_track_color: 1, 0, 0, 1
+        size_hint: (1, 0.1)
+        orientation: 'horizontal'
+    BoxLayout:
+        id: subBoxLayoutID1
+        orientation: 'horizontal'
+        size_hint: (1, 0.1)
+        Button:
+            id: StartScreenButtonID
+            text: "Play"
+            on_release: kivy.app.App.get_running_app().toggleCV()
+        Label:
+            text: str(vidsliderID.value) #convert slider label to a time
+
+FCVA_screen_manager: #remember to return a root widget
+"""
+                def build(self):
+                    self.title = self.shared_metadata_dictVAR["title"]
+                    build_app_from_kv = Builder.load_string(self.KV_string)
+                    button = Button(text="Test")
+                    inspector.create_inspector(Window, button)
+                    return build_app_from_kv
+
+                def on_start(self):
+                    # start blitting. 1/30 always works because it will always blit the latest image from open_appliedcv subprocess, but kivy itself will be at 30 fps
+                    self.index = 0
+                    print("fps wtf", self.fps)
+                    from queue import Queue
+                    self.frameQ = Queue(maxsize=self.bufferlen*self.cvpartitions)
+                    self.internal_framecount = 0
+                    Clock.schedule_interval(self.blit_from_shared_memory, (1/self.fps))
+                    self.starttime = None
+
+                def on_request_close(self, *args):
+                    Clock.unschedule(self.blit_from_shared_memory)
+                    print("#kivy subprocess closed END!", flush=True)
+
+                def run(self):
+                    """Launches the app in standalone mode.
+                    reference:
+                    how to run kivy as a subprocess (so the main code can run neural networks like mediapipe without any delay)
+                    https://stackoverflow.com/questions/31458331/running-multiple-kivy-apps-at-same-time-that-communicate-with-each-other
+                    """
+                    self._run_prepare()
+                    from kivy.base import runTouchApp
+                    runTouchApp()
+                    self.shared_metadata_dictVAR["kivy_run_state"] = False
+
+                def populate_texture(self, texture, buffervar):
+                    texture.blit_buffer(buffervar)
+                
+                def blit_from_shared_memory(self, *args):
+                    try:
+                        timeog = time.time()
+                        if "toggleCV" in self.shared_metadata_dictVAR and self.shared_globalindex_dictVAR["starttime"] != None:
+                            self.index = int((time.time() - self.starttime)/self.spf)
+                            if self.index < 0:
+                                self.index = 0
+                            #this is helpful but is very good at locking up the shared dicts...
+                            # fprint("is cv subprocess keeping up?", self.index, self.shared_analyzedAKeycountVAR.values(),self.shared_analyzedBKeycountVAR.values(),self.shared_analyzedCKeycountVAR.values(),self.shared_analyzedDKeycountVAR.values())
+                            #know the current framenumber
+                            #get the right shareddict https://www.geeksforgeeks.org/python-get-key-from-value-in-dictionary/#
+                            # https://stackoverflow.com/questions/8023306/get-key-by-value-in-dictionary
+                            # fprint("index in values?A",  self.index, self.shared_analyzedAKeycountVAR.values(), self.index in self.shared_analyzedAKeycountVAR.values())
+                            frame = None
+                            #hint: u know self.dicts_per_subprocessVAR and self.cvpartitions
+                            #this is the nested shared list (containing shared dicts): shared_pool_meta_listVAR
+                            #so keycounts are always: 
+                            #frameblock(*args):
+                            #given partition #, instance, bufferlen, maxpartitions tells u the frames to get:
+                            #where partition is x in range(self.cvpartitions), instance is 0, bufferlen is 1, maxpartitions is given by self.cvpartitions
+
+                            # for partitionint in range(self.cvpartitions):
+                            #     #note TO FUTURE SELF, THIS LOOKS WRONG, it's it frameblock(partitionint,0,1,self.cvpartitions???) > it's correct, it's a group of 4 and u want the guy in the 1st index (shared_analyzedKeycountIndex)
+                            #     shared_analyzedKeycountIndex = frameblock(1,partitionint,1,self.cvpartitions)[0]
+                            #     fprint("err here, check numbers","instance",partitionint, "index:", shared_analyzedKeycountIndex,"metalist len", len(self.shared_pool_meta_listVAR))
+                            #     fprint("correct index for analyzedkeycount?", self.index, self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values())
+                            #     shared_analyzedIndex = frameblock(0,partitionint,1,self.cvpartitions)[0]
+                            #     if self.index in self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values():
+                            #         correctkey = list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].keys())[list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values()).index(self.index)]
+                            #         frameref = "frame" + correctkey.replace("key",'')
+                            #         frame = self.shared_pool_meta_listVAR[shared_analyzedIndex][frameref]
+                            #         break
+                            #this doesn't have to be a for loop since u know what index it should be in...
+                            #reminder, int to partition is w.r.t. the index and the shared dicts
+                            
+                            #THIS WORKED
+                            shareddict_instance = int_to_partition(self.index,self.bufferlen,self.cvpartitions) 
+                            # shared analyzed keycount is w.r.t. getting the right index when the index is self.cvpartitions-many of this sequence: shared_analyzedA, shared_analyzedAKeycount, shared_rawA, shared_rawAKEYS
+                            shared_analyzedKeycountIndex = frameblock(1,shareddict_instance,1,self.dicts_per_subprocessVAR)[0] #reminder that frameblock is a continuous BLOCK and shared_pool_meta_listVAR is alternating: 0 1 2 3, 0 1 2 3, etc... which is why bufferlen is 1
+                            shared_analyzedIndex = frameblock(0,shareddict_instance,1,self.dicts_per_subprocessVAR)[0]
+                            fprint("valtesting", self.index, shareddict_instance,shared_analyzedKeycountIndex, len(self.shared_pool_meta_listVAR), shared_analyzedIndex)
+                            # fprint("valtesting2", self.index, self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values())
+                            # fprint("valtesting2", self.index, shared_analyzedKeycountIndex)
+
+                            if self.index in self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values():
+                                fprint("valtesting3", self.index, list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values()))
+                                correctkey = list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].keys())[list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values()).index(self.index)]
+                                frameref = "frame" + correctkey.replace("key",'')
+                                frame = self.shared_pool_meta_listVAR[shared_analyzedIndex][frameref]
+                            #THIS WORKED
+                            
+                                
+
+                            # if self.index in self.shared_analyzedAKeycountVAR.values():
+                            #     correctkey = list(self.shared_analyzedAKeycountVAR.keys())[list(self.shared_analyzedAKeycountVAR.values()).index(self.index)]
+                            #     frameref = "frame" + correctkey.replace("key",'')
+                            #     frame = self.shared_analyzedAVAR[frameref]
+
+                            # if self.index in self.shared_analyzedAKeycountVAR.values():
+                            #     correctkey = list(self.shared_analyzedAKeycountVAR.keys())[list(self.shared_analyzedAKeycountVAR.values()).index(self.index)]
+                            #     frameref = "frame" + correctkey.replace("key",'')
+                            #     frame = self.shared_analyzedAVAR[frameref]
+                            
+                            # # fprint("index in values?B",  self.index, self.shared_analyzedBKeycountVAR.values(), self.index in self.shared_analyzedBKeycountVAR.values())
+                            # if self.index in self.shared_analyzedBKeycountVAR.values():
+                            #     correctkey = list(self.shared_analyzedBKeycountVAR.keys())[list(self.shared_analyzedBKeycountVAR.values()).index(self.index)]
+                            #     frameref = "frame" + correctkey.replace("key",'')
+                            #     timeax = time.time()
+                            #     frame = self.shared_analyzedBVAR[frameref]
+                            #     framesizeguy = frame
+                            #     fprint("how long to load a frame from shared mem?", time.time()-timeax, "size?", sys.getsizeof(framesizeguy))
+
+                            # # fprint("index in values?C",  self.index, self.shared_analyzedCKeycountVAR.values(), self.index in self.shared_analyzedCKeycountVAR.values())
+                            # if self.index in self.shared_analyzedCKeycountVAR.values():
+                            #     correctkey = list(self.shared_analyzedCKeycountVAR.keys())[list(self.shared_analyzedCKeycountVAR.values()).index(self.index)]
+                            #     frameref = "frame" + correctkey.replace("key",'')
+                            #     frame = self.shared_analyzedCVAR[frameref]
+
+                            # if self.index in self.shared_analyzedDKeycountVAR.values():
+                            #     correctkey = list(self.shared_analyzedDKeycountVAR.keys())[list(self.shared_analyzedDKeycountVAR.values()).index(self.index)]
+                            #     frameref = "frame" + correctkey.replace("key",'')
+                            #     frame = self.shared_analyzedDVAR[frameref]
+
+
+                            # https://stackoverflow.com/questions/43748991/how-to-check-if-a-variable-is-either-a-python-list-numpy-array-or-pandas-series
+                            
+                            if frame != None:
+                                frame = blosc2.decompress(frame)
+                                # frame = np.frombuffer(frame, np.uint8).copy().reshape(1080, 1920, 3)
+                                frame = np.frombuffer(frame, np.uint8).copy().reshape(720, 1280, 3)
+                                # frame = np.frombuffer(frame, np.uint8).copy().reshape(480, 640, 3)
+                                frame = cv2.flip(frame, 0)
+                                buf = frame.tobytes()
+                                if isinstance(frame,np.ndarray): #trying bytes
+                                    #complicated way of safely checking if a value may or may not exist, then get that value:
+                                    #quickly checked this, time is 0...
+                                    existence_check = [
+                                        frame.shape[x] for x in range(0, len(frame.shape)) if x == 2
+                                    ]
+                                    # only valid dimensions are if pixels are 3 (RGB) or 4 (RGBA, but u have to also set the colorfmt)
+                                    if [x for x in existence_check if x == 3 or x == 4] == []:
+                                        raise Exception(
+                                            "check your numpy dimensions! should be (height, width, 3 for RGB/ 4 for RGBA): like  (1920,1080,3): ",
+                                            frame.shape, frame
+                                        )
+                                    
+                                    # # check for existence of colorfmt in shared_metadata_dict, then if so, set colorfmt:
+                                    # formatoption = [
+                                    #     shared_metadata_dict[x]
+                                    #     for x in shared_metadata_dict.keys()
+                                    #     if x == "colorfmt"
+                                    # ]
+                                    # if len(formatoption) != 0:
+                                    #     self.colorfmtval = formatoption[0]
+                                    # else:
+                                    #     # default to bgr
+                                    #     self.colorfmtval = "bgr"
+
+                                    self.colorfmtval = "bgr"
+
+                                    # texture documentation: https://github.com/kivy/kivy/blob/master/kivy/graphics/texture.pyx
+                                    # blit to texture
+                                    # blit buffer example: https://stackoverflow.com/questions/61122285/kivy-camera-application-with-opencv-in-android-shows-black-screen
+
+                                    # I think creating a new texture is lagging the app, opencv reads the file faster than the video ends
+                                    # reference this, u need a reload observer: https://stackoverflow.com/questions/51546327/in-kivy-is-there-a-way-to-dynamically-change-the-shape-of-a-texture
+                                    # for later, if I need to clear a texture this is the reference: https://stackoverflow.com/questions/55099463/how-to-update-a-texture-from-array-in-kivy
+
+                                    # if hasattr(self, "texture1"):
+                                    #     print("texture size?", self.texture1.size[0] != frame.shape[1] and self.texture1.size[1] != frame.shape[0])
+                                    #     if (
+                                    #         self.texture1.size[0] != frame.shape[1]
+                                    #         and self.texture1.size[1] != frame.shape[0]
+                                    #     ):
+                                    #         print("texture size changed!", self.texture1.size)
+                                    #         self.texture1 = Texture.create(
+                                    #             size=(frame.shape[1], frame.shape[0]),
+                                    #             colorfmt=self.colorfmtval,
+                                    #         )
+                                    #         self.texture1.add_reload_observer(self.populate_texture)
+                                    #     else:
+                                    #         print("populating ok texture", flush= True)
+                                    #         self.populate_texture(self.texture1, buf)
+                                    # else:
+                                    #     print("notexture", flush= True)
+                                    #     self.texture1 = Texture.create(
+                                    #         size=(frame.shape[1], frame.shape[0]), colorfmt=self.colorfmtval
+                                    #     )
+                                    #     self.texture1.blit_buffer(
+                                    #         buf, colorfmt=self.colorfmtval, bufferfmt="ubyte"
+                                    #     )
+                                    #     self.texture1.add_reload_observer(self.populate_texture)
+
+                                    # print("blitting to texture index:", self.index)
+
+                                    self.texture1 = Texture.create(
+                                        size=(frame.shape[1], frame.shape[0]), colorfmt=self.colorfmtval
+                                    )
+                                    self.texture1.blit_buffer(
+                                        buf, colorfmt=self.colorfmtval, bufferfmt="ubyte"
+                                    )
+                                    App.get_running_app().root.get_screen("start_screen_name").ids['FCVAWidget_id'].ids[
+                                        "image_textureID"
+                                    ].texture = self.texture1
+                            else:
+                                if self.index != 0:
+                                    # fprint("missed frame#", self.index, self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values())
+                                    fprint("missed frame#", self.index)
+                        self.newt = time.time()
+                        if hasattr(self, 'newt'):
+                            if self.newt - timeog > 0 and (1/(self.newt- timeog)) < 200:
+                                # print("blit fps?", 1/(self.newt- timeog))
+                                pass
+                    except Exception as e: 
+                        print("blitting died!", e, flush=True)
+                        import traceback
+                        print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
+                
+                def toggleCV(self, *args):
+                    # fprint("what are args, do I have widget?, nope, do the search strat", args)
+                    # fprint("id searching", App.get_running_app().root.get_screen('start_screen_name').ids['FCVAWidget_id'].ids)
+                    widgettext = App.get_running_app().root.get_screen('start_screen_name').ids['FCVAWidget_id'].ids['StartScreenButtonID'].text
+                    fprint("widgettext is?", widgettext)
+                    if "Play" in widgettext:
+                        App.get_running_app().root.get_screen('start_screen_name').ids['FCVAWidget_id'].ids['StartScreenButtonID'].text = "Pause"
+                        
+                        #check if you have been paused already:
+                        if "pausedtime" in self.shared_globalindex_dictVAR.keys() and isinstance(self.shared_globalindex_dictVAR["pausedtime"], float):
+                            #start all subprocesses (hope it's fast enough):
+                            subprocess_list = [x for x in self.shared_globalindex_dictVAR.keys() if "subprocess" in x]
+                            for x in subprocess_list:
+                                self.shared_globalindex_dictVAR[x] = True
+                            #clear pausedtime and adjust starttime by elapsed time from last pause:
+                            self.shared_globalindex_dictVAR["starttime"] = self.shared_globalindex_dictVAR["starttime"] + (time.time() - self.shared_globalindex_dictVAR["pausedtime"])
+                            self.shared_globalindex_dictVAR["pausedtime"] = False
+                    else:
+                        App.get_running_app().root.get_screen('start_screen_name').ids['FCVAWidget_id'].ids['StartScreenButtonID'].text = "Play"
+                        
+                        self.shared_globalindex_dictVAR["pausedtime"] = time.time()
+                        fprint("#pause all subprocesses (hope it's fast enough):")
+                        subprocess_list = [x for x in self.shared_globalindex_dictVAR.keys() if "subprocess" in x]
+                        for x in subprocess_list:
+                            self.shared_globalindex_dictVAR[x] = False
+                        
+                    if "toggleCV" not in self.shared_metadata_dictVAR.keys():
+                        self.shared_metadata_dictVAR["toggleCV"] = True
+                        if self.starttime == None:
+                            #init starttime:
+                            # self.starttime = time.time() + 1
+                            # self.starttime = time.time() + 2
+                            self.starttime = time.time() + 3 #wait 3 seconds
+                            # self.starttime = time.time() + 8
+                            self.shared_globalindex_dictVAR["starttime"] = self.starttime
+                    else:
+                        #pop it to remove, that way I can make the time critical stuff faster:
+                        self.shared_metadata_dictVAR.pop("toggleCV")
+
+            class FCVA_screen_manager(ScreenManager):
+                pass
+
+            class StartScreen(Screen):
+                pass
+
+            # MainApp.shared_analysis_dictVAR = args[0]
+            # MainApp.shared_metadata_dictVAR = args[1]
+            # MainApp.fps = args[2]
+            # MainApp.shared_globalindex_dictVAR = args[3]
+            # MainApp.shared_analyzedAVAR = args[4]
+            # MainApp.shared_analyzedBVAR = args[5]
+            # MainApp.shared_analyzedCVAR = args[6]
+            # MainApp.shared_analyzedAKeycountVAR = args[7]
+            # MainApp.shared_analyzedBKeycountVAR = args[8]
+            # MainApp.shared_analyzedCKeycountVAR = args[9]
+            # MainApp.spf = args[10]
+            # MainApp.bufferlen = args[11]
+            # MainApp.cvpartitions = args[12]
+            # MainApp.framelength = args[13]
+            # MainApp.shared_analyzedDVAR = args[14]
+            # MainApp.shared_analyzedDKeycountVAR = args[15]
+
+            # MainApp.shared_analyzedAVAR = args[4]
+            # MainApp.shared_analyzedBVAR = args[5]
+            # MainApp.shared_analyzedCVAR = args[6]
+            # MainApp.shared_analyzedAKeycountVAR = args[7]
+            # MainApp.shared_analyzedBKeycountVAR = args[8]
+            # MainApp.shared_analyzedCKeycountVAR = args[9]
+            # MainApp.shared_analyzedDVAR = args[14]
+            # MainApp.shared_analyzedDKeycountVAR = args[15]
+
+            #since I moved this to a class def all the args got moved by 1 since self is here too
+            MainApp.shared_analysis_dictVAR = args[1]
+            MainApp.shared_metadata_dictVAR = args[2]
+            MainApp.fps = args[3]
+            MainApp.shared_globalindex_dictVAR = args[4]
+            MainApp.spf = args[5]
+            MainApp.bufferlen = args[6]
+            MainApp.cvpartitions = args[7]
+            MainApp.framelength = args[8]
+            MainApp.shared_pool_meta_listVAR = args[9]
+            MainApp.dicts_per_subprocessVAR = args[10]
+            
+            
+            MainApp().run()
+        except Exception as e: 
+            print("kivy subprocess died!", e, flush=True)
             import traceback
             print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
