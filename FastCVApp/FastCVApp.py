@@ -698,11 +698,11 @@ class FCVA:
                     shared_rawAKEYS = shared_mem_manager.dict()
                     
                     #init dicts
-                    for x in range(bufferlen):
-                        shared_analyzedA["frame" + str(x)] = -1
-                        shared_analyzedAKeycount["key" + str(x)] = -1
-                        shared_rawA["frame" + str(x)] = -1
-                        shared_rawAKEYS["key" + str(x)] = -1
+                    for y in range(bufferlen):
+                        shared_analyzedA["frame" + str(y)] = -1
+                        shared_analyzedAKeycount["key" + str(y)] = -1
+                        shared_rawA["frame" + str(y)] = -1
+                        shared_rawAKEYS["key" + str(y)] = -1
                     
                     #start the subprocesses
                     cv_subprocessA = FCVA_mp.Process(
@@ -725,13 +725,19 @@ class FCVA:
                     )
                     cv_subprocessA.start()
                     #append everything at the end so kivy can start and know all the info
-                    shared_pool_meta_list.append(shared_analyzedA)
-                    shared_pool_meta_list.append(shared_analyzedAKeycount)
-                    shared_pool_meta_list.append(shared_rawA)
-                    shared_pool_meta_list.append(shared_rawAKEYS)
+                    thefguy = f'{"shared_analyzed" + str(x) + "OUTERVAR = "} shared_analyzedA'
+                    print("thefguy", thefguy)
+                    exec(thefguy)
+                    # shared_pool_meta_list.append(shared_analyzedA)
+                    # shared_pool_meta_list.append(shared_analyzedAKeycount)
+                    # shared_pool_meta_list.append(shared_rawA)
+                    # shared_pool_meta_list.append(shared_rawAKEYS)
                     
                     #give kivy the list of subprocesses (at the end)
                 
+                #quickly test:
+                print("does this exist?", shared_analyzed1OUTERVAR)
+
                 #not necessary
                 #new idea: do it vertically: create and init all dicts then run the subprocess
                 #when you are done, send all the shared dicts to a list
