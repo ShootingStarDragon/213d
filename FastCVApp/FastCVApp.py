@@ -112,6 +112,7 @@ FCVA_screen_manager: #remember to return a root widget
                 texture.blit_buffer(buffervar)
             
             def blit_from_shared_memory(self, *args):
+                # try:
                 timeog = time.time()
                 if "toggleCV" in self.shared_metadata_dictVAR and self.shared_globalindex_dictVAR["starttime"] != None:
                     self.index = int((time.time() - self.starttime)/self.spf)
@@ -149,10 +150,12 @@ FCVA_screen_manager: #remember to return a root widget
                     shareddict_instance = int_to_partition(self.index,self.bufferlen,self.cvpartitions) 
                     # shared analyzed keycount is w.r.t. getting the right index when the index is self.cvpartitions-many of this sequence: shared_analyzedA, shared_analyzedAKeycount, shared_rawA, shared_rawAKEYS
                     shared_analyzedKeycountIndex = frameblock(1,shareddict_instance,1,self.cvpartitions)[0] #reminder that frameblock is a continuous BLOCK and shared_pool_meta_listVAR is alternating: 0 1 2 3, 0 1 2 3, etc... which is why bufferlen is 1
-                    fprint("valtesting", self.index, shareddict_instance,shared_analyzedKeycountIndex, len(self.shared_pool_meta_listVAR))
+                    # fprint("valtesting", self.index, shareddict_instance,shared_analyzedKeycountIndex, len(self.shared_pool_meta_listVAR))
                     shared_analyzedIndex = frameblock(0,shareddict_instance,1,self.cvpartitions)[0]
+                    # fprint("valtesting2", self.index, self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values())
 
                     if self.index in self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values():
+                        fprint("valtesting3", self.index, list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values()))
                         correctkey = list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].keys())[list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values()).index(self.index)]
                         frameref = "frame" + correctkey.replace("key",'')
                         frame = self.shared_pool_meta_listVAR[shared_analyzedIndex][frameref]
@@ -195,8 +198,8 @@ FCVA_screen_manager: #remember to return a root widget
                     try:
                         if frame != None:
                             frame = blosc2.decompress(frame)
-                            frame = np.frombuffer(frame, np.uint8).copy().reshape(1080, 1920, 3)
-                            # frame = np.frombuffer(frame, np.uint8).copy().reshape(720, 1280, 3)
+                            # frame = np.frombuffer(frame, np.uint8).copy().reshape(1080, 1920, 3)
+                            frame = np.frombuffer(frame, np.uint8).copy().reshape(720, 1280, 3)
                             # frame = np.frombuffer(frame, np.uint8).copy().reshape(480, 640, 3)
                             frame = cv2.flip(frame, 0)
                             buf = frame.tobytes()
@@ -571,7 +574,7 @@ def open_cvpipeline(*args):
                             #compare internal framecount to see if it's a frame that this subprocess is supposed to analyze
                             if ret and internal_framecount in framelist:
                                 # i might not be picking up a pose because the frame is being read upside down, flip it first before analyzing with mediapipe
-                                # framedata = cv2.resize(framedata, (1280, 720))
+                                framedata = cv2.resize(framedata, (1280, 720))
                                 # framedata = cv2.resize(framedata, (640, 480))
                                 # framedata = cv2.flip(framedata, 0) 
                                 # framedata = cv2.cvtColor(framedata, cv2.COLOR_RGB2BGR)
