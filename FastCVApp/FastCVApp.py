@@ -738,6 +738,7 @@ class FCVA:
 
                 # shared_pool_meta_list = shared_mem_manager.list()
                 shared_pool_meta_list = [] #IMO this is faster, i think since it doesn't have to propagate changes down the nested dict structure
+                subprocess_list = []
                 for x in range(cvpartitions):
                     #init analyzed/keycount dicts
                     shared_analyzedA = shared_mem_manager.dict()
@@ -781,6 +782,7 @@ class FCVA:
                     shared_pool_meta_list.append(shared_rawA)
                     shared_pool_meta_list.append(shared_rawAKEYS)
                     dicts_per_subprocess = 4 #remember to update this....
+                    subprocess_list.append(cv_subprocessA)
                     
                     
                     #give kivy the list of subprocesses (at the end)
@@ -979,10 +981,12 @@ class FCVA:
                     if shared_metadata_dict["kivy_run_state"] == False:
                         # when the while block is done, close all the subprocesses using .join to gracefully exit. also make sure opencv releases the video.
                         # mediaread_subprocess.join()
-                        cv_subprocessA.join()
-                        cv_subprocessB.join()
-                        cv_subprocessC.join()
-                        cv_subprocessD.join()
+                        for subprocessVAR in subprocess_list:
+                            subprocessVAR.join()
+                        # cv_subprocessA.join()
+                        # cv_subprocessB.join()
+                        # cv_subprocessC.join()
+                        # cv_subprocessD.join()
                         kivy_subprocess.join()
                         fprint("g")
                         break
