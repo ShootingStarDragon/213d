@@ -131,15 +131,29 @@ FCVA_screen_manager: #remember to return a root widget
                     #given partition #, instance, bufferlen, maxpartitions tells u the frames to get:
                     #where partition is x in range(self.cvpartitions), instance is 0, bufferlen is 1, maxpartitions is given by self.cvpartitions
 
-                    for instanceint in range(self.cvpartitions):
-                        shared_analyzedKeycountIndex = frameblock(1,instanceint,1,self.cvpartitions)[0]
-                        fprint("correct index for analyzedkeycount?", self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values())
-                        shared_analyzedIndex = frameblock(0,instanceint,1,self.cvpartitions)[0]
-                        if self.index in self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values():
-                            correctkey = list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].keys())[list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values()).index(self.index)]
-                            frameref = "frame" + correctkey.replace("key",'')
-                            frame = self.shared_pool_meta_listVAR[shared_analyzedIndex][frameref]
-                            break
+                    # for partitionint in range(self.cvpartitions):
+                    #     #NOTE TO FUTURE SELF, THIS LOOKS WRONG, it's it frameblock(partitionint,0,1,self.cvpartitions???) > it's correct, it's a group of 4 and u want the guy in the 1st index (shared_analyzedKeycountIndex)
+                    #     shared_analyzedKeycountIndex = frameblock(1,partitionint,1,self.cvpartitions)[0]
+                    #     fprint("err here, check numbers","instance",partitionint, "index:", shared_analyzedKeycountIndex,"metalist len", len(self.shared_pool_meta_listVAR))
+                    #     fprint("correct index for analyzedkeycount?", self.index, self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values())
+                    #     shared_analyzedIndex = frameblock(0,partitionint,1,self.cvpartitions)[0]
+                    #     if self.index in self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values():
+                    #         correctkey = list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].keys())[list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values()).index(self.index)]
+                    #         frameref = "frame" + correctkey.replace("key",'')
+                    #         frame = self.shared_pool_meta_listVAR[shared_analyzedIndex][frameref]
+                    #         break
+                    #this doesn't have to be a for loop since u know what index it should be in...
+                    #reminder, int to partition is w.r.t. the index and the shared dicts
+                    shareddict_instance = int_to_partition(self.index,self.bufferlen,self.cvpartitions) 
+                    # shared analyzed keycount is w.r.t. getting the right index when the index is self.cvpartitions-many of this sequence: shared_analyzedA, shared_analyzedAKeycount, shared_rawA, shared_rawAKEYS
+                    shared_analyzedKeycountIndex = frameblock(1,shareddict_instance,1,self.cvpartitions)[0] #reminder that frameblock is a continuous BLOCK and shared_pool_meta_listVAR is alternating: 0 1 2 3, 0 1 2 3, etc... which is why bufferlen is 1
+                    fprint("valtesting", self.index, shareddict_instance,shared_analyzedKeycountIndex, len(self.shared_pool_meta_listVAR))
+                    shared_analyzedIndex = frameblock(0,shareddict_instance,1,self.cvpartitions)[0]
+
+                    if self.index in self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values():
+                        correctkey = list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].keys())[list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values()).index(self.index)]
+                        frameref = "frame" + correctkey.replace("key",'')
+                        frame = self.shared_pool_meta_listVAR[shared_analyzedIndex][frameref]
 
                         
 
@@ -379,6 +393,32 @@ def frameblock(*args):
     # print("frameblock args?", partitionnumber, instance)
     Ans = [x + bufferlen*maxpartitions*instance + partitionnumber*bufferlen for x in range(bufferlen)]
     return Ans
+
+def int_to_partition(*args):
+    '''
+    args: 
+        int u want to test
+        bufferlen
+        maxpartitions
+    returns:
+        partition# that contains this int any the frameblock
+
+    78 > 70>80 correct?
+    then u want NOT the mod, but the whole #:
+
+    78 % (bufferlen) = 8
+    78 - (78 % bufferlen) = 70
+    (78 - (78 % bufferlen))/bufferlen = 70/bufferlen = 7
+    then @ 7, there are 4 processes/maxpartitions > 7%4 is 3, so it's in the "3rd" (0-index) or "4th" (1-index) subprocess
+
+    REMINDER: THIS ANSWER RETURNS IS BASED ON 0-INDEX!!!
+    '''
+    testint = args[0]
+    bufferlen = args[1]
+    maxpartitions = args[2]
+    return int(((testint - (testint % bufferlen))/bufferlen)%maxpartitions)
+
+
 
 def open_cvpipeline(*args):
     try:
@@ -681,7 +721,7 @@ class FCVA:
                 # nested shared object
                 # https://stackoverflow.com/questions/68604215/how-do-you-create-nested-shared-objects-in-multi-processing-in-python
 
-                # shared_pool_meta_list = shared_mem_manager.list()
+                shared_pool_meta_list = shared_mem_manager.list()
                 # shared_pool_meta_list = [] 
                 # the metalist (both shared and not shared) work but are slow: this is most likely because the nested shared dict defeats the purpose of using split shared dicts in that updates happen once instead of multiply at the same time
                 # new approach: I'm not smart enough to do this w/o using exec, but generate code on the fly and exec it...
@@ -689,7 +729,6 @@ class FCVA:
                 # reference: https://stackoverflow.com/questions/22558548/eval-syntaxerror-invalid-syntax-in-python
 
                 analyze_pool_count = 4
-                dicts_per_subprocess = 4
                 for x in range(analyze_pool_count):
                     #init analyzed/keycount dicts
                     shared_analyzedA = shared_mem_manager.dict()
@@ -714,7 +753,7 @@ class FCVA:
                             shared_globalindex_dict,
                             shared_analyzedAKeycount,
                             self.source,
-                            0, #partition #, starts at 0
+                            x, #partition #, starts at 0 (now is x in this loop)
                             0, #instance of the block of relevant frames
                             bufferlen, #bufferlen AKA how long the internal queues should be
                             cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
@@ -725,18 +764,20 @@ class FCVA:
                     )
                     cv_subprocessA.start()
                     #append everything at the end so kivy can start and know all the info
-                    thefguy = f'{"shared_analyzed" + str(x) + "OUTERVAR = "} shared_analyzedA'
-                    print("thefguy", thefguy)
-                    exec(thefguy)
-                    # shared_pool_meta_list.append(shared_analyzedA)
-                    # shared_pool_meta_list.append(shared_analyzedAKeycount)
-                    # shared_pool_meta_list.append(shared_rawA)
-                    # shared_pool_meta_list.append(shared_rawAKEYS)
+                    # thefguy = f'{"shared_analyzed" + str(x) + "OUTERVAR = "} shared_analyzedA'
+                    # print("thefguy", thefguy)
+                    # exec(thefguy)
+                    shared_pool_meta_list.append(shared_analyzedA)
+                    shared_pool_meta_list.append(shared_analyzedAKeycount)
+                    shared_pool_meta_list.append(shared_rawA)
+                    shared_pool_meta_list.append(shared_rawAKEYS)
+                    dicts_per_subprocess = 4 #remember to update this....
+                    
                     
                     #give kivy the list of subprocesses (at the end)
                 
                 #quickly test:
-                print("does this exist?", shared_analyzed1OUTERVAR)
+                # print("does this exist?", shared_analyzed1OUTERVAR)
 
                 #not necessary
                 #new idea: do it vertically: create and init all dicts then run the subprocess
