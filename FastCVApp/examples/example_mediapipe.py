@@ -64,7 +64,10 @@ def mediapipe(*args): #basicmp
         bufferlenVAR = args[3]
         answerqueue = deque(maxlen=bufferlenVAR)
         landmarkerVAR = args[4]
-
+        raw_queueKEYSVAR = args[5]
+        
+        #reference: https://stackoverflow.com/questions/48640251/how-to-peek-front-of-deque-without-popping#:~:text=You%20can%20peek%20front%20element,right%20and%20seems%20efficient%20too.
+        peek_to_force_monotonically_increasing = 0
         while len(inputqueue) > 0:
             
             image = inputqueue.popleft()
@@ -84,11 +87,13 @@ def mediapipe(*args): #basicmp
             #time has this many digits: 1685543338.9065359, inconsistent digis
             #int(str(time.time())[-10:])
             timestr = str(time.time()).split(".")
-            newint = int(timestr[0][-4:]+timestr[1][:3]) #take last 4 of the whole number and first 3 of the decimal, idk if this matters tho
+            # newint = int(timestr[0][-4:]+timestr[1][:3]) #take last 4 of the whole number and first 3 of the decimal, idk if this matters tho
             #time.time should work, i'm feeding them in sequence anyways
             #just making sure they have only the first 3 digits from the decimal and it's an int
-            results = landmarkerVAR.detect_for_video(image, newint) 
+            # results = landmarkerVAR.detect_for_video(image, newint) 
+            results = landmarkerVAR.detect_for_video(image, raw_queueKEYSVAR[peek_to_force_monotonically_increasing]) 
             # results = landmarkerVAR.detect(image) 
+            peek_to_force_monotonically_increasing += 1
             
             #now draw on original image: 
             fixed_image = draw_landmarks_on_image(ogimage, results)

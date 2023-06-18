@@ -545,7 +545,8 @@ def open_cvpipeline(*args):
                         #give the queue to the cv func
                         #cv func returns a queue of frames
                         rtime = time.time()
-                        resultqueue = appliedcv(raw_queue, shared_globalindex_dictVAR, shared_metadata_dict, bufferlen, landmarker)
+                        # u can peek at deques: https://stackoverflow.com/questions/48640251/how-to-peek-front-of-deque-without-popping#:~:text=You%20can%20peek%20front%20element,right%20and%20seems%20efficient%20too. , can do it but I thought of a simpler way in the example py file
+                        resultqueue = appliedcv(raw_queue, shared_globalindex_dictVAR, shared_metadata_dict, bufferlen, landmarker, raw_queueKEYS)
                         fprint("resultqueue timing (appliedcv)", os.getpid(), time.time() - rtime, time.time())
                         current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
                         otherhalf = time.time()
