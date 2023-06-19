@@ -637,7 +637,7 @@ class FCVA:
             import traceback
             print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
 
-    def FCVAWidgetInit(*args):
+    def FCVAWidgetInit(self, *args):
         '''
         this is going to spawn subprocesses so make sure the code that calls it has this to stop infinite subprocesses
         if __name__ == "__main__":
@@ -648,8 +648,13 @@ class FCVA:
         #3: add it to kv string before it's loaded
         
         '''
-        pass
+        from kivy.uix.boxlayout import BoxLayout
 
+        class FCVAWidget(BoxLayout):
+            pass
+        self.FCVAKV = f"""
+        placeholder
+"""
     
     def open_kivy(*args):
         try:
@@ -686,6 +691,7 @@ class FCVA:
                     else:
                         # remember that the KV string IS THE ACTUAL FILE AND MUST BE INDENTED PROPERLY TO THE LEFT!
                         self.KV_string = f"""
+                        
 #:import kivy.app kivy.app
 <FCVA_screen_manager>:
     id: FCVA_screen_managerID
@@ -698,6 +704,8 @@ class FCVA:
     id: start_screen_id
     FCVAWidget:
         id: FCVAWidget_id
+
+FCVA_screen_manager: #remember to return a root widget
 
 <FCVAWidget>:
     orientation: 'vertical'
@@ -724,7 +732,6 @@ class FCVA:
         Label:
             text: str(vidsliderID.value) #convert slider label to a time
 
-FCVA_screen_manager: #remember to return a root widget
 """
                 def build(self):
                     self.title = self.shared_metadata_dictVAR["title"]
