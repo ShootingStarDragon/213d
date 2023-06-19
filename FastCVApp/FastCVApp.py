@@ -601,6 +601,8 @@ class FCVA:
                 #         shared_analyzedDKeycount))
                 # kivy_subprocess.start()
                 
+                #you CAN target class methods using multiprocessing process 
+                #https://stackoverflow.com/questions/45311398/python-multiprocessing-class-methods
                 kivy_subprocess = FCVA_mp.Process(
                     target=self.open_kivy,
                     args=(
@@ -635,6 +637,20 @@ class FCVA:
             import traceback
             print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
 
+    def FCVAWidgetInit(*args):
+        '''
+        this is going to spawn subprocesses so make sure the code that calls it has this to stop infinite subprocesses
+        if __name__ == "__main__":
+            import multiprocessing 
+            multiprocessing.freeze_support()
+        #1: define class
+        #2: set up the kv
+        #3: add it to kv string before it's loaded
+        
+        '''
+        pass
+
+    
     def open_kivy(*args):
         try:
             # infinite recursion bug when packaging with pyinstaller with no console: https://github.com/kivy/kivy/issues/8074#issuecomment-1364595283
