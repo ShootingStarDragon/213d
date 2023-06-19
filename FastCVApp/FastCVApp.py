@@ -362,6 +362,42 @@ class FCVA:
                 self.length += 11222333
                 video.release()
 
+                #sanity checks
+                if not hasattr(self, "fps"):
+                    # default to 30fps, else set blit buffer speed to 1/30 sec
+                    self.fps = 1 / 30
+                if not hasattr(self, "title"):
+                    shared_metadata_dict[
+                        "title"
+                    ] = "Fast CV App Example v0.1.0 by Pengindoramu"
+                else:
+                    shared_metadata_dict["title"] = self.title
+                if hasattr(self, "colorfmt"):
+                    shared_metadata_dict["colorfmt"] = self.colorfmt
+                if hasattr(self, "kvstring"):
+                    shared_metadata_dict["kvstring"] = self.kvstring
+                if self.appliedcv == None:
+                    print(
+                        "FCVA.appliedcv is currently None. Not starting the CV subprocess."
+                    )
+
+                #you CAN target class methods using multiprocessing process 
+                #https://stackoverflow.com/questions/45311398/python-multiprocessing-class-methods
+                kivy_subprocess = FCVA_mp.Process(
+                    target=self.open_kivy,
+                    args=(
+                        shared_analysis_dict, 
+                        shared_metadata_dict, 
+                        self.fps, 
+                        shared_globalindex_dict, 
+                        (1/self.fps), 
+                        bufferlen,
+                        cvpartitions, 
+                        self.length, 
+                        shared_pool_meta_list,
+                        dicts_per_subprocess))
+                kivy_subprocess.start()
+
                 bufferlen = 10
                 cvpartitions = 3
                 #init shared dicts:
@@ -451,24 +487,7 @@ class FCVA:
                 #     shared_rawD["frame" + str(x)] = -1
                 #     shared_rawDKEYS["key" + str(x)] = -1
 
-                #sanity checks
-                if not hasattr(self, "fps"):
-                    # default to 30fps, else set blit buffer speed to 1/30 sec
-                    self.fps = 1 / 30
-                if not hasattr(self, "title"):
-                    shared_metadata_dict[
-                        "title"
-                    ] = "Fast CV App Example v0.1.0 by Pengindoramu"
-                else:
-                    shared_metadata_dict["title"] = self.title
-                if hasattr(self, "colorfmt"):
-                    shared_metadata_dict["colorfmt"] = self.colorfmt
-                if hasattr(self, "kvstring"):
-                    shared_metadata_dict["kvstring"] = self.kvstring
-                if self.appliedcv == None:
-                    print(
-                        "FCVA.appliedcv is currently None. Not starting the CV subprocess."
-                    )
+                
                 
                 #start the subprocesses
                 # cv_subprocessA = FCVA_mp.Process(
@@ -573,22 +592,8 @@ class FCVA:
                 #         shared_analyzedDKeycount))
                 # kivy_subprocess.start()
                 
-                #you CAN target class methods using multiprocessing process 
-                #https://stackoverflow.com/questions/45311398/python-multiprocessing-class-methods
-                kivy_subprocess = FCVA_mp.Process(
-                    target=self.open_kivy,
-                    args=(
-                        shared_analysis_dict, 
-                        shared_metadata_dict, 
-                        self.fps, 
-                        shared_globalindex_dict, 
-                        (1/self.fps), 
-                        bufferlen,
-                        cvpartitions, 
-                        self.length, 
-                        shared_pool_meta_list,
-                        dicts_per_subprocess))
-                kivy_subprocess.start()
+                
+                
 
                 # this try except block holds the main process open so the subprocesses aren't cleared when the main process exits early.
                 while "kivy_run_state" in shared_metadata_dict.keys():
@@ -686,7 +691,9 @@ class FCVA:
         from kivy.uix.boxlayout import BoxLayout
 
         class FCVAWidget(BoxLayout):
-            pass
+            def tester(*args):
+                fprint("am i accessible in the subprocess after FCVAWidgetInit is called?")
+
         FCVAWidget_KV = f"""
 <FCVAWidget>:
     orientation: 'vertical'
