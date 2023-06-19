@@ -380,53 +380,25 @@ class FCVA:
                 # shared_pool_meta_list = shared_mem_manager.list()
                 shared_pool_meta_list = [] #IMO this is faster, i think since it doesn't have to propagate changes down the nested dict structure
                 subprocess_list = []
-                for x in range(cvpartitions):
-                    #init analyzed/keycount dicts
-                    shared_analyzedA = shared_mem_manager.dict()
-                    shared_analyzedAKeycount = shared_mem_manager.dict()
-                    shared_rawA = shared_mem_manager.dict()
-                    shared_rawAKEYS = shared_mem_manager.dict()
-                    
-                    #init dicts
-                    for y in range(bufferlen):
-                        shared_analyzedA["frame" + str(y)] = -1
-                        shared_analyzedAKeycount["key" + str(y)] = -1
-                        shared_rawA["frame" + str(y)] = -1
-                        shared_rawAKEYS["key" + str(y)] = -1
-                    
-                    #start the subprocesses
-                    cv_subprocessA = FCVA_mp.Process(
-                        target=open_cvpipeline,
-                        args=(
-                            shared_metadata_dict,
-                            self.appliedcv,
-                            shared_analyzedA,
-                            shared_globalindex_dict,
-                            shared_analyzedAKeycount,
-                            self.source,
-                            x, #partition #, starts at 0 (now is x in this loop)
-                            0, #instance of the block of relevant frames
-                            bufferlen, #bufferlen AKA how long the internal queues should be
-                            cvpartitions, #max # of partitions/subprocesses that divide up the video sequence
-                            self.fps,
-                            shared_rawA,
-                            shared_rawAKEYS
-                        ),
+                initdatalist = FCVA.FCVAWidget_SubprocessInit(
+                    FCVA_mp,
+                    shared_mem_manager,
+                    cvpartitions,
+                    bufferlen,
+                    shared_metadata_dict,
+                    shared_globalindex_dict,
+                    self.source,
+                    self.fps,
+                    self.appliedcv,
+                    shared_pool_meta_list,
+                    subprocess_list,
                     )
-                    cv_subprocessA.start()
-                    #append everything at the end so kivy can start and know all the info
-                    # thefguy = f'{"shared_analyzed" + str(x) + "OUTERVAR = "} shared_analyzedA'
-                    # print("thefguy", thefguy)
-                    # exec(thefguy)
-                    shared_pool_meta_list.append(shared_analyzedA)
-                    shared_pool_meta_list.append(shared_analyzedAKeycount)
-                    shared_pool_meta_list.append(shared_rawA)
-                    shared_pool_meta_list.append(shared_rawAKEYS)
-                    dicts_per_subprocess = 4 #remember to update this....
-                    subprocess_list.append(cv_subprocessA)
-                    
-                    
-                    #give kivy the list of subprocesses (at the end)
+                #now set all the stuff that needs to be set from initdatalist:
+                shared_pool_meta_list = initdatalist[0]
+                subprocess_list = initdatalist[1]
+                dicts_per_subprocess =  initdatalist[2]
+
+                # REMINDER: there is no self because I never instantiate a class with multiprocessing.process
                 
                 #quickly test:
                 # print("does this exist?", shared_analyzed1OUTERVAR)
@@ -637,16 +609,74 @@ class FCVA:
             import traceback
             print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
 
-    def FCVAWidget_SubprocessInit(self, *args):
+    def FCVAWidget_SubprocessInit(*args): #REMINDER: there is no self because I never instantiate a class with multiprocessing.process
+        #more reference.... I can do a class wtf https://stackoverflow.com/questions/17172878/using-pythons-multiprocessing-process-class
         '''
         this is going to spawn subprocesses so make sure the code that calls it has this to stop infinite subprocesses
         if __name__ == "__main__":
             import multiprocessing 
             multiprocessing.freeze_support()
         '''
-        pass
+        FCVA_mpVAR                     = args[0]
+        shared_mem_managerVAR          = args[1]
+        cvpartitionsVAR                = args[2]
+        bufferlenVAR                   = args[3]
+        shared_metadata_dictVAR        = args[4]
+        shared_globalindex_dictVAR     = args[5]
+        sourceVAR                      = args[6]
+        fpsVAR                         = args[7]
+        appliedcvVAR                   = args[8]
+        shared_pool_meta_listVAR       = args[9]
+        subprocess_listVAR             = args[10]
+         
 
-    def FCVAWidgetInit(*args):
+        for x in range(cvpartitionsVAR):
+            #init analyzed/keycount dicts
+            shared_analyzedA = shared_mem_managerVAR.dict()
+            shared_analyzedAKeycount = shared_mem_managerVAR.dict()
+            shared_rawA = shared_mem_managerVAR.dict()
+            shared_rawAKEYS = shared_mem_managerVAR.dict()
+            
+            #init dicts
+            for y in range(bufferlenVAR):
+                shared_analyzedA["frame" + str(y)] = -1
+                shared_analyzedAKeycount["key" + str(y)] = -1
+                shared_rawA["frame" + str(y)] = -1
+                shared_rawAKEYS["key" + str(y)] = -1
+            
+            #start the subprocesses
+            cv_subprocessA = FCVA_mpVAR.Process(
+                target=open_cvpipeline,
+                args=(
+                    shared_metadata_dictVAR,
+                    appliedcvVAR,
+                    shared_analyzedA,
+                    shared_globalindex_dictVAR,
+                    shared_analyzedAKeycount,
+                    sourceVAR,
+                    x, #partition #, starts at 0 (now is x in this loop)
+                    0, #instance of the block of relevant frames
+                    bufferlenVAR, #bufferlen AKA how long the internal queues should be
+                    cvpartitionsVAR, #max # of partitions/subprocesses that divide up the video sequence
+                    fpsVAR,
+                    shared_rawA,
+                    shared_rawAKEYS
+                ),
+            )
+            cv_subprocessA.start()
+            #append everything at the end so kivy can start and know all the info
+            # thefguy = f'{"shared_analyzed" + str(x) + "OUTERVAR = "} shared_analyzedA'
+            # print("thefguy", thefguy)
+            # exec(thefguy)
+            shared_pool_meta_listVAR.append(shared_analyzedA)
+            shared_pool_meta_listVAR.append(shared_analyzedAKeycount)
+            shared_pool_meta_listVAR.append(shared_rawA)
+            shared_pool_meta_listVAR.append(shared_rawAKEYS)
+            dicts_per_subprocessVAR = 4 #remember to update this....
+            subprocess_listVAR.append(cv_subprocessA)
+        return [shared_pool_meta_listVAR, subprocess_listVAR, dicts_per_subprocessVAR]
+
+    def FCVAWidgetInit(*args):#REMINDER: there is no self because I never instantiate a class with multiprocessing.process
         '''
         #1: define class
         #2: set up the kv
@@ -713,8 +743,6 @@ class FCVA:
                     #this loads the class def and sets the kv string as self.FCVAWidget_KV, remember to add self.FCVAWidget_KV to the string
                     # self.FCVAWidgetInit() #this fails because I run this by targeting this function AKA no class exists...
                     self.FCVAWidget_KV = FCVA.FCVAWidgetInit()
-
-
 
                     if len(kvstring_check) != 0:
                         self.KV_string = kvstring_check[0]
