@@ -637,12 +637,17 @@ class FCVA:
             import traceback
             print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
 
-    def FCVAWidgetInit(self, *args):
+    def FCVAWidget_SubprocessInit(self, *args):
         '''
         this is going to spawn subprocesses so make sure the code that calls it has this to stop infinite subprocesses
         if __name__ == "__main__":
             import multiprocessing 
             multiprocessing.freeze_support()
+        '''
+        pass
+
+    def FCVAWidgetInit(*args):
+        '''
         #1: define class
         #2: set up the kv
         #3: add it to kv string before it's loaded
@@ -652,9 +657,33 @@ class FCVA:
 
         class FCVAWidget(BoxLayout):
             pass
-        self.FCVAKV = f"""
-        placeholder
+        FCVAWidget_KV = f"""
+<FCVAWidget>:
+    orientation: 'vertical'
+    id: mainBoxLayoutID
+    Image:
+        id: image_textureID
+    Slider:
+        id: vidsliderID
+        min: 0
+        max: 1111111 #should be 30*total_seconds
+        step: 1
+        value_track: True
+        value_track_color: 1, 0, 0, 1
+        size_hint: (1, 0.1)
+        orientation: 'horizontal'
+    BoxLayout:
+        id: subBoxLayoutID1
+        orientation: 'horizontal'
+        size_hint: (1, 0.1)
+        Button:
+            id: StartScreenButtonID
+            text: "Play"
+            on_release: kivy.app.App.get_running_app().toggleCV()
+        Label:
+            text: str(vidsliderID.value) #convert slider label to a time
 """
+        return FCVAWidget_KV
     
     def open_kivy(*args):
         try:
@@ -681,17 +710,17 @@ class FCVA:
                         if x == "kvstring"
                     ]
 
-                    from kivy.uix.boxlayout import BoxLayout
+                    #this loads the class def and sets the kv string as self.FCVAWidget_KV, remember to add self.FCVAWidget_KV to the string
+                    # self.FCVAWidgetInit() #this fails because I run this by targeting this function AKA no class exists...
+                    self.FCVAWidget_KV = FCVA.FCVAWidgetInit()
 
-                    class FCVAWidget(BoxLayout):
-                        pass
+
 
                     if len(kvstring_check) != 0:
                         self.KV_string = kvstring_check[0]
                     else:
                         # remember that the KV string IS THE ACTUAL FILE AND MUST BE INDENTED PROPERLY TO THE LEFT!
                         self.KV_string = f"""
-                        
 #:import kivy.app kivy.app
 <FCVA_screen_manager>:
     id: FCVA_screen_managerID
@@ -706,33 +735,9 @@ class FCVA:
         id: FCVAWidget_id
 
 FCVA_screen_manager: #remember to return a root widget
-
-<FCVAWidget>:
-    orientation: 'vertical'
-    id: mainBoxLayoutID
-    Image:
-        id: image_textureID
-    Slider:
-        id: vidsliderID
-        min: 0
-        max: {self.framelength} #should be 30*total_seconds
-        step: 1
-        value_track: True
-        value_track_color: 1, 0, 0, 1
-        size_hint: (1, 0.1)
-        orientation: 'horizontal'
-    BoxLayout:
-        id: subBoxLayoutID1
-        orientation: 'horizontal'
-        size_hint: (1, 0.1)
-        Button:
-            id: StartScreenButtonID
-            text: "Play"
-            on_release: kivy.app.App.get_running_app().toggleCV()
-        Label:
-            text: str(vidsliderID.value) #convert slider label to a time
-
 """
+                        self.KV_string += self.FCVAWidget_KV     
+
                 def build(self):
                     self.title = self.shared_metadata_dictVAR["title"]
                     build_app_from_kv = Builder.load_string(self.KV_string)
