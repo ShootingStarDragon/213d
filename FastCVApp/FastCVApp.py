@@ -241,9 +241,7 @@ class FCVA:
         try:
             fprint("when compiled, what is __name__?", __name__, "file?", __file__)
             if __name__ == "FastCVApp":
-                # import multiprocessing as FCVA_mp
-                # trying out multiprocess as per https://stackoverflow.com/a/72776044
-                import multiprocess as FCVA_mp
+                import multiprocessing as FCVA_mp
 
                 # this is so that only 1 window is run when packaging with pyinstaller
                 FCVA_mp.freeze_support()
@@ -398,7 +396,6 @@ class FCVA:
                 # # reference: https://stackoverflow.com/questions/70862189/how-to-create-variable-names-dynamically-and-assigning-values-in-python
                 # # reference: https://stackoverflow.com/questions/22558548/eval-syntaxerror-invalid-syntax-in-python
 
-                '''
                 # shared_pool_meta_list = shared_mem_manager.list()
                 shared_pool_meta_list = [] #IMO this is faster, i think since it doesn't have to propagate changes down the nested dict structure
                 subprocess_list = []
@@ -419,30 +416,20 @@ class FCVA:
                 shared_pool_meta_list = initdatalist[0]
                 subprocess_list = initdatalist[1]
                 dicts_per_subprocess =  initdatalist[2]
-                '''
                 
                 #you CAN target class methods using multiprocessing process 
                 #https://stackoverflow.com/questions/45311398/python-multiprocessing-class-methods
                 kivy_subprocess = FCVA_mp.Process(
                     target=self.open_kivy,
                     args=(
-                        #since I moved this to a class def all the args got moved by 1 since self is here too
                         shared_analysis_dict, 
                         shared_metadata_dict, 
                         self.fps, 
                         shared_globalindex_dict, 
-                        (1/self.fps), #5
+                        (1/self.fps), 
                         bufferlen,
                         cvpartitions, 
                         self.length, 
-
-                        FCVA_mp, 
-                        shared_mem_manager, #10
-                        
-                        self.source,
-                        
-                        self.appliedcv,
-
                         # shared_pool_meta_list,
                         # dicts_per_subprocess,
                         ))
@@ -636,48 +623,48 @@ class FCVA:
             import multiprocessing 
             multiprocessing.freeze_support()
         '''
-        FCVA_mpVAR2                     = args[0]
-        shared_mem_managerVAR2          = args[1]
-        cvpartitionsVAR2                = args[2]
-        bufferlenVAR2                   = args[3]
-        shared_metadata_dictVAR2        = args[4]
-        shared_globalindex_dictVAR2     = args[5]
-        sourceVAR2                      = args[6]
-        fpsVAR2                         = args[7]
-        appliedcvVAR2                   = args[8]
-        shared_pool_meta_listVAR2       = args[9]
-        subprocess_listVAR2             = args[10]
+        FCVA_mpVAR                     = args[0]
+        shared_mem_managerVAR          = args[1]
+        cvpartitionsVAR                = args[2]
+        bufferlenVAR                   = args[3]
+        shared_metadata_dictVAR        = args[4]
+        shared_globalindex_dictVAR     = args[5]
+        sourceVAR                      = args[6]
+        fpsVAR                         = args[7]
+        appliedcvVAR                   = args[8]
+        shared_pool_meta_listVAR       = args[9]
+        subprocess_listVAR             = args[10]
          
 
-        for x in range(cvpartitionsVAR2):
+        for x in range(cvpartitionsVAR):
             #init analyzed/keycount dicts
-            shared_analyzedA = shared_mem_managerVAR2.dict()
-            shared_analyzedAKeycount = shared_mem_managerVAR2.dict()
-            shared_rawA = shared_mem_managerVAR2.dict()
-            shared_rawAKEYS = shared_mem_managerVAR2.dict()
+            shared_analyzedA = shared_mem_managerVAR.dict()
+            shared_analyzedAKeycount = shared_mem_managerVAR.dict()
+            shared_rawA = shared_mem_managerVAR.dict()
+            shared_rawAKEYS = shared_mem_managerVAR.dict()
             
             #init dicts
-            for y in range(bufferlenVAR2):
+            for y in range(bufferlenVAR):
                 shared_analyzedA["frame" + str(y)] = -1
                 shared_analyzedAKeycount["key" + str(y)] = -1
                 shared_rawA["frame" + str(y)] = -1
                 shared_rawAKEYS["key" + str(y)] = -1
             
             #start the subprocesses
-            cv_subprocessA = FCVA_mpVAR2.Process(
+            cv_subprocessA = FCVA_mpVAR.Process(
                 target=open_cvpipeline,
                 args=(
-                    shared_metadata_dictVAR2,
-                    appliedcvVAR2,
+                    shared_metadata_dictVAR,
+                    appliedcvVAR,
                     shared_analyzedA,
-                    shared_globalindex_dictVAR2,
+                    shared_globalindex_dictVAR,
                     shared_analyzedAKeycount,
-                    sourceVAR2,
+                    sourceVAR,
                     x, #partition #, starts at 0 (now is x in this loop)
                     0, #instance of the block of relevant frames
-                    bufferlenVAR2, #bufferlen AKA how long the internal queues should be
-                    cvpartitionsVAR2, #max # of partitions/subprocesses that divide up the video sequence
-                    fpsVAR2,
+                    bufferlenVAR, #bufferlen AKA how long the internal queues should be
+                    cvpartitionsVAR, #max # of partitions/subprocesses that divide up the video sequence
+                    fpsVAR,
                     shared_rawA,
                     shared_rawAKEYS
                 ),
@@ -687,13 +674,13 @@ class FCVA:
             # thefguy = f'{"shared_analyzed" + str(x) + "OUTERVAR = "} shared_analyzedA'
             # print("thefguy", thefguy)
             # exec(thefguy)
-            shared_pool_meta_listVAR2.append(shared_analyzedA)
-            shared_pool_meta_listVAR2.append(shared_analyzedAKeycount)
-            shared_pool_meta_listVAR2.append(shared_rawA)
-            shared_pool_meta_listVAR2.append(shared_rawAKEYS)
+            shared_pool_meta_listVAR.append(shared_analyzedA)
+            shared_pool_meta_listVAR.append(shared_analyzedAKeycount)
+            shared_pool_meta_listVAR.append(shared_rawA)
+            shared_pool_meta_listVAR.append(shared_rawAKEYS)
             dicts_per_subprocessVAR = 4 #remember to update this....
-            subprocess_listVAR2.append(cv_subprocessA)
-        return [shared_pool_meta_listVAR2, subprocess_listVAR2, dicts_per_subprocessVAR]
+            subprocess_listVAR.append(cv_subprocessA)
+        return [shared_pool_meta_listVAR, subprocess_listVAR, dicts_per_subprocessVAR]
 
     def FCVAWidgetInit(*args, ):#REMINDER: there is no self because I never instantiate a class with multiprocessing.process
         '''
@@ -705,44 +692,9 @@ class FCVA:
         from kivy.uix.boxlayout import BoxLayout
 
         class FCVAWidget(BoxLayout):
-            # https://stackoverflow.com/a/11421962
-            #try class attributes as per 
-            # bar = "Bar" #Class attribute.
-
-            #do this so u can pass info to class def
-            FCVA_mpVAR2 = args[0]
-            shared_mem_managerVAR2 = args[1]
-            cvpartitionsVAR2 = args[2]
-            bufferlenVAR2 = args[3]
-            shared_metadata_dictVAR2 = args[4]
-            shared_globalindex_dictVAR2 = args[5]
-            sourceVAR2 = args[6]
-            fpsVAR2 = args[7]
-            appliedcvVAR2 = args[8]
-
-            def init_subprocesses(self, *args):
-                shared_pool_meta_list = [] #IMO this is faster, i think since it doesn't have to propagate changes down the nested dict structure
-                subprocess_list = []
-                fprint("ok, is there self???, should be bufferlen:", self.bufferlenVAR2)
-                initdatalist = FCVA.FCVAWidget_SubprocessInit(
-                    self.FCVA_mpVAR2,
-                    self.shared_mem_managerVAR2,
-                    self.cvpartitionsVAR2,
-                    self.bufferlenVAR2,
-                    self.shared_metadata_dictVAR2,
-                    self.shared_globalindex_dictVAR2,
-                    self.sourceVAR2,
-                    self.fpsVAR2,
-                    self.appliedcvVAR2,
-                    shared_pool_meta_list,
-                    subprocess_list,
-                    )
-                #now set all the stuff that needs to be set from initdatalist:
-                shared_pool_meta_list = initdatalist[0]
-                subprocess_list = initdatalist[1]
-                dicts_per_subprocess =  initdatalist[2]
-                #set all the self stuff here:
-                self.blah = blah
+            
+            def tester(*args):
+                fprint("am i accessible in the subprocess after FCVAWidgetInit is called?")
             
             def on_start(self):
                 # start blitting. 1/30 always works because it will always blit the latest image from open_appliedcv subprocess, but kivy itself will be at 30 fps
@@ -758,10 +710,6 @@ class FCVA:
                 # fprint("id searching", self, self.ids)
                 # fprint("id searching", self, self.ids, self.ids['subBoxLayoutID1'], self.ids['subBoxLayoutID1'].ids)
                 # widgettext = App.get_running_app().root.get_screen('start_screen_name').ids['FCVAWidget_id'].ids['StartScreenButtonID'].text
-
-                #test
-                self.init_subprocesses()
-
                 widgettext = self.ids['StartScreenButtonID'].text
                 fprint("widgettext is?", widgettext)
                 if "Play" in widgettext:
@@ -978,17 +926,6 @@ class FCVA:
                     print("blitting died!", e, flush=True)
                     import traceback
                     print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
-        
-        #do this so u can pass info to class def
-        # FCVAWidget.FCVA_mpVAR2 = args[0]
-        # FCVAWidget.shared_mem_managerVAR2 = args[1]
-        # FCVAWidget.cvpartitionsVAR2 = args[2]
-        # FCVAWidget.bufferlenVAR2 = args[3]
-        # FCVAWidget.shared_metadata_dictVAR2 = args[4]
-        # FCVAWidget.shared_globalindex_dictVAR2 = args[5]
-        # FCVAWidget.sourceVAR2 = args[6]
-        # FCVAWidget.fpsVAR2 = args[7]
-        # FCVAWidget.appliedcvVAR2 = args[8]
 
         FCVAWidget_KV = f"""
 <FCVAWidget>:
@@ -1036,7 +973,6 @@ class FCVA:
             from kivy.modules import inspector
             from kivy.core.window import Window
             from kivy.uix.button import Button
-            fprint("out of len wtf? open_kivy level", len(args), args)
 
             class MainApp(App):
                 def __init__(self, *args, **kwargs):
@@ -1050,19 +986,7 @@ class FCVA:
 
                     #this loads the class def and sets the kv string as self.FCVAWidget_KV, remember to add self.FCVAWidget_KV to the string
                     # self.FCVAWidgetInit() #this fails because I run this by targeting this function AKA no class exists...
-
-                    #since I moved this to a class def all the args got moved by 1 since self is here too
-                    self.FCVAWidget_KV = FCVA.FCVAWidgetInit(
-                        self.FCVA_mpVAR, # FCVA_mpVAR,
-                        self.shared_mem_managerVAR, # shared_mem_managerVAR,
-                        self.cvpartitions, # cvpartitionsVAR,
-                        self.bufferlen, # bufferlen,
-                        self.shared_metadata_dictVAR, # shared_metadata_dict,
-                        self.shared_globalindex_dictVAR, # shared_globalindex_dict,
-                        self.sourceVAR, # self.source,
-                        self.fps, # self.fps,
-                        self.appliedcvVAR, # self.appliedcv,
-                    )
+                    self.FCVAWidget_KV = FCVA.FCVAWidgetInit()
 
                     if len(kvstring_check) != 0:
                         self.KV_string = kvstring_check[0]
@@ -1141,7 +1065,6 @@ FCVA_screen_manager: #remember to return a root widget
             # MainApp.shared_analyzedDKeycountVAR = args[15]
 
             #since I moved this to a class def all the args got moved by 1 since self is here too
-            #remember this changes the class defintion so it's available every time u instance MainApp
             MainApp.shared_analysis_dictVAR = args[1]
             MainApp.shared_metadata_dictVAR = args[2]
             MainApp.fps = args[3]
@@ -1150,12 +1073,8 @@ FCVA_screen_manager: #remember to return a root widget
             MainApp.bufferlen = args[6]
             MainApp.cvpartitions = args[7]
             MainApp.framelength = args[8]
-            # MainApp.shared_pool_meta_listVAR = args[9]
+            MainApp.shared_pool_meta_listVAR = args[9]
             # MainApp.dicts_per_subprocessVAR = args[10]
-            MainApp.FCVA_mpVAR = args[9] #FCVA_mpVAR,
-            MainApp.shared_mem_managerVAR = args[10] #FCVA_mpVAR,
-            MainApp.sourceVAR = args[11] #FCVA_mpVAR,
-            MainApp.appliedcvVAR = args[12] #FCVA_mpVAR,
             
             MainApp().run()
         except Exception as e: 
