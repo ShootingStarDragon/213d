@@ -20,7 +20,6 @@ mediapipe = {version = "^0.10.0"}
 #mediapipe-silicon = {version = "^0.9.1",  markers = "sys_platform == 'darwin'"}
 #mediapipe silicon is for m1 chip, if ur install is failing try regular mediapipe
 blosc2 = "^2.2.2"
-multiprocess = "^0.70.14"
 
 [tool.poetry.group.dev.dependencies]
 pydantic = "^1.10.2"
