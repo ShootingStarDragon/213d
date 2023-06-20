@@ -237,8 +237,6 @@ class FCVA:
                 FCVA_mp.freeze_support()
 
                 shared_mem_manager = FCVA_mp.Manager()
-                # shared_analysis_dict holds the actual frames
-                shared_analysis_dict = shared_mem_manager.dict()
                 # shared_metadata_dict holds keys about run states so things don't error by reading something that doesn't exist
                 shared_metadata_dict = shared_mem_manager.dict()
                 # FEAR OF USING SHARED METADATA DICT TOO MUCH: too many processes lock up the memory too much....
@@ -412,7 +410,6 @@ class FCVA:
                 kivy_subprocess = FCVA_mp.Process(
                     target=self.open_kivy,
                     args=(
-                        shared_analysis_dict, 
                         shared_metadata_dict, 
                         self.fps, 
                         shared_globalindex_dict, 
@@ -841,16 +838,13 @@ FCVA_screen_manager: #remember to return a root widget
                 pass
 
             #since I moved this to a class def all the args got moved by 1 since self is here too
-            MainApp.shared_analysis_dictVAR = args[1]
-            MainApp.shared_metadata_dictVAR = args[2]
-            MainApp.fps = args[3]
-            MainApp.shared_globalindex_dictVAR = args[4]
-            MainApp.spf = args[5]
-            MainApp.bufferlen = args[6]
-            MainApp.cvpartitions = args[7]
-            MainApp.framelength = args[8]
-            # MainApp.shared_pool_meta_listVAR = args[9]
-            # MainApp.dicts_per_subprocessVAR = args[10]
+            MainApp.shared_metadata_dictVAR     = args[1]
+            MainApp.fps                         = args[2]
+            MainApp.shared_globalindex_dictVAR  = args[3]
+            MainApp.spf                         = args[4]
+            MainApp.bufferlen                   = args[5]
+            MainApp.cvpartitions                = args[6]
+            MainApp.framelength                 = args[7]
             
             MainApp().run()
         except Exception as e: 
