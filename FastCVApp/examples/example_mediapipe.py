@@ -58,13 +58,13 @@ def draw_landmarks_on_image(annotated_image, detection_result):
         import traceback
         print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
     
-def mediapipe(*args): #basicmp
+def apply_mediapipe_func(*args): #basicmp
     try:
         inputqueue = args[0]
-        bufferlenVAR = args[3]
+        bufferlenVAR = args[2]
         answerqueue = deque(maxlen=bufferlenVAR)
-        landmarkerVAR = args[4]
-        raw_queueKEYSVAR = args[5]
+        landmarkerVAR = args[3]
+        raw_queueKEYSVAR = args[4]
         
         #reference: https://stackoverflow.com/questions/48640251/how-to-peek-front-of-deque-without-popping#:~:text=You%20can%20peek%20front%20element,right%20and%20seems%20efficient%20too.
         peek_to_force_monotonically_increasing = 0
@@ -111,10 +111,10 @@ if __name__ == "__main__":
     import multiprocessing 
     multiprocessing.freeze_support()
     print("location of file if name main?", __file__, os.getpid() )
-    print("paths??", sys.path)
+    # print("paths??", sys.path)
     import FastCVApp
     app = FastCVApp.FCVA()
-    app.appliedcv = mediapipe
+    app.appliedcv = apply_mediapipe_func
 
     # # / and \ works on windows, only / on mac tho 
     app.source = sourcelocation
