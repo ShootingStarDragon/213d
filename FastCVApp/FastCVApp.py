@@ -469,7 +469,7 @@ class FCVA:
                 # target=open_cvpipeline,
                 target=open_cvpipelineDUMMY,
                 args=(
-                    appliedcvVAR, #this was a problem...
+                    appliedcvVAR, #this is a problem, it doesn't survive multiple dill/pickles...
                     shared_analyzedA,
                     shared_analyzedAKeycount,
                     sourceVAR,
