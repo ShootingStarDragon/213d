@@ -10,7 +10,9 @@ from kivy.uix.boxlayout import BoxLayout
 
 
 class Threebythreeone(BoxLayout):
-    pass
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        print("how many times is this instanced? I call it twice in kv... IT GETS CALLED TWICE IF U CALL IT TWICE IN KV....")
 
 
 class Noughtsandcrosses(BoxLayout):
