@@ -61,20 +61,17 @@ def int_to_partition(*args):
 
 def open_cvpipeline(*args):
     try:
-        shared_metadata_dict            =  args[0]
-        appliedcv                       = args[1]
-        shared_metadata_dict["mp_ready"] = True
-        shared_analyzedVAR              = args[2]
-        shared_globalindex_dictVAR      = args[3] #self.shared_globalindex_dictVAR["starttime"]
-        shared_analyzedKeycountVAR      = args[4]
-        source                          = args[5]
-        partitionnumber                 = args[6]
-        instance                        = args[7]
-        bufferlen                       = args[8]
-        maxpartitions                   = args[9]
-        fps                             = args[10]
-        shared_rawdict                  = args[11]
-        shared_rawKEYSdict              = args[12]
+        appliedcv                       = args[0]
+        shared_analyzedVAR              = args[1]
+        shared_analyzedKeycountVAR      = args[2]
+        source                          = args[3]
+        partitionnumber                 = args[4]
+        instance                        = args[5]
+        bufferlen                       = args[6]
+        maxpartitions                   = args[7]
+        fps                             = args[8]
+        shared_rawdict                  = args[9]
+        shared_rawKEYSdict              = args[10]
 
         #didn't know about apipreference: https://stackoverflow.com/questions/73753126/why-does-opencv-read-video-faster-than-ffmpeg
         sourcecap = cv2.VideoCapture(source, apiPreference=cv2.CAP_FFMPEG)
@@ -126,97 +123,93 @@ def open_cvpipeline(*args):
         landmarker = mp.tasks.vision.PoseLandmarker.create_from_options(options)
 
         while True:
-            if "kivy_run_state" in shared_metadata_dict:
-                if shared_metadata_dict["kivy_run_state"] == False:
-                    print("exiting open_appliedcv", os.getpid(), flush=True)
-                    break
-                '''
-                PLAN:
-                Init shared dicts at the beginning instead of checking every while loop
+            '''
+            PLAN:
+            Init shared dicts at the beginning instead of checking every while loop
+            
+            use 3 subprocesses(A,B,C) to use opencv to get frames from 1 file simultaneously (pray it works and there's no file hold...)
+            then for each subprocesses, request 10 frames (0-9 > A, 10-19> B, 20-39>C, etc)
+            2 queues, 1 naked frame, 1 analyzed frame that is written to sharedmem for kivy to see
+            2 dicts:
+            rawqueue
+            analyzedqueue
+
+            LOOP:
+                3 actions: 
+                Write
+                    Write to shared dict if init OR frames are old                    
+                Analyze
+                    Analyze all the time (if analyze queue is empty and there is a framequeue)
+                Read
+                    request the RIGHT 10 frames (0-10 or 11-20 or 21-30)
+                    Load raw frames only if analyze queue is empty (this implicitly checks for time, keeps frames loaded, and stops u from loading too much)
+            Why write>analyze>read?
+                you want to write out the analyzed frames first
+                there is some downtime where kivy reads from a shareddict, in that time I would ideally read/analyze frames (something that doesn't lock the shared dict)
+            '''
+            #make sure things have started AND this processess is not stopped:
+            if "starttime" in shared_globalindex_dictVAR and shared_globalindex_dictVAR["subprocess" + str(pid)]:
+
+                initial_time = time.time()
+                future_time = shared_globalindex_dictVAR["starttime"] + ((1/fps)*internal_framecount)
+                current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
+                # fprint("frame advantage START????", os.getpid(), internal_framecount, current_framenumber, future_time-time.time(), time.time())
                 
-                use 3 subprocesses(A,B,C) to use opencv to get frames from 1 file simultaneously (pray it works and there's no file hold...)
-                then for each subprocesses, request 10 frames (0-9 > A, 10-19> B, 20-39>C, etc)
-                2 queues, 1 naked frame, 1 analyzed frame that is written to sharedmem for kivy to see
-                2 dicts:
-                rawqueue
-                analyzedqueue
-
-                LOOP:
-                    3 actions: 
-                    Write
-                        Write to shared dict if init OR frames are old                    
-                    Analyze
-                        Analyze all the time (if analyze queue is empty and there is a framequeue)
-                    Read
-                        request the RIGHT 10 frames (0-10 or 11-20 or 21-30)
-                        Load raw frames only if analyze queue is empty (this implicitly checks for time, keeps frames loaded, and stops u from loading too much)
-                Why write>analyze>read?
-                    you want to write out the analyzed frames first
-                    there is some downtime where kivy reads from a shareddict, in that time I would ideally read/analyze frames (something that doesn't lock the shared dict)
-                '''
-                #make sure things have started AND this processess is not stopped:
-                if "starttime" in shared_globalindex_dictVAR and shared_globalindex_dictVAR["subprocess" + str(pid)]:
-
-                    initial_time = time.time()
-                    future_time = shared_globalindex_dictVAR["starttime"] + ((1/fps)*internal_framecount)
+                newwritestart = time.time()
+                if len(analyzed_queue) == bufferlen and (max(shared_analyzedKeycountVAR.values()) <= current_framenumber or max(shared_analyzedKeycountVAR.values()) == -1):
+                    dictwritetime = time.time()
+                    for x in range(bufferlen):
+                        shared_analyzedVAR['frame'+str(x)] = analyzed_queue.popleft()
+                        shared_analyzedKeycountVAR['key'+str(x)] = analyzed_queueKEYS.popleft()
+                    fprint("updated shareddict", shared_analyzedKeycountVAR.values())
+                newwriteend = time.time()
+                
+                afteranalyzetimestart = time.time()
+                if len(raw_queue) > 0 and len(analyzed_queue) == 0:
+                    #give the queue to the cv func
+                    #cv func returns a queue of frames
+                    rtime = time.time()
+                    # u can peek at deques: https://stackoverflow.com/questions/48640251/how-to-peek-front-of-deque-without-popping#:~:text=You%20can%20peek%20front%20element,right%20and%20seems%20efficient%20too. , can do it but I thought of a simpler way in the example py file
+                    resultqueue = appliedcv(raw_queue, shared_globalindex_dictVAR, bufferlen, landmarker, raw_queueKEYS)
+                    fprint("resultqueue timing (appliedcv)", os.getpid(), time.time() - rtime, time.time())
                     current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
-                    # fprint("frame advantage START????", os.getpid(), internal_framecount, current_framenumber, future_time-time.time(), time.time())
-                    
-                    newwritestart = time.time()
-                    if len(analyzed_queue) == bufferlen and (max(shared_analyzedKeycountVAR.values()) <= current_framenumber or max(shared_analyzedKeycountVAR.values()) == -1):
-                        dictwritetime = time.time()
-                        for x in range(bufferlen):
-                            shared_analyzedVAR['frame'+str(x)] = analyzed_queue.popleft()
-                            shared_analyzedKeycountVAR['key'+str(x)] = analyzed_queueKEYS.popleft()
-                        fprint("updated shareddict", shared_analyzedKeycountVAR.values())
-                    newwriteend = time.time()
-                    
-                    afteranalyzetimestart = time.time()
-                    if len(raw_queue) > 0 and len(analyzed_queue) == 0:
-                        #give the queue to the cv func
-                        #cv func returns a queue of frames
-                        rtime = time.time()
-                        # u can peek at deques: https://stackoverflow.com/questions/48640251/how-to-peek-front-of-deque-without-popping#:~:text=You%20can%20peek%20front%20element,right%20and%20seems%20efficient%20too. , can do it but I thought of a simpler way in the example py file
-                        resultqueue = appliedcv(raw_queue, shared_globalindex_dictVAR, shared_metadata_dict, bufferlen, landmarker, raw_queueKEYS)
-                        fprint("resultqueue timing (appliedcv)", os.getpid(), time.time() - rtime, time.time())
-                        current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
-                        otherhalf = time.time()
+                    otherhalf = time.time()
 
-                        #figure out future time
-                        future_time = shared_globalindex_dictVAR["starttime"] + ((1/fps)*internal_framecount)
+                    #figure out future time
+                    future_time = shared_globalindex_dictVAR["starttime"] + ((1/fps)*internal_framecount)
 
-                        for x in range(len(resultqueue)):
-                            result_compressed = resultqueue.popleft().tobytes()
-                            result_compressed = blosc2.compress(result_compressed,filter=blosc2.Filter.SHUFFLE, codec=blosc2.Codec.LZ4)
-                            analyzed_queue.append(result_compressed)
-                            analyzed_queueKEYS.append(raw_queueKEYS.popleft())
-                    afteranalyzetime = time.time()
+                    for x in range(len(resultqueue)):
+                        result_compressed = resultqueue.popleft().tobytes()
+                        result_compressed = blosc2.compress(result_compressed,filter=blosc2.Filter.SHUFFLE, codec=blosc2.Codec.LZ4)
+                        analyzed_queue.append(result_compressed)
+                        analyzed_queueKEYS.append(raw_queueKEYS.popleft())
+                afteranalyzetime = time.time()
 
-                    afterqueuetimestart = time.time()
-                    # if raw_queue.qsize() == 0:
-                    # if len(raw_queue) == 0:
-                    if len(raw_queue) <= int(bufferlen/2):
-                        #get the right framecount:
-                        framelist = frameblock(partitionnumber,instance_count,bufferlen,maxpartitions)
-                        # fprint("says true for some reason?", shared_globalindex_dictVAR["subprocess" + str(pid)])
-                        instance_count += 1
-                        timeoog = time.time()
-                        for x in range(bufferlen*maxpartitions):
-                            timegg = time.time()
-                            (ret, framedata) = sourcecap.read()  #like .005 speed
-                            # fprint("how fast is readin really?", time.time() - timegg) #0.010001897811889648
+                afterqueuetimestart = time.time()
+                # if raw_queue.qsize() == 0:
+                # if len(raw_queue) == 0:
+                if len(raw_queue) <= int(bufferlen/2):
+                    #get the right framecount:
+                    framelist = frameblock(partitionnumber,instance_count,bufferlen,maxpartitions)
+                    # fprint("says true for some reason?", shared_globalindex_dictVAR["subprocess" + str(pid)])
+                    instance_count += 1
+                    timeoog = time.time()
+                    for x in range(bufferlen*maxpartitions):
+                        timegg = time.time()
+                        (ret, framedata) = sourcecap.read()  #like .005 speed
+                        # fprint("how fast is readin really?", time.time() - timegg) #0.010001897811889648
 
-                            #compare internal framecount to see if it's a frame that this subprocess is supposed to analyze
-                            if ret and internal_framecount in framelist:
-                                # i might not be picking up a pose because the frame is being read upside down, flip it first before analyzing with mediapipe
-                                framedata = cv2.resize(framedata, (1280, 720))
-                                # framedata = cv2.resize(framedata, (640, 480))
-                                # framedata = cv2.flip(framedata, 0) 
-                                # framedata = cv2.cvtColor(framedata, cv2.COLOR_RGB2BGR)
-                                raw_queue.append(framedata) #im not giving bytes, yikes? # 0 time
-                                raw_queueKEYS.append(framelist[x % bufferlen]) # 0 time
-                            internal_framecount += 1
-                        # fprint("the for loop structure is slow...", time.time()-timeoog)
+                        #compare internal framecount to see if it's a frame that this subprocess is supposed to analyze
+                        if ret and internal_framecount in framelist:
+                            # i might not be picking up a pose because the frame is being read upside down, flip it first before analyzing with mediapipe
+                            framedata = cv2.resize(framedata, (1280, 720))
+                            # framedata = cv2.resize(framedata, (640, 480))
+                            # framedata = cv2.flip(framedata, 0) 
+                            # framedata = cv2.cvtColor(framedata, cv2.COLOR_RGB2BGR)
+                            raw_queue.append(framedata) #im not giving bytes, yikes? # 0 time
+                            raw_queueKEYS.append(framelist[x % bufferlen]) # 0 time
+                        internal_framecount += 1
+                    # fprint("the for loop structure is slow...", time.time()-timeoog)
     except Exception as e: 
         print("open_appliedcv died!", e)
         import traceback
@@ -237,16 +230,7 @@ class FCVA:
                 FCVA_mp.freeze_support()
 
                 shared_mem_manager = FCVA_mp.Manager()
-                # shared_metadata_dict holds keys about run states so things don't error by reading something that doesn't exist
-                shared_metadata_dict = shared_mem_manager.dict()
-                # FEAR OF USING SHARED METADATA DICT TOO MUCH: too many processes lock up the memory too much....
-                # 2nd shared metadata dict: shared global index, knows: current frame, paused time, idk what else...
-                shared_globalindex_dict = shared_mem_manager.dict()
-                shared_globalindex_dict["curframe"] = 0
-
-                # set metadata kivy_run_state to true so cv subprocess will run and not get an error by reading uninstantiated shared memory.
-                shared_metadata_dict["kivy_run_state"] = True
-
+                
                 # reference: https://stackoverflow.com/questions/8220108/how-do-i-check-the-operating-system-in-python
                 from sys import platform
 
@@ -350,20 +334,21 @@ class FCVA:
                 self.length += 11222333
                 video.release()
 
+                kvinit_dict = {}
                 #sanity checks
                 if not hasattr(self, "fps"):
                     # default to 30fps, else set blit buffer speed to 1/30 sec
                     self.fps = 1 / 30
                 if not hasattr(self, "title"):
-                    shared_metadata_dict[
+                    kvinit_dict[
                         "title"
                     ] = "Fast CV App Example v0.1.0 by Pengindoramu"
                 else:
-                    shared_metadata_dict["title"] = self.title
+                    kvinit_dict["title"] = self.title
                 if hasattr(self, "colorfmt"):
-                    shared_metadata_dict["colorfmt"] = self.colorfmt
+                    kvinit_dict["colorfmt"] = self.colorfmt
                 if hasattr(self, "kvstring"):
-                    shared_metadata_dict["kvstring"] = self.kvstring
+                    kvinit_dict["kvstring"] = self.kvstring
                 if self.appliedcv == None:
                     print(
                         "FCVA.appliedcv is currently None. Not starting the CV subprocess."
@@ -392,8 +377,6 @@ class FCVA:
                     shared_mem_manager,
                     cvpartitions,
                     bufferlen,
-                    shared_metadata_dict,
-                    shared_globalindex_dict,
                     self.source,
                     self.fps,
                     self.appliedcv,
@@ -410,15 +393,12 @@ class FCVA:
                 kivy_subprocess = FCVA_mp.Process(
                     target=self.open_kivy,
                     args=(
-                        shared_metadata_dict, 
-                        self.fps, 
-                        shared_globalindex_dict, 
+                        self.fps,  
                         (1/self.fps), 
                         bufferlen,
                         cvpartitions, 
                         self.length, 
-                        # shared_pool_meta_list,
-                        # dicts_per_subprocess,
+                        kvinit_dict,
                         ))
                 kivy_subprocess.start()
 
@@ -430,19 +410,18 @@ class FCVA:
                 #to give the shareddict to kivy subprocess, unpack that list and give the shareddict directly 
 
                 # this try except block holds the main process open so the subprocesses aren't cleared when the main process exits early.
-                while "kivy_run_state" in shared_metadata_dict.keys():
-                    if shared_metadata_dict["kivy_run_state"] == False:
-                        # when the while block is done, close all the subprocesses using .join to gracefully exit. also make sure opencv releases the video.
-                        # mediaread_subprocess.join()
-                        for subprocessVAR in subprocess_list:
-                            subprocessVAR.join()
-                        # cv_subprocessA.join()
-                        # cv_subprocessB.join()
-                        # cv_subprocessC.join()
-                        # cv_subprocessD.join()
-                        kivy_subprocess.join()
-                        fprint("g")
-                        break
+                while True:
+                    time.sleep(200)
+                    # when the while block is done, close all the subprocesses using .join to gracefully exit. also make sure opencv releases the video.
+                    # mediaread_subprocess.join()
+                    for subprocessVAR in subprocess_list:
+                        subprocessVAR.join()
+                    # cv_subprocessA.join()
+                    # cv_subprocessB.join()
+                    # cv_subprocessC.join()
+                    # cv_subprocessD.join()
+                    kivy_subprocess.join()
+                    fprint("g")
         except Exception as e: 
             print("FCVA run died!", e, flush=True)
             import traceback
@@ -460,13 +439,11 @@ class FCVA:
         shared_mem_managerVAR          = args[1]
         cvpartitionsVAR                = args[2]
         bufferlenVAR                   = args[3]
-        shared_metadata_dictVAR        = args[4]
-        shared_globalindex_dictVAR     = args[5]
-        sourceVAR                      = args[6]
-        fpsVAR                         = args[7]
-        appliedcvVAR                   = args[8]
-        shared_pool_meta_listVAR       = args[9]
-        subprocess_listVAR             = args[10]
+        sourceVAR                      = args[4]
+        fpsVAR                         = args[5]
+        appliedcvVAR                   = args[6]
+        shared_pool_meta_listVAR       = args[7]
+        subprocess_listVAR             = args[8]
          
 
         for x in range(cvpartitionsVAR):
@@ -487,10 +464,8 @@ class FCVA:
             cv_subprocessA = FCVA_mpVAR.Process(
                 target=open_cvpipeline,
                 args=(
-                    shared_metadata_dictVAR,
                     appliedcvVAR,
                     shared_analyzedA,
-                    shared_globalindex_dictVAR,
                     shared_analyzedAKeycount,
                     sourceVAR,
                     x, #partition #, starts at 0 (now is x in this loop)
@@ -776,10 +751,10 @@ class FCVA:
             class MainApp(App):
                 def __init__(self, *args, **kwargs):
                     super().__init__(*args, **kwargs)
-                    shared_metadata_dict = self.shared_metadata_dictVAR
+                    kvinit_dict = self.kvinit_dictVAR
                     kvstring_check = [
-                        shared_metadata_dict[x]
-                        for x in shared_metadata_dict.keys()
+                        kvinit_dict[x]
+                        for x in kvinit_dict.keys()
                         if x == "kvstring"
                     ]
 
@@ -810,7 +785,7 @@ FCVA_screen_manager: #remember to return a root widget
                         self.KV_string += self.FCVAWidget_KV     
 
                 def build(self):
-                    self.title = self.shared_metadata_dictVAR["title"]
+                    self.title = self.kvinit_dictVAR["title"]
                     build_app_from_kv = Builder.load_string(self.KV_string)
                     button = Button(text="Test")
                     inspector.create_inspector(Window, button)
@@ -829,7 +804,6 @@ FCVA_screen_manager: #remember to return a root widget
                     self._run_prepare()
                     from kivy.base import runTouchApp
                     runTouchApp()
-                    self.shared_metadata_dictVAR["kivy_run_state"] = False
 
             class FCVA_screen_manager(ScreenManager):
                 pass
@@ -838,13 +812,12 @@ FCVA_screen_manager: #remember to return a root widget
                 pass
 
             #since I moved this to a class def all the args got moved by 1 since self is here too
-            MainApp.shared_metadata_dictVAR     = args[1]
-            MainApp.fps                         = args[2]
-            MainApp.shared_globalindex_dictVAR  = args[3]
-            MainApp.spf                         = args[4]
-            MainApp.bufferlen                   = args[5]
-            MainApp.cvpartitions                = args[6]
-            MainApp.framelength                 = args[7]
+            MainApp.fps                         = args[1]
+            MainApp.spf                         = args[2]
+            MainApp.bufferlen                   = args[3]
+            MainApp.cvpartitions                = args[4]
+            MainApp.framelength                 = args[5]
+            MainApp.kvinit_dictVAR              = args[6]
             
             MainApp().run()
         except Exception as e: 
