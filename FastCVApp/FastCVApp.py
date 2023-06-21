@@ -58,6 +58,8 @@ def int_to_partition(*args):
     return int(((testint - (testint % bufferlen))/bufferlen)%maxpartitions)
 
 
+def open_cvpipelineDUMMY(*args):
+    pass
 
 def open_cvpipeline(*args):
     try:
@@ -224,12 +226,12 @@ class FCVA:
         try:
             fprint("when compiled, what is __name__?", __name__, "file?", __file__)
             if __name__ == "FastCVApp":
-                import multiprocessing as FCVA_mp
+                import multiprocess as FCVA_mp
 
                 # this is so that only 1 window is run when packaging with pyinstaller
                 FCVA_mp.freeze_support()
 
-                shared_mem_manager = FCVA_mp.Manager()
+                # shared_mem_manager = FCVA_mp.Manager()
                 
                 # reference: https://stackoverflow.com/questions/8220108/how-do-i-check-the-operating-system-in-python
                 from sys import platform
@@ -370,23 +372,23 @@ class FCVA:
                 # reference: https://stackoverflow.com/questions/22558548/eval-syntaxerror-invalid-syntax-in-python
 
                 # shared_pool_meta_list = shared_mem_manager.list()
-                shared_pool_meta_list = [] #IMO this is faster, i think since it doesn't have to propagate changes down the nested dict structure
-                subprocess_list = []
-                initdatalist = FCVA.FCVAWidget_SubprocessInit(
-                    FCVA_mp,
-                    shared_mem_manager,
-                    cvpartitions,
-                    bufferlen,
-                    self.source,
-                    self.fps,
-                    self.appliedcv,
-                    shared_pool_meta_list,
-                    subprocess_list,
-                    )
-                #now set all the stuff that needs to be set from initdatalist:
-                shared_pool_meta_list = initdatalist[0]
-                subprocess_list = initdatalist[1]
-                dicts_per_subprocess =  initdatalist[2]
+                # shared_pool_meta_list = [] #IMO this is faster, i think since it doesn't have to propagate changes down the nested dict structure
+                # subprocess_list = []
+                # initdatalist = FCVA.FCVAWidget_SubprocessInit(
+                #     FCVA_mp,
+                #     shared_mem_manager,
+                #     cvpartitions,
+                #     bufferlen,
+                #     self.source,
+                #     self.fps,
+                #     self.appliedcv,
+                #     shared_pool_meta_list,
+                #     subprocess_list,
+                #     )
+                # #now set all the stuff that needs to be set from initdatalist:
+                # shared_pool_meta_list = initdatalist[0]
+                # subprocess_list = initdatalist[1]
+                # dicts_per_subprocess =  initdatalist[2]
                 
                 #you CAN target class methods using multiprocessing process 
                 #https://stackoverflow.com/questions/45311398/python-multiprocessing-class-methods
@@ -399,6 +401,8 @@ class FCVA:
                         cvpartitions, 
                         self.length, 
                         kvinit_dict,
+                        self.source,
+                        self.appliedcv,
                         ))
                 kivy_subprocess.start()
 
@@ -414,8 +418,8 @@ class FCVA:
                     time.sleep(200)
                     # when the while block is done, close all the subprocesses using .join to gracefully exit. also make sure opencv releases the video.
                     # mediaread_subprocess.join()
-                    for subprocessVAR in subprocess_list:
-                        subprocessVAR.join()
+                    # for subprocessVAR in subprocess_list:
+                    #     subprocessVAR.join()
                     # cv_subprocessA.join()
                     # cv_subprocessB.join()
                     # cv_subprocessC.join()
@@ -432,7 +436,7 @@ class FCVA:
         '''
         this is going to spawn subprocesses so make sure the code that calls it has this to stop infinite subprocesses
         if __name__ == "__main__":
-            import multiprocessing 
+            import multiprocessing #edit use multiprocess since it uses dill which apparently is better than pickle as per: https://github.com/ShootingStarDragon/FastCVApp/issues/263
             multiprocessing.freeze_support()
         '''
         FCVA_mpVAR                     = args[0]
@@ -444,7 +448,7 @@ class FCVA:
         appliedcvVAR                   = args[6]
         shared_pool_meta_listVAR       = args[7]
         subprocess_listVAR             = args[8]
-         
+        fprint("check args for FCVAWidget_SubprocessInit", args)
 
         for x in range(cvpartitionsVAR):
             #init analyzed/keycount dicts
@@ -462,9 +466,10 @@ class FCVA:
             
             #start the subprocesses
             cv_subprocessA = FCVA_mpVAR.Process(
-                target=open_cvpipeline,
+                # target=open_cvpipeline,
+                target=open_cvpipelineDUMMY,
                 args=(
-                    appliedcvVAR,
+                    appliedcvVAR, #this was a problem...
                     shared_analyzedA,
                     shared_analyzedAKeycount,
                     sourceVAR,
@@ -500,6 +505,45 @@ class FCVA:
         from kivy.uix.boxlayout import BoxLayout
 
         class FCVAWidget(BoxLayout):
+
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                #when widget is init start up the subprocesses
+                #YOU NEED TO MAKE SURE THE CODE THAT CALLS THIS HAS ALREADY MULTIPROCESSING FREEZE SUPPORT AND IS UNDER SOME GUARD LIKE IF NAME == MAIN
+                fprint("what is __name__?", __name__, "this should be bufferlen:", self.bufferlen)
+                #in my example I already import multiprocessing. so try if it exist first before I import it twice...
+                
+                try:
+                    FCVA_mp.Manager()
+                except Exception as e: 
+                    if __name__ == "FastCVApp":
+                        import multiprocess as FCVA_mp
+                        FCVA_mp.freeze_support()
+                    print("FCVA FCVAWidget __init__ detected no multiprocessing, importing as such", e, flush=True)
+                    import traceback
+                    print("full exception (you can ignore this)", "".join(traceback.format_exception(*sys.exc_info())))
+                
+                shared_mem_manager = FCVA_mp.Manager()
+                shared_pool_meta_list = [] #IMO this is faster, i think since it doesn't have to propagate changes down the nested dict structure
+                subprocess_list = []
+                
+                initdatalist = FCVA.FCVAWidget_SubprocessInit(
+                    FCVA_mp,
+                    shared_mem_manager,
+                    self.cvpartitions,
+                    self.bufferlen,
+                    self.source,
+                    self.fps,
+                    self.appliedcv,
+                    shared_pool_meta_list,
+                    subprocess_list,
+                    )
+                #now set all the stuff that needs to be set from initdatalist:
+                #put this in the widget for later so I can exit at the end...
+                self.shared_pool_meta_list = initdatalist[0]
+                self.subprocess_list = initdatalist[1]
+                self.dicts_per_subprocess =  initdatalist[2]
+
             
             def tester(*args):
                 fprint("am i accessible in the subprocess after FCVAWidgetInit is called?")
@@ -700,6 +744,13 @@ class FCVA:
                     print("blitting died!", e, flush=True)
                     import traceback
                     print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
+        
+        #change the classdef so that stuff becomes available. This REALLY cannot be called more than once...
+        FCVAWidget.cvpartitions = args[0]
+        FCVAWidget.bufferlen = args[1]
+        FCVAWidget.source = args[2]
+        FCVAWidget.fps = args[3]
+        FCVAWidget.appliedcv = args[4]
 
         FCVAWidget_KV = f"""
 <FCVAWidget>:
@@ -760,7 +811,13 @@ class FCVA:
 
                     #this loads the class def and sets the kv string as self.FCVAWidget_KV, remember to add self.FCVAWidget_KV to the string
                     # self.FCVAWidgetInit() #this fails because I run this by targeting this function AKA no class exists...
-                    self.FCVAWidget_KV = FCVA.FCVAWidgetInit()
+                    self.FCVAWidget_KV = FCVA.FCVAWidgetInit(
+                            self.cvpartitions, 
+                            self.bufferlen,
+                            self.sourceVAR,
+                            self.fps,
+                            self.appliedcvVAR,
+                            )
 
                     if len(kvstring_check) != 0:
                         self.KV_string = kvstring_check[0]
@@ -818,6 +875,8 @@ FCVA_screen_manager: #remember to return a root widget
             MainApp.cvpartitions                = args[4]
             MainApp.framelength                 = args[5]
             MainApp.kvinit_dictVAR              = args[6]
+            MainApp.sourceVAR                   = args[7]
+            MainApp.appliedcvVAR                = args[8]
             
             MainApp().run()
         except Exception as e: 
