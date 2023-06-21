@@ -520,8 +520,8 @@ class FCVA:
                         import multiprocessing as FCVA_mp
                         FCVA_mp.freeze_support()
                         print("FCVA FCVAWidget __init__ detected no multiprocessing, importing as such", e, flush=True)
-                        import traceback
-                        print("full exception (YOU CAN IGNORE THIS, just testing if multiprocess/multiprocessing has already been imported)", "".join(traceback.format_exception(*sys.exc_info())))
+                        # import traceback
+                        # print("full exception (YOU CAN IGNORE THIS, just testing if multiprocess/multiprocessing has already been imported)", "".join(traceback.format_exception(*sys.exc_info())))
                 
                 self.starttime = None
                 self.spf = (1/self.fps)
@@ -728,6 +728,7 @@ class FCVA:
 
                                 # print("blitting to texture index:", self.index)
 
+                                ggtime = time.time()
                                 self.texture1 = Texture.create(
                                     size=(frame.shape[1], frame.shape[0]), colorfmt=self.colorfmtval
                                 )
@@ -737,6 +738,7 @@ class FCVA:
                                 self.ids[
                                     "image_textureID"
                                 ].texture = self.texture1
+                                # fprint("texture blit entire sequence", time.time()-ggtime) #~8ms... 0.006002187728881836 0.006994962692260742 0.007999658584594727
                         else:
                             if self.index != 0:
                                 # fprint("missed frame#", self.index, self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values())
