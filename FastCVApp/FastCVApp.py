@@ -59,17 +59,18 @@ def int_to_partition(*args):
 
 def open_cvpipeline(*args):
     try:
-        appliedcv                       = args[0]
-        shared_analyzedVAR              = args[1]
-        shared_analyzedKeycountVAR      = args[2]
-        source                          = args[3]
-        partitionnumber                 = args[4]
-        instance                        = args[5]
-        bufferlen                       = args[6]
-        maxpartitions                   = args[7]
-        fps                             = args[8]
-        shared_rawdict                  = args[9]
-        shared_rawKEYSdict              = args[10]
+        appliedcv                           = args[0]
+        shared_analyzedVAR                  = args[1]
+        shared_analyzedKeycountVAR          = args[2]
+        source                              = args[3]
+        partitionnumber                     = args[4]
+        instance                            = args[5]
+        bufferlen                           = args[6]
+        maxpartitions                       = args[7]
+        fps                                 = args[8]
+        shared_rawdict                      = args[9]
+        shared_rawKEYSdict                  = args[10]
+        FCVAWidget_shared_metadata_dictVAR2 = args[11]
 
         #didn't know about apipreference: https://stackoverflow.com/questions/73753126/why-does-opencv-read-video-faster-than-ffmpeg
         sourcecap = cv2.VideoCapture(source, apiPreference=cv2.CAP_FFMPEG)
@@ -78,7 +79,7 @@ def open_cvpipeline(*args):
         instance_count = 0
         
         pid = os.getpid()
-        shared_globalindex_dictVAR["subprocess" + str(pid)] = True
+        FCVAWidget_shared_metadata_dictVAR2["subprocess" + str(pid)] = True
 
         from collections import deque
         raw_queue = deque(maxlen=bufferlen)
@@ -146,11 +147,11 @@ def open_cvpipeline(*args):
                 there is some downtime where kivy reads from a shareddict, in that time I would ideally read/analyze frames (something that doesn't lock the shared dict)
             '''
             #make sure things have started AND this processess is not stopped:
-            if "starttime" in shared_globalindex_dictVAR and shared_globalindex_dictVAR["subprocess" + str(pid)]:
+            if "starttime" in FCVAWidget_shared_metadata_dictVAR2 and FCVAWidget_shared_metadata_dictVAR2["subprocess" + str(pid)]:
 
                 initial_time = time.time()
-                future_time = shared_globalindex_dictVAR["starttime"] + ((1/fps)*internal_framecount)
-                current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
+                future_time = FCVAWidget_shared_metadata_dictVAR2["starttime"] + ((1/fps)*internal_framecount)
+                current_framenumber = int((time.time() - FCVAWidget_shared_metadata_dictVAR2["starttime"])/(1/fps))
                 # fprint("frame advantage START????", os.getpid(), internal_framecount, current_framenumber, future_time-time.time(), time.time())
                 
                 newwritestart = time.time()
@@ -168,13 +169,13 @@ def open_cvpipeline(*args):
                     #cv func returns a queue of frames
                     rtime = time.time()
                     # u can peek at deques: https://stackoverflow.com/questions/48640251/how-to-peek-front-of-deque-without-popping#:~:text=You%20can%20peek%20front%20element,right%20and%20seems%20efficient%20too. , can do it but I thought of a simpler way in the example py file
-                    resultqueue = appliedcv(raw_queue, shared_globalindex_dictVAR, bufferlen, landmarker, raw_queueKEYS)
+                    resultqueue = appliedcv(raw_queue, FCVAWidget_shared_metadata_dictVAR2, bufferlen, landmarker, raw_queueKEYS)
                     fprint("resultqueue timing (appliedcv)", os.getpid(), time.time() - rtime, time.time())
-                    current_framenumber = int((time.time() - shared_globalindex_dictVAR["starttime"])/(1/fps))
+                    current_framenumber = int((time.time() - FCVAWidget_shared_metadata_dictVAR2["starttime"])/(1/fps))
                     otherhalf = time.time()
 
                     #figure out future time
-                    future_time = shared_globalindex_dictVAR["starttime"] + ((1/fps)*internal_framecount)
+                    future_time = FCVAWidget_shared_metadata_dictVAR2["starttime"] + ((1/fps)*internal_framecount)
 
                     for x in range(len(resultqueue)):
                         result_compressed = resultqueue.popleft().tobytes()
@@ -435,15 +436,16 @@ class FCVA:
             import multiprocessing #edit use multiprocess since it uses dill which apparently is better than pickle as per: https://github.com/ShootingStarDragon/FastCVApp/issues/263
             multiprocessing.freeze_support()
         '''
-        FCVA_mpVAR                     = args[0]
-        shared_mem_managerVAR          = args[1]
-        cvpartitionsVAR                = args[2]
-        bufferlenVAR                   = args[3]
-        sourceVAR                      = args[4]
-        fpsVAR                         = args[5]
-        appliedcvVAR                   = args[6]
-        shared_pool_meta_listVAR       = args[7]
-        subprocess_listVAR             = args[8]
+        FCVA_mpVAR                          = args[0]
+        shared_mem_managerVAR               = args[1]
+        cvpartitionsVAR                     = args[2]
+        bufferlenVAR                        = args[3]
+        sourceVAR                           = args[4]
+        fpsVAR                              = args[5]
+        appliedcvVAR                        = args[6]
+        shared_pool_meta_listVAR            = args[7]
+        subprocess_listVAR                  = args[8]
+        FCVAWidget_shared_metadata_dictVAR  = args[9]
         fprint("check args for FCVAWidget_SubprocessInit", args)
 
         for x in range(cvpartitionsVAR):
@@ -474,7 +476,8 @@ class FCVA:
                     cvpartitionsVAR, #max # of partitions/subprocesses that divide up the video sequence
                     fpsVAR,
                     shared_rawA,
-                    shared_rawAKEYS
+                    shared_rawAKEYS, 
+                    FCVAWidget_shared_metadata_dictVAR
                 ),
             )
             cv_subprocessA.start()
@@ -498,6 +501,8 @@ class FCVA:
         
         '''
         from kivy.uix.boxlayout import BoxLayout
+        from kivy.clock import Clock
+        from kivy.graphics.texture import Texture
 
         class FCVAWidget(BoxLayout):
 
@@ -514,13 +519,18 @@ class FCVA:
                     if __name__ == "FastCVApp":
                         import multiprocessing as FCVA_mp
                         FCVA_mp.freeze_support()
-                    print("FCVA FCVAWidget __init__ detected no multiprocessing, importing as such", e, flush=True)
-                    import traceback
-                    print("full exception (you can ignore this)", "".join(traceback.format_exception(*sys.exc_info())))
+                        print("FCVA FCVAWidget __init__ detected no multiprocessing, importing as such", e, flush=True)
+                        import traceback
+                        print("full exception (YOU CAN IGNORE THIS, just testing if multiprocess/multiprocessing has already been imported)", "".join(traceback.format_exception(*sys.exc_info())))
                 
+                self.starttime = None
+                self.spf = (1/self.fps)
+
                 shared_mem_manager = FCVA_mp.Manager()
                 shared_pool_meta_list = [] #IMO this is faster, i think since it doesn't have to propagate changes down the nested dict structure
                 subprocess_list = []
+
+                self.FCVAWidget_shared_metadata_dict = shared_mem_manager.dict()
                 
                 initdatalist = FCVA.FCVAWidget_SubprocessInit(
                     FCVA_mp,
@@ -532,24 +542,16 @@ class FCVA:
                     self.appliedcv,
                     shared_pool_meta_list,
                     subprocess_list,
+                    self.FCVAWidget_shared_metadata_dict,
                     )
                 #now set all the stuff that needs to be set from initdatalist:
                 #put this in the widget for later so I can exit at the end...
                 self.shared_pool_meta_list = initdatalist[0]
                 self.subprocess_list = initdatalist[1]
                 self.dicts_per_subprocess =  initdatalist[2]
-
             
             def tester(*args):
                 fprint("am i accessible in the subprocess after FCVAWidgetInit is called?")
-            
-            def on_start(self):
-                # start blitting. 1/30 always works because it will always blit the latest image from open_appliedcv subprocess, but kivy itself will be at 30 fps
-                self.index = 0
-                print("fps wtf", self.fps)
-                self.internal_framecount = 0
-                Clock.schedule_interval(self.blit_from_shared_memory, (1/self.fps))
-                self.starttime = None
             
             def toggleCV(self, *args):
                 # fprint("what are args, do I have widget?, nope, do the search strat", args)
@@ -559,39 +561,48 @@ class FCVA:
                 # widgettext = App.get_running_app().root.get_screen('start_screen_name').ids['FCVAWidget_id'].ids['StartScreenButtonID'].text
                 widgettext = self.ids['StartScreenButtonID'].text
                 fprint("widgettext is?", widgettext)
+
+                
+                #update this play/pause code later
                 if "Play" in widgettext:
                     widgettext = "Pause"
                     
                     #check if you have been paused already:
-                    if "pausedtime" in self.shared_globalindex_dictVAR.keys() and isinstance(self.shared_globalindex_dictVAR["pausedtime"], float):
-                        #start all subprocesses (hope it's fast enough):
-                        subprocess_list = [x for x in self.shared_globalindex_dictVAR.keys() if "subprocess" in x]
-                        for x in subprocess_list:
-                            self.shared_globalindex_dictVAR[x] = True
-                        #clear pausedtime and adjust starttime by elapsed time from last pause:
-                        self.shared_globalindex_dictVAR["starttime"] = self.shared_globalindex_dictVAR["starttime"] + (time.time() - self.shared_globalindex_dictVAR["pausedtime"])
-                        self.shared_globalindex_dictVAR["pausedtime"] = False
+                    # if "pausedtime" in self.shared_globalindex_dictVAR.keys() and isinstance(self.shared_globalindex_dictVAR["pausedtime"], float):
+                    #     #start all subprocesses (hope it's fast enough):
+                    #     subprocess_list = [x for x in self.shared_globalindex_dictVAR.keys() if "subprocess" in x]
+                    #     for x in subprocess_list:
+                    #         self.shared_globalindex_dictVAR[x] = True
+                    #     #clear pausedtime and adjust starttime by elapsed time from last pause:
+                    #     self.shared_globalindex_dictVAR["starttime"] = self.shared_globalindex_dictVAR["starttime"] + (time.time() - self.shared_globalindex_dictVAR["pausedtime"])
+                    #     self.shared_globalindex_dictVAR["pausedtime"] = False
                 else:
                     widgettext = "Play"
                     
-                    self.shared_globalindex_dictVAR["pausedtime"] = time.time()
-                    fprint("#pause all subprocesses (hope it's fast enough):")
-                    subprocess_list = [x for x in self.shared_globalindex_dictVAR.keys() if "subprocess" in x]
-                    for x in subprocess_list:
-                        self.shared_globalindex_dictVAR[x] = False
-                    
-                if "toggleCV" not in self.shared_metadata_dictVAR.keys():
-                    self.shared_metadata_dictVAR["toggleCV"] = True
+                    # self.shared_globalindex_dictVAR["pausedtime"] = time.time()
+                    # fprint("#pause all subprocesses (hope it's fast enough):")
+                    # subprocess_list = [x for x in self.shared_globalindex_dictVAR.keys() if "subprocess" in x]
+                    # for x in subprocess_list:
+                    #     self.shared_globalindex_dictVAR[x] = False
+
+                       
+                if "toggleCV" not in self.FCVAWidget_shared_metadata_dict.keys():
+                    self.FCVAWidget_shared_metadata_dict["toggleCV"] = True
                     if self.starttime == None:
                         #init starttime:
                         # self.starttime = time.time() + 1
                         # self.starttime = time.time() + 2
-                        self.starttime = time.time() + 3 #wait 3 seconds
-                        # self.starttime = time.time() + 8
-                        self.shared_globalindex_dictVAR["starttime"] = self.starttime
+                        # self.starttime = time.time() + 3 #wait 3 seconds
+                        self.starttime = time.time() + 8 #need to start 
+                        self.FCVAWidget_shared_metadata_dict["starttime"] = self.starttime
+                        self.index = 0 #this needs to be updated with seek...
+                        self.internal_framecount = 0
+                        self.starttime = None
+                        Clock.schedule_interval(self.blit_from_shared_memory, (1/self.fps))
+                        # start blitting. 1/30 always works because it will always blit the latest image from open_appliedcv subprocess, but kivy itself will be at 30 fps
                 else:
                     #pop it to remove, that way I can make the time critical stuff faster:
-                    self.shared_metadata_dictVAR.pop("toggleCV")
+                    self.FCVAWidget_shared_metadata_dict.pop("toggleCV")
 
             def populate_texture(self, texture, buffervar):
                 texture.blit_buffer(buffervar)
@@ -599,8 +610,8 @@ class FCVA:
             def blit_from_shared_memory(self, *args):
                 try:
                     timeog = time.time()
-                    if "toggleCV" in self.shared_metadata_dictVAR and self.shared_globalindex_dictVAR["starttime"] != None:
-                        self.index = int((time.time() - self.starttime)/self.spf)
+                    if "toggleCV" in self.FCVAWidget_shared_metadata_dict and self.FCVAWidget_shared_metadata_dict["starttime"] != None:
+                        self.index = int((time.time() - self.FCVAWidget_shared_metadata_dict["starttime"])/self.spf)
                         if self.index < 0:
                             self.index = 0
                         #this is helpful but is very good at locking up the shared dicts...
@@ -634,17 +645,17 @@ class FCVA:
                         #THIS WORKED
                         shareddict_instance = int_to_partition(self.index,self.bufferlen,self.cvpartitions) 
                         # shared analyzed keycount is w.r.t. getting the right index when the index is self.cvpartitions-many of this sequence: shared_analyzedA, shared_analyzedAKeycount, shared_rawA, shared_rawAKEYS
-                        shared_analyzedKeycountIndex = frameblock(1,shareddict_instance,1,self.dicts_per_subprocessVAR)[0] #reminder that frameblock is a continuous BLOCK and shared_pool_meta_listVAR is alternating: 0 1 2 3, 0 1 2 3, etc... which is why bufferlen is 1
-                        shared_analyzedIndex = frameblock(0,shareddict_instance,1,self.dicts_per_subprocessVAR)[0]
-                        fprint("valtesting", self.index, shareddict_instance,shared_analyzedKeycountIndex, len(self.shared_pool_meta_listVAR), shared_analyzedIndex)
+                        shared_analyzedKeycountIndex = frameblock(1,shareddict_instance,1,self.dicts_per_subprocess)[0] #reminder that frameblock is a continuous BLOCK and shared_pool_meta_listVAR is alternating: 0 1 2 3, 0 1 2 3, etc... which is why bufferlen is 1
+                        shared_analyzedIndex = frameblock(0,shareddict_instance,1,self.dicts_per_subprocess)[0]
+                        fprint("valtesting", self.index, shareddict_instance,shared_analyzedKeycountIndex, len(self.shared_pool_meta_list), shared_analyzedIndex)
                         # fprint("valtesting2", self.index, self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values())
                         # fprint("valtesting2", self.index, shared_analyzedKeycountIndex)
 
-                        if self.index in self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values():
-                            fprint("valtesting3", self.index, list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values()))
-                            correctkey = list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].keys())[list(self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values()).index(self.index)]
+                        if self.index in self.shared_pool_meta_list[shared_analyzedKeycountIndex].values():
+                            fprint("valtesting3", self.index, list(self.shared_pool_meta_list[shared_analyzedKeycountIndex].values()))
+                            correctkey = list(self.shared_pool_meta_list[shared_analyzedKeycountIndex].keys())[list(self.shared_pool_meta_list[shared_analyzedKeycountIndex].values()).index(self.index)]
                             frameref = "frame" + correctkey.replace("key",'')
-                            frame = self.shared_pool_meta_listVAR[shared_analyzedIndex][frameref]
+                            frame = self.shared_pool_meta_list[shared_analyzedIndex][frameref]
                         
                         # https://stackoverflow.com/questions/43748991/how-to-check-if-a-variable-is-either-a-python-list-numpy-array-or-pandas-series
                         
@@ -788,8 +799,6 @@ class FCVA:
             from kivy.app import App
             from kivy.lang import Builder
             from kivy.uix.screenmanager import ScreenManager, Screen
-            from kivy.graphics.texture import Texture
-            from kivy.clock import Clock
             from kivy.modules import inspector
             from kivy.core.window import Window
             from kivy.uix.button import Button
@@ -844,7 +853,6 @@ FCVA_screen_manager: #remember to return a root widget
                     return build_app_from_kv
 
                 def on_request_close(self, *args):
-                    Clock.unschedule(self.blit_from_shared_memory)
                     print("#kivy subprocess closed END!", flush=True)
 
                 def run(self):
