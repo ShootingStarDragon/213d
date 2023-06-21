@@ -57,10 +57,6 @@ def int_to_partition(*args):
     maxpartitions = args[2]
     return int(((testint - (testint % bufferlen))/bufferlen)%maxpartitions)
 
-
-def open_cvpipelineDUMMY(*args):
-    pass
-
 def open_cvpipeline(*args):
     try:
         appliedcv                       = args[0]
@@ -226,7 +222,7 @@ class FCVA:
         try:
             fprint("when compiled, what is __name__?", __name__, "file?", __file__)
             if __name__ == "FastCVApp":
-                import multiprocess as FCVA_mp
+                import multiprocessing as FCVA_mp
 
                 # this is so that only 1 window is run when packaging with pyinstaller
                 FCVA_mp.freeze_support()
@@ -466,10 +462,9 @@ class FCVA:
             
             #start the subprocesses
             cv_subprocessA = FCVA_mpVAR.Process(
-                # target=open_cvpipeline,
-                target=open_cvpipelineDUMMY,
+                target=open_cvpipeline,
                 args=(
-                    appliedcvVAR, #this is a problem, it doesn't survive multiple dill/pickles...
+                    appliedcvVAR.__func__, #this is a problem, it doesn't survive multiple dill/pickles...
                     shared_analyzedA,
                     shared_analyzedAKeycount,
                     sourceVAR,
@@ -517,7 +512,7 @@ class FCVA:
                     FCVA_mp.Manager()
                 except Exception as e: 
                     if __name__ == "FastCVApp":
-                        import multiprocess as FCVA_mp
+                        import multiprocessing as FCVA_mp
                         FCVA_mp.freeze_support()
                     print("FCVA FCVAWidget __init__ detected no multiprocessing, importing as such", e, flush=True)
                     import traceback

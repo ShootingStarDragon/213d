@@ -57,7 +57,7 @@ def draw_landmarks_on_image(annotated_image, detection_result):
         print("open_appliedcv died!", e)
         import traceback
         print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
-    
+
 def apply_mediapipe_func(*args): #basicmp
     try:
         inputqueue = args[0]
