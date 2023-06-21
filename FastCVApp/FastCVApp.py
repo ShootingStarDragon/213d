@@ -734,7 +734,7 @@ class FCVA:
                                 self.texture1.blit_buffer(
                                     buf, colorfmt=self.colorfmtval, bufferfmt="ubyte"
                                 )
-                                App.get_running_app().root.get_screen("start_screen_name").ids['FCVAWidget_id'].ids[
+                                self.ids[
                                     "image_textureID"
                                 ].texture = self.texture1
                         else:
@@ -760,8 +760,6 @@ class FCVA:
 
         FCVAWidget_KV = f"""
 <FCVAWidget>:
-    # #https://stackoverflow.com/a/49493556/16355112 (dropdown reference keeps getting lost somehow)
-    __save_id: [StartScreenButtonID.__self__]
     orientation: 'vertical'
     id: FCVAWidgetID
     Image:
@@ -780,8 +778,6 @@ class FCVA:
         orientation: 'horizontal'
         size_hint: (1, 0.1)
         Button:
-            #https://stackoverflow.com/a/49493556/16355112 (dropdown reference keeps getting lost somehow)
-            # __save_id: [StartScreenButtonID.__self__]
             id: StartScreenButtonID
             text: "Play"
             on_release: FCVAWidgetID.toggleCV()
