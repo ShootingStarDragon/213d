@@ -530,6 +530,7 @@ class FCVA:
         from kivy.core.window import Window
         import cv2 #nice, it's ok to load things multiple times python is amazing
         import datetime
+        from functools import partial
 
         class FCVAWidget(BoxLayout):
 
@@ -560,7 +561,10 @@ class FCVA:
                 self.FCVAWidget_shared_metadata_dict = shared_mem_manager.dict()
                 if hasattr(self, "source"):
                     self.FCVAWidget_shared_metadata_dict["source"] = self.source
-                    self.updateSliderData(self.FCVAWidget_shared_metadata_dict)
+                    #sliderdata needs to udpate slider so just schedule for 1st valid frame with clock 0
+                    # self.updateSliderData(self.FCVAWidget_shared_metadata_dict)
+                    Clock.schedule_once(partial(self.updateSliderData,self.FCVAWidget_shared_metadata_dict), 0)
+                    fprint("schedule once???")
                 
 
                 initdatalist = FCVA.FCVAWidget_SubprocessInit(
@@ -594,6 +598,9 @@ class FCVA:
                 #https://stackoverflow.com/questions/25359288/how-to-know-total-number-of-frame-in-a-file-with-cv2-in-python
                 captest = cv2.VideoCapture(sourceguy)
                 caplength = int(captest.get(cv2.CAP_PROP_FRAME_COUNT))
+                #update slidermax so that u have a 1 to 1 relationship between sliderval and frame:
+                self.ids['vidsliderID'].max = caplength
+                fprint("what is caplenthg?", caplength)
                 capfps = captest.get(cv2.CAP_PROP_FPS)
                 captest.release()
                 maxseconds = int(caplength/capfps)
@@ -606,13 +613,17 @@ class FCVA:
                 # https://kivy.org/doc/stable/api-kivy.event.html#kivy.event.EventDispatcher.bind
                 
                 
-                # slider_max = self.ids['vidsliderID'].max = str(datetime.timedelta(seconds=maxseconds))
 
             def updateSliderMax(self, *args):
-                currentpos = args[0]
-                if "maxseconds" in self.FCVAWidget_shared_metadata_dict.keys():
-                    # print("what is currentpos??", currentpos)
-                    return str(datetime.timedelta(seconds=int(currentpos*0.01*self.FCVAWidget_shared_metadata_dict["maxseconds"]))) + "/" + str(datetime.timedelta(seconds=self.FCVAWidget_shared_metadata_dict["maxseconds"]))
+                #normalize currentpos against maxframes
+                if "caplength" in self.FCVAWidget_shared_metadata_dict:
+                    currentpos = args[0]/self.FCVAWidget_shared_metadata_dict["caplength"]
+                    # print("what is slider value really??", currentpos)
+                    if "maxseconds" in self.FCVAWidget_shared_metadata_dict.keys():
+                        # print("what is currentpos??", currentpos)
+                        return str(datetime.timedelta(seconds=int(currentpos*self.FCVAWidget_shared_metadata_dict["maxseconds"]))) + "/" + str(datetime.timedelta(seconds=self.FCVAWidget_shared_metadata_dict["maxseconds"]))
+                    else:
+                        return ""
                 else:
                     return ""
 
@@ -646,7 +657,7 @@ class FCVA:
                         self.FCVAWidget_shared_metadata_dict["starttime"] = time.time() + 3
                         fprint("set basictime")
                         
-                    self.blitschedule =  Clock.schedule_interval(self.blit_from_shared_memory, (1/self.fps))
+                    self.blitschedule = Clock.schedule_interval(self.blit_from_shared_memory, (1/self.fps))
                     
                     #check if you have been paused already:
                     # if "pausedtime" in self.shared_globalindex_dictVAR.keys() and isinstance(self.shared_globalindex_dictVAR["pausedtime"], float):
@@ -829,6 +840,8 @@ class FCVA:
                                     "image_textureID"
                                 ].texture = self.texture1
                                 # fprint("texture blit entire sequence", time.time()-ggtime) #~8ms... 0.006002187728881836 0.006994962692260742 0.007999658584594727
+                                #here update the slider with self.index
+                                self.ids['vidsliderID'].value = self.index
                         else:
                             if self.index != 0:
                                 # fprint("missed frame#", self.index, self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values())
