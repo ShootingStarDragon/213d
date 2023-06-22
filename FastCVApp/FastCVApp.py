@@ -516,6 +516,8 @@ class FCVA:
         from kivy.graphics.texture import Texture
         #for drop in (Mac and Windows) #example as per: https://stackoverflow.com/questions/71957402/the-on-drop-file-function-in-kivy-for-python-passes-5-arguments-but-only-3-argu
         from kivy.core.window import Window
+        import cv2 #nice, it's ok to load things multiple times python is amazing
+        import datetime
 
         class FCVAWidget(BoxLayout):
 
@@ -546,8 +548,10 @@ class FCVA:
                 self.FCVAWidget_shared_metadata_dict = shared_mem_manager.dict()
                 if hasattr(self, "source"):
                     self.FCVAWidget_shared_metadata_dict["source"] = self.source
-
+                    #when you set source, also set slidermax: 
+                    self.updateSliderData(self.FCVAWidget_shared_metadata_dict, self.FCVAWidget_shared_metadata_dict["source"])
                 
+
                 initdatalist = FCVA.FCVAWidget_SubprocessInit(
                     FCVA_mp,
                     shared_mem_manager,
@@ -567,12 +571,45 @@ class FCVA:
                 self.dicts_per_subprocess =  initdatalist[2]
 
                 #not sure init has window available so just bind after everything is done using clock schedule once 0
+                #binding works BUT im making it too complicated lmao, just update the Label's text instead...
+                Clock.schedule_once(self.bindSlider, 0)
                 Window.bind(on_drop_file=self._on_file_drop)
             
+            def bindSlider(self, *args):
+                self.ids['vidsliderID'].fbind('value_pos', self.updateSliderMax) 
+
+            def updateSliderMax(self, *args):
+                fprint("args for slidermax??", args)
+
+            def updateSliderData(self, *args):
+                '''
+                update the slider, right now all it does is update the maxtime by fps * seconds:
+                '''
+                FCVAWidget_shared_metadata_dictVAR = args[0] 
+                sourceguy = args[1] #arg0 is self
+                #https://stackoverflow.com/questions/25359288/how-to-know-total-number-of-frame-in-a-file-with-cv2-in-python
+                captest = cv2.VideoCapture(sourceguy)
+                caplength = int(captest.get(cv2.CAP_PROP_FRAME_COUNT))
+                capfps = captest.get(cv2.CAP_PROP_FPS)
+                captest.release()
+                maxseconds = int(caplength/capfps)
+                FCVAWidget_shared_metadata_dictVAR["caplength"] = caplength
+                FCVAWidget_shared_metadata_dictVAR["capfps"] = capfps
+                FCVAWidget_shared_metadata_dictVAR["maxseconds"] = maxseconds
+                print( maxseconds )
+                # https://stackoverflow.com/questions/775049/how-do-i-convert-seconds-to-hours-minutes-and-seconds
+                #so slidermax is a number but you want time like what VLC and Youtube do, so just have a label whose text tracks valuepos and "normalizes" that to the time
+                # https://kivy.org/doc/stable/api-kivy.event.html#kivy.event.EventDispatcher.bind
+                
+                
+                # slider_max = self.ids['vidsliderID'].max = str(datetime.timedelta(seconds=maxseconds))
+                
+
             def _on_file_drop(self, window, file_path, x, y):
                 print(file_path, str(file_path, encoding='utf-8'))
                 self.FCVAWidget_shared_metadata_dict["source"] = str(file_path, encoding='utf-8')
-                return
+                self.updateSliderData(self.FCVAWidget_shared_metadata_dict, self.FCVAWidget_shared_metadata_dict["source"])
+                # return
 
             def tester(*args):
                 fprint("am i accessible in the subprocess after FCVAWidgetInit is called?")
@@ -793,7 +830,7 @@ class FCVA:
     Slider:
         id: vidsliderID
         min: 0
-        max: 1111111 #should be 30*total_seconds
+        max: 100 #will be updated, ideally should be should be 30fps*total_seconds but of course source fps varies BUT imo we'll squish everything to 30fps (or lower, if source is lower)
         step: 1
         value_track: True
         value_track_color: 1, 0, 0, 1
