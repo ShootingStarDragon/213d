@@ -158,7 +158,19 @@ def open_cvpipeline(*args):
                 currentsource = FCVAWidget_shared_metadata_dictVAR2["source"]
                 # fprint("done? switching?")
 
-            if "starttime" in FCVAWidget_shared_metadata_dictVAR2 and FCVAWidget_shared_metadata_dictVAR2["subprocess" + str(pid)]:
+            #JUST PAUSE/PLAY RIGHT NOW:
+                #press button> togglecv sets the pausetime (when u click pause)
+                #UPDATE STARTTIME: 
+                #starttime = starttime + time.time - pausetime
+                #<seek should happen here but skip for right now>
+                #then resume blitting on the proper frame
+
+            #if paused > clear all deques
+            #add paused check in if statement below
+            #on readframe, add a seek to frame
+            #from my quick testing takes ~6ms to get to frame, but doesn't matter since everything should wait until all subprocesses seek to that frame
+
+            if "starttime" in FCVAWidget_shared_metadata_dictVAR2 and ("pausetime" not in FCVAWidget_shared_metadata_dictVAR2) and FCVAWidget_shared_metadata_dictVAR2["subprocess" + str(pid)]:
 
                 initial_time = time.time()
                 future_time = FCVAWidget_shared_metadata_dictVAR2["starttime"] + ((1/fps)*internal_framecount)
@@ -624,7 +636,17 @@ class FCVA:
                 
                 #update this play/pause code later
                 if "Play" in widgettext:
-                    widgettext = "Pause"
+                    self.ids['StartScreenButtonID'].text = "Pause"
+                    if "pausetime" in self.FCVAWidget_shared_metadata_dict.keys():
+                        fprint("reset time with pausetime diff:", time.time()- self.FCVAWidget_shared_metadata_dict["pausetime"], "old starttime +3",self.FCVAWidget_shared_metadata_dict["starttime"])
+
+                        self.FCVAWidget_shared_metadata_dict["starttime"] = time.time()- self.FCVAWidget_shared_metadata_dict["pausetime"] + self.FCVAWidget_shared_metadata_dict["starttime"]
+                        self.FCVAWidget_shared_metadata_dict.pop("pausetime")
+                    else:
+                        self.FCVAWidget_shared_metadata_dict["starttime"] = time.time() + 3
+                        fprint("set basictime")
+                        
+                    self.blitschedule =  Clock.schedule_interval(self.blit_from_shared_memory, (1/self.fps))
                     
                     #check if you have been paused already:
                     # if "pausedtime" in self.shared_globalindex_dictVAR.keys() and isinstance(self.shared_globalindex_dictVAR["pausedtime"], float):
@@ -636,7 +658,12 @@ class FCVA:
                     #     self.shared_globalindex_dictVAR["starttime"] = self.shared_globalindex_dictVAR["starttime"] + (time.time() - self.shared_globalindex_dictVAR["pausedtime"])
                     #     self.shared_globalindex_dictVAR["pausedtime"] = False
                 else:
-                    widgettext = "Play"
+                    self.ids['StartScreenButtonID'].text = "Play"
+                    
+                    fprint("set pausetime")
+                    self.FCVAWidget_shared_metadata_dict["pausetime"] = time.time()
+                    if hasattr(self, "blitschedule"):
+                        self.blitschedule.cancel()
                     
                     # self.shared_globalindex_dictVAR["pausedtime"] = time.time()
                     # fprint("#pause all subprocesses (hope it's fast enough):")
@@ -645,23 +672,24 @@ class FCVA:
                     #     self.shared_globalindex_dictVAR[x] = False
 
                        
-                if "toggleCV" not in self.FCVAWidget_shared_metadata_dict.keys():
-                    self.FCVAWidget_shared_metadata_dict["toggleCV"] = True
-                    if self.starttime == None:
-                        #init starttime:
-                        # self.starttime = time.time() + 1
-                        # self.starttime = time.time() + 2
-                        # self.starttime = time.time() + 3 #wait 3 seconds
-                        self.starttime = time.time() + 8 #need to start 
-                        self.FCVAWidget_shared_metadata_dict["starttime"] = self.starttime
-                        self.index = 0 #this needs to be updated with seek...
-                        self.internal_framecount = 0
-                        self.starttime = None
-                        Clock.schedule_interval(self.blit_from_shared_memory, (1/self.fps))
-                        # start blitting. 1/30 always works because it will always blit the latest image from open_appliedcv subprocess, but kivy itself will be at 30 fps
-                else:
-                    #pop it to remove, that way I can make the time critical stuff faster:
-                    self.FCVAWidget_shared_metadata_dict.pop("toggleCV")
+                # if "toggleCV" not in self.FCVAWidget_shared_metadata_dict.keys():
+                #     self.FCVAWidget_shared_metadata_dict["toggleCV"] = True
+                #     if self.starttime == None:
+                #         #init starttime:
+                #         # self.starttime = time.time() + 1
+                #         # self.starttime = time.time() + 2
+                #         # self.starttime = time.time() + 3 #wait 3 seconds
+                #         self.starttime = time.time() + 8 #need to start 
+                #         self.FCVAWidget_shared_metadata_dict["starttime"] = self.starttime
+                #         self.index = 0 #this needs to be updated with seek...
+                #         self.internal_framecount = 0
+                #         self.starttime = None
+                #         Clock.schedule_interval(self.blit_from_shared_memory, (1/self.fps))
+                #         # start blitting. 1/30 always works because it will always blit the latest image from open_appliedcv subprocess, but kivy itself will be at 30 fps
+
+                # else:
+                #     #pop it to remove, that way I can make the time critical stuff faster:
+                #     self.FCVAWidget_shared_metadata_dict.pop("toggleCV")
 
             def populate_texture(self, texture, buffervar):
                 texture.blit_buffer(buffervar)
@@ -669,10 +697,13 @@ class FCVA:
             def blit_from_shared_memory(self, *args):
                 try:
                     timeog = time.time()
-                    if "toggleCV" in self.FCVAWidget_shared_metadata_dict and self.FCVAWidget_shared_metadata_dict["starttime"] != None:
+                    # if "toggleCV" in self.FCVAWidget_shared_metadata_dict and self.FCVAWidget_shared_metadata_dict["starttime"] != None:
+                    if self.FCVAWidget_shared_metadata_dict["starttime"] != None:
                         self.index = int((time.time() - self.FCVAWidget_shared_metadata_dict["starttime"])/self.spf)
-                        if self.index < 0:
-                            self.index = 0
+                        # if self.index < 0:
+                        #     self.index = 0
+
+                        # fprint("self index>?", self.index)
                         #this is helpful but is very good at locking up the shared dicts...
                         # fprint("is cv subprocess keeping up?", self.index, self.shared_analyzedAKeycountVAR.values(),self.shared_analyzedBKeycountVAR.values(),self.shared_analyzedCKeycountVAR.values(),self.shared_analyzedDKeycountVAR.values())
                         #know the current framenumber
