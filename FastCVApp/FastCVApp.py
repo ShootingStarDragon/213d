@@ -548,8 +548,7 @@ class FCVA:
                 self.FCVAWidget_shared_metadata_dict = shared_mem_manager.dict()
                 if hasattr(self, "source"):
                     self.FCVAWidget_shared_metadata_dict["source"] = self.source
-                    #when you set source, also set slidermax: 
-                    self.updateSliderData(self.FCVAWidget_shared_metadata_dict, self.FCVAWidget_shared_metadata_dict["source"])
+                    self.updateSliderData(self.FCVAWidget_shared_metadata_dict)
                 
 
                 initdatalist = FCVA.FCVAWidget_SubprocessInit(
@@ -571,22 +570,15 @@ class FCVA:
                 self.dicts_per_subprocess =  initdatalist[2]
 
                 #not sure init has window available so just bind after everything is done using clock schedule once 0
-                #binding works BUT im making it too complicated lmao, just update the Label's text instead...
-                Clock.schedule_once(self.bindSlider, 0)
+                
                 Window.bind(on_drop_file=self._on_file_drop)
             
-            def bindSlider(self, *args):
-                self.ids['vidsliderID'].fbind('value_pos', self.updateSliderMax) 
-
-            def updateSliderMax(self, *args):
-                fprint("args for slidermax??", args)
-
             def updateSliderData(self, *args):
                 '''
                 update the slider, right now all it does is update the maxtime by fps * seconds:
                 '''
                 FCVAWidget_shared_metadata_dictVAR = args[0] 
-                sourceguy = args[1] #arg0 is self
+                sourceguy = FCVAWidget_shared_metadata_dictVAR["source"]
                 #https://stackoverflow.com/questions/25359288/how-to-know-total-number-of-frame-in-a-file-with-cv2-in-python
                 captest = cv2.VideoCapture(sourceguy)
                 caplength = int(captest.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -603,13 +595,19 @@ class FCVA:
                 
                 
                 # slider_max = self.ids['vidsliderID'].max = str(datetime.timedelta(seconds=maxseconds))
-                
+
+            def updateSliderMax(self, *args):
+                currentpos = args[0]
+                if "maxseconds" in self.FCVAWidget_shared_metadata_dict.keys():
+                    # print("what is currentpos??", currentpos)
+                    return str(datetime.timedelta(seconds=int(currentpos*0.01*self.FCVAWidget_shared_metadata_dict["maxseconds"]))) + "/" + str(datetime.timedelta(seconds=self.FCVAWidget_shared_metadata_dict["maxseconds"]))
+                else:
+                    return ""
 
             def _on_file_drop(self, window, file_path, x, y):
                 print(file_path, str(file_path, encoding='utf-8'))
                 self.FCVAWidget_shared_metadata_dict["source"] = str(file_path, encoding='utf-8')
-                self.updateSliderData(self.FCVAWidget_shared_metadata_dict, self.FCVAWidget_shared_metadata_dict["source"])
-                # return
+                self.updateSliderData(self.FCVAWidget_shared_metadata_dict)
 
             def tester(*args):
                 fprint("am i accessible in the subprocess after FCVAWidgetInit is called?")
@@ -845,7 +843,8 @@ class FCVA:
             text: "Play"
             on_release: FCVAWidgetID.toggleCV()
         Label:
-            text: str(vidsliderID.value) #convert slider label to a time
+            # text: str(vidsliderID.value) #convert slider label to a time
+            text: root.updateSliderMax(vidsliderID.value)
 """
         return FCVAWidget_KV
     
