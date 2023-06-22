@@ -62,18 +62,19 @@ def open_cvpipeline(*args):
         appliedcv                           = args[0]
         shared_analyzedVAR                  = args[1]
         shared_analyzedKeycountVAR          = args[2]
-        source                              = args[3]
-        partitionnumber                     = args[4]
-        instance                            = args[5]
-        bufferlen                           = args[6]
-        maxpartitions                       = args[7]
-        fps                                 = args[8]
-        shared_rawdict                      = args[9]
-        shared_rawKEYSdict                  = args[10]
-        FCVAWidget_shared_metadata_dictVAR2 = args[11]
+        # source                              = args[3]
+        partitionnumber                     = args[3]
+        instance                            = args[4]
+        bufferlen                           = args[5]
+        maxpartitions                       = args[6]
+        fps                                 = args[7]
+        shared_rawdict                      = args[8]
+        shared_rawKEYSdict                  = args[9]
+        FCVAWidget_shared_metadata_dictVAR2 = args[10]
 
         #didn't know about apipreference: https://stackoverflow.com/questions/73753126/why-does-opencv-read-video-faster-than-ffmpeg
-        sourcecap = cv2.VideoCapture(source, apiPreference=cv2.CAP_FFMPEG)
+        currentsource = FCVAWidget_shared_metadata_dictVAR2["source"]
+        sourcecap = cv2.VideoCapture(FCVAWidget_shared_metadata_dictVAR2["source"], apiPreference=cv2.CAP_FFMPEG)
         internal_framecount = 0
         analyzedframecounter = 0
         instance_count = 0
@@ -147,6 +148,15 @@ def open_cvpipeline(*args):
                 there is some downtime where kivy reads from a shareddict, in that time I would ideally read/analyze frames (something that doesn't lock the shared dict)
             '''
             #make sure things have started AND this processess is not stopped:
+
+            #if source is different, close cap and reopen with new source: also remember this adds time to this already time critical function...
+            # fprint("sourceswitching", currentsource, FCVAWidget_shared_metadata_dictVAR2["source"])
+            if currentsource != FCVAWidget_shared_metadata_dictVAR2["source"]:
+                sourcecap.release()
+                sourcecap = cv2.VideoCapture(FCVAWidget_shared_metadata_dictVAR2["source"], apiPreference=cv2.CAP_FFMPEG)
+                currentsource = FCVAWidget_shared_metadata_dictVAR2["source"]
+                # fprint("done? switching?")
+
             if "starttime" in FCVAWidget_shared_metadata_dictVAR2 and FCVAWidget_shared_metadata_dictVAR2["subprocess" + str(pid)]:
 
                 initial_time = time.time()
@@ -160,7 +170,7 @@ def open_cvpipeline(*args):
                     for x in range(bufferlen):
                         shared_analyzedVAR['frame'+str(x)] = analyzed_queue.popleft()
                         shared_analyzedKeycountVAR['key'+str(x)] = analyzed_queueKEYS.popleft()
-                    fprint("updated shareddict", shared_analyzedKeycountVAR.values())
+                    # fprint("updated shareddict", shared_analyzedKeycountVAR.values())
                 newwriteend = time.time()
                 
                 afteranalyzetimestart = time.time()
@@ -440,12 +450,12 @@ class FCVA:
         shared_mem_managerVAR               = args[1]
         cvpartitionsVAR                     = args[2]
         bufferlenVAR                        = args[3]
-        sourceVAR                           = args[4]
-        fpsVAR                              = args[5]
-        appliedcvVAR                        = args[6]
-        shared_pool_meta_listVAR            = args[7]
-        subprocess_listVAR                  = args[8]
-        FCVAWidget_shared_metadata_dictVAR  = args[9]
+        # sourceVAR                           = args[4] > move this to the shareddict so source can change 
+        fpsVAR                              = args[4]
+        appliedcvVAR                        = args[5]
+        shared_pool_meta_listVAR            = args[6]
+        subprocess_listVAR                  = args[7]
+        FCVAWidget_shared_metadata_dictVAR  = args[8]
         fprint("check args for FCVAWidget_SubprocessInit", args)
 
         for x in range(cvpartitionsVAR):
@@ -469,7 +479,7 @@ class FCVA:
                     appliedcvVAR.__func__, #this is a problem, it doesn't survive multiple dill/pickles...
                     shared_analyzedA,
                     shared_analyzedAKeycount,
-                    sourceVAR,
+                    # sourceVAR,
                     x, #partition #, starts at 0 (now is x in this loop)
                     0, #instance of the block of relevant frames
                     bufferlenVAR, #bufferlen AKA how long the internal queues should be
@@ -503,6 +513,8 @@ class FCVA:
         from kivy.uix.boxlayout import BoxLayout
         from kivy.clock import Clock
         from kivy.graphics.texture import Texture
+        #for drop in (Mac and Windows) #example as per: https://stackoverflow.com/questions/71957402/the-on-drop-file-function-in-kivy-for-python-passes-5-arguments-but-only-3-argu
+        from kivy.core.window import Window
 
         class FCVAWidget(BoxLayout):
 
@@ -519,7 +531,7 @@ class FCVA:
                     if __name__ == "FastCVApp":
                         import multiprocessing as FCVA_mp
                         FCVA_mp.freeze_support()
-                        print("FCVA FCVAWidget __init__ detected no multiprocessing, importing as such", e, flush=True)
+                        print("FCVA FCVAWidget __init__ detected no multiprocessing, importing as such", flush=True)
                         # import traceback
                         # print("full exception (YOU CAN IGNORE THIS, just testing if multiprocess/multiprocessing has already been imported)", "".join(traceback.format_exception(*sys.exc_info())))
                 
@@ -531,13 +543,16 @@ class FCVA:
                 subprocess_list = []
 
                 self.FCVAWidget_shared_metadata_dict = shared_mem_manager.dict()
+                if hasattr(self, "source"):
+                    self.FCVAWidget_shared_metadata_dict["source"] = self.source
+
                 
                 initdatalist = FCVA.FCVAWidget_SubprocessInit(
                     FCVA_mp,
                     shared_mem_manager,
                     self.cvpartitions,
                     self.bufferlen,
-                    self.source,
+                    # self.source,
                     self.fps,
                     self.appliedcv,
                     shared_pool_meta_list,
@@ -549,7 +564,15 @@ class FCVA:
                 self.shared_pool_meta_list = initdatalist[0]
                 self.subprocess_list = initdatalist[1]
                 self.dicts_per_subprocess =  initdatalist[2]
+
+                #not sure init has window available so just bind after everything is done using clock schedule once 0
+                Window.bind(on_drop_file=self._on_file_drop)
             
+            def _on_file_drop(self, window, file_path, x, y):
+                print(file_path, str(file_path, encoding='utf-8'))
+                self.FCVAWidget_shared_metadata_dict["source"] = str(file_path, encoding='utf-8')
+                return
+
             def tester(*args):
                 fprint("am i accessible in the subprocess after FCVAWidgetInit is called?")
             
@@ -647,7 +670,7 @@ class FCVA:
                         # shared analyzed keycount is w.r.t. getting the right index when the index is self.cvpartitions-many of this sequence: shared_analyzedA, shared_analyzedAKeycount, shared_rawA, shared_rawAKEYS
                         shared_analyzedKeycountIndex = frameblock(1,shareddict_instance,1,self.dicts_per_subprocess)[0] #reminder that frameblock is a continuous BLOCK and shared_pool_meta_listVAR is alternating: 0 1 2 3, 0 1 2 3, etc... which is why bufferlen is 1
                         shared_analyzedIndex = frameblock(0,shareddict_instance,1,self.dicts_per_subprocess)[0]
-                        fprint("valtesting", self.index, shareddict_instance,shared_analyzedKeycountIndex, len(self.shared_pool_meta_list), shared_analyzedIndex)
+                        # fprint("valtesting1", self.index, shareddict_instance,shared_analyzedKeycountIndex, len(self.shared_pool_meta_list), shared_analyzedIndex)
                         # fprint("valtesting2", self.index, self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values())
                         # fprint("valtesting2", self.index, shared_analyzedKeycountIndex)
 
