@@ -588,6 +588,24 @@ class FCVA:
                 #not sure init has window available so just bind after everything is done using clock schedule once 0
                 
                 Window.bind(on_drop_file=self._on_file_drop)
+
+            def on_touch_down(self, touch): #overrides touchdown for entire widget
+                self.ids['vidsliderID'].on_touch_down(touch) #self is automatically passed i think
+                #check if slider is touched as per: https://stackoverflow.com/questions/50590027/how-can-i-detect-when-touch-is-in-the-children-widget-in-kivy and per https://kivy.org/doc/stable/guide/events.html#dispatching-a-property-event
+                if self.ids['vidsliderID'].collide_point(*touch.pos):
+                    # fprint("touched????", touch)
+                    self.toggleCV() #luckily this needs no args
+
+            def on_touch_up(self, touch):
+                self.ids['vidsliderID'].on_touch_up(touch)
+                # fprint("args???", touch, touch.pos)
+                if self.ids['vidsliderID'].collide_point(*touch.pos):
+                    fprint("args dont matter, check sliderpos:",self.ids['vidsliderID'].value)
+                    self.toggleCV()
+                #check if slider has been touched:
+                # https://stackoverflow.com/questions/50590027/how-can-i-detect-when-touch-is-in-the-children-widget-in-kivy
+                
+                # return super().on_touch_move(touch)
             
             def updateSliderData(self, *args):
                 '''
@@ -643,7 +661,6 @@ class FCVA:
                 # widgettext = App.get_running_app().root.get_screen('start_screen_name').ids['FCVAWidget_id'].ids['StartScreenButtonID'].text
                 widgettext = self.ids['StartScreenButtonID'].text
                 fprint("widgettext is?", widgettext)
-
                 
                 #update this play/pause code later
                 if "Play" in widgettext:
