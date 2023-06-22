@@ -12,11 +12,6 @@ import os
 class LoadDialog(FloatLayout):
     load = ObjectProperty(None)
     cancel = ObjectProperty(None)
-    
-    def on_drop_file(self, *args):
-        print("did dropfile trigger?", args)
-        print("filelocation?", args[0])
-
 class SaveDialog(FloatLayout):
     save = ObjectProperty(None)
     text_input = ObjectProperty(None)
