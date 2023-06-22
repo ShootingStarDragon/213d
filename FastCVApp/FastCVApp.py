@@ -74,7 +74,9 @@ def open_cvpipeline(*args):
 
         #didn't know about apipreference: https://stackoverflow.com/questions/73753126/why-does-opencv-read-video-faster-than-ffmpeg
         currentsource = FCVAWidget_shared_metadata_dictVAR2["source"]
-        sourcecap = cv2.VideoCapture(FCVAWidget_shared_metadata_dictVAR2["source"], apiPreference=cv2.CAP_FFMPEG)
+        #if source exists (that way you can just start the subprocess w/o requiring a source), if u change source you'll end up triggering the source change code in the while loop so ur good:
+        if "source" in FCVAWidget_shared_metadata_dictVAR2.keys():
+            sourcecap = cv2.VideoCapture(FCVAWidget_shared_metadata_dictVAR2["source"], apiPreference=cv2.CAP_FFMPEG)
         internal_framecount = 0
         analyzedframecounter = 0
         instance_count = 0
@@ -150,7 +152,6 @@ def open_cvpipeline(*args):
             #make sure things have started AND this processess is not stopped:
 
             #if source is different, close cap and reopen with new source: also remember this adds time to this already time critical function...
-            # fprint("sourceswitching", currentsource, FCVAWidget_shared_metadata_dictVAR2["source"])
             if currentsource != FCVAWidget_shared_metadata_dictVAR2["source"]:
                 sourcecap.release()
                 sourcecap = cv2.VideoCapture(FCVAWidget_shared_metadata_dictVAR2["source"], apiPreference=cv2.CAP_FFMPEG)
