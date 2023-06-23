@@ -65,6 +65,7 @@ def apply_mediapipe_func(*args): #basicmp
         answerqueue = deque(maxlen=bufferlenVAR)
         landmarkerVAR = args[3]
         raw_queueKEYSVAR = args[4]
+        force_monotonic_increasingVAR = args[5]
         
         #reference: https://stackoverflow.com/questions/48640251/how-to-peek-front-of-deque-without-popping#:~:text=You%20can%20peek%20front%20element,right%20and%20seems%20efficient%20too.
         peek_to_force_monotonically_increasing = 0
@@ -91,9 +92,13 @@ def apply_mediapipe_func(*args): #basicmp
             #time.time should work, i'm feeding them in sequence anyways
             #just making sure they have only the first 3 digits from the decimal and it's an int
             # results = landmarkerVAR.detect_for_video(image, newint) 
-            results = landmarkerVAR.detect_for_video(image, raw_queueKEYSVAR[peek_to_force_monotonically_increasing]) 
+            #you need this because after SEEK the rawqueue is cleared
+            # results = landmarkerVAR.detect_for_video(image, raw_queueKEYSVAR[peek_to_force_monotonically_increasing]) 
+            # peek_to_force_monotonically_increasing += 1
+            # print("increase wf??", os.getpid(), force_monotonic_increasingVAR, flush = True)
+            results = landmarkerVAR.detect_for_video(image, force_monotonic_increasingVAR) 
+            force_monotonic_increasingVAR += 1
             # results = landmarkerVAR.detect(image) 
-            peek_to_force_monotonically_increasing += 1
             
             #now draw on original image: 
             fixed_image = draw_landmarks_on_image(ogimage, results)

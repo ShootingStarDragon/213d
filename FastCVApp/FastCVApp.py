@@ -30,7 +30,25 @@ def frameblock(*args):
     bufferlen = args[2]
     maxpartitions = args[3]
     # print("frameblock args?", partitionnumber, instance)
-    Ans = [x + bufferlen*maxpartitions*instance + partitionnumber*bufferlen for x in range(bufferlen)]
+    Ans = [int(x + bufferlen*maxpartitions*instance + partitionnumber*bufferlen) for x in range(bufferlen)]
+    return Ans
+
+def int_to_instance(*args):
+    '''
+    args:
+        int u want to test
+        maxpartitions
+        bufferlen
+        partitionnumber (dont think it's req)
+    returns: the correct instance_count according to frameblock
+
+    what this does: remove the offset then get the instance number required to produce testint as per frameblock
+    '''
+    testintVAR = args[0]
+    maxpartitionsVAR = args[1]
+    bufferlenVAR = args[2]
+    offset = testintVAR % (bufferlenVAR*maxpartitionsVAR) 
+    Ans = (testintVAR - offset) / (bufferlenVAR*maxpartitionsVAR) 
     return Ans
 
 def int_to_partition(*args):
@@ -78,7 +96,7 @@ def open_cvpipeline(*args):
         if "source" in FCVAWidget_shared_metadata_dictVAR2.keys():
             sourcecap = cv2.VideoCapture(FCVAWidget_shared_metadata_dictVAR2["source"], apiPreference=cv2.CAP_FFMPEG)
         internal_framecount = 0
-        analyzedframecounter = 0
+        force_monotonic_increasing = 0 #mediapipe keeps complaining about " Input timestamp must be monotonically increasing."
         instance_count = 0
         
         pid = os.getpid()
@@ -124,6 +142,8 @@ def open_cvpipeline(*args):
                 )
         landmarker = mp.tasks.vision.PoseLandmarker.create_from_options(options)
 
+        #set this for seeking ONCE per subprocess since I can't pop which would interfere with the other subprocesses
+        FCVAWidget_shared_metadata_dictVAR2["seek_req_val" + str(os.getpid())] = 0
         while True:
             '''
             PLAN:
@@ -183,33 +203,54 @@ def open_cvpipeline(*args):
                     for x in range(bufferlen):
                         shared_analyzedVAR['frame'+str(x)] = analyzed_queue.popleft()
                         shared_analyzedKeycountVAR['key'+str(x)] = analyzed_queueKEYS.popleft()
-                    # fprint("updated shareddict", shared_analyzedKeycountVAR.values())
+                    fprint("updated shareddict", shared_analyzedKeycountVAR.values())
                 newwriteend = time.time()
                 
                 afteranalyzetimestart = time.time()
+                # fprint("why is analyze not running", len(raw_queue) > 0, len(analyzed_queue) == 0)
                 if len(raw_queue) > 0 and len(analyzed_queue) == 0:
                     #give the queue to the cv func
                     #cv func returns a queue of frames
                     rtime = time.time()
                     # u can peek at deques: https://stackoverflow.com/questions/48640251/how-to-peek-front-of-deque-without-popping#:~:text=You%20can%20peek%20front%20element,right%20and%20seems%20efficient%20too. , can do it but I thought of a simpler way in the example py file
-                    resultqueue = appliedcv(raw_queue, FCVAWidget_shared_metadata_dictVAR2, bufferlen, landmarker, raw_queueKEYS)
-                    fprint("resultqueue timing (appliedcv)", os.getpid(), time.time() - rtime, time.time())
+                    resultqueue = appliedcv(raw_queue, FCVAWidget_shared_metadata_dictVAR2, bufferlen, landmarker, raw_queueKEYS, force_monotonic_increasing)
+                    force_monotonic_increasing += bufferlen  
+                    fprint("resultqueue timing (appliedcv)", time.time() - rtime,current_framenumber)
                     current_framenumber = int((time.time() - FCVAWidget_shared_metadata_dictVAR2["starttime"])/(1/fps))
                     otherhalf = time.time()
 
                     #figure out future time
                     future_time = FCVAWidget_shared_metadata_dictVAR2["starttime"] + ((1/fps)*internal_framecount)
 
-                    for x in range(len(resultqueue)):
-                        result_compressed = resultqueue.popleft().tobytes()
-                        result_compressed = blosc2.compress(result_compressed,filter=blosc2.Filter.SHUFFLE, codec=blosc2.Codec.LZ4)
-                        analyzed_queue.append(result_compressed)
-                        analyzed_queueKEYS.append(raw_queueKEYS.popleft())
+                    if len(resultqueue)> 0: #resultqueue can be none if seek occurs
+                        for x in range(len(resultqueue)):
+                            result_compressed = resultqueue.popleft().tobytes()
+                            result_compressed = blosc2.compress(result_compressed,filter=blosc2.Filter.SHUFFLE, codec=blosc2.Codec.LZ4)
+                            analyzed_queue.append(result_compressed)
+                            analyzed_queueKEYS.append(raw_queueKEYS.popleft())
                 afteranalyzetime = time.time()
 
                 afterqueuetimestart = time.time()
                 # if raw_queue.qsize() == 0:
                 # if len(raw_queue) == 0:
+
+                #update info for seeking
+                if "seek_req_val" in FCVAWidget_shared_metadata_dictVAR2 and FCVAWidget_shared_metadata_dictVAR2["seek_req_val"] != FCVAWidget_shared_metadata_dictVAR2["seek_req_val" + str(os.getpid())]:
+                    internal_framecount = FCVAWidget_shared_metadata_dictVAR2["seek_req_val"]
+                    # fprint("lol wut why is it wrong frame??", internal_framecount)
+                    sourcecap.set(cv2.CAP_PROP_POS_FRAMES, internal_framecount) # as per https://stackoverflow.com/questions/33650974/opencv-python-read-specific-frame-using-videocapture
+                    FCVAWidget_shared_metadata_dictVAR2["seek_req_val" + str(os.getpid())] = internal_framecount
+                    #clear out old deques so it resets after a seek
+                    raw_queue.clear()
+                    raw_queueKEYS.clear()
+                    analyzed_queue.clear()
+                    analyzed_queueKEYS.clear()
+                    # fprint("deque len?", len(analyzed_queue))
+                    #reset instance count to be at the right spot where internal_framecount is:
+                    instance_count = int_to_instance(internal_framecount, maxpartitions, bufferlen) 
+                    fprint("internal framecount to instance", internal_framecount, maxpartitions, bufferlen,  instance_count)
+
+
                 if len(raw_queue) <= int(bufferlen/2):
                     #get the right framecount:
                     framelist = frameblock(partitionnumber,instance_count,bufferlen,maxpartitions)
@@ -222,7 +263,8 @@ def open_cvpipeline(*args):
                         # fprint("how fast is readin really?", time.time() - timegg) #0.010001897811889648
 
                         #compare internal framecount to see if it's a frame that this subprocess is supposed to analyze
-                        if ret and internal_framecount in framelist:
+                        # fprint("ret and internal_framecount in framelist", ret, internal_framecount, framelist, ret and (internal_framecount in framelist))
+                        if ret and (internal_framecount in framelist):
                             # i might not be picking up a pose because the frame is being read upside down, flip it first before analyzing with mediapipe
                             framedata = cv2.resize(framedata, (1280, 720))
                             # framedata = cv2.resize(framedata, (640, 480))
@@ -594,18 +636,24 @@ class FCVA:
                 #check if slider is touched as per: https://stackoverflow.com/questions/50590027/how-can-i-detect-when-touch-is-in-the-children-widget-in-kivy and per https://kivy.org/doc/stable/guide/events.html#dispatching-a-property-event
                 if self.ids['vidsliderID'].collide_point(*touch.pos):
                     # fprint("touched????", touch)
-                    self.toggleCV() #luckily this needs no args
+                    # self.toggleCV() #luckily this needs no args
+                    self.CV_off()
 
             def on_touch_up(self, touch):
                 self.ids['vidsliderID'].on_touch_up(touch)
                 # fprint("args???", touch, touch.pos)
                 if self.ids['vidsliderID'].collide_point(*touch.pos):
                     fprint("args dont matter, check sliderpos:",self.ids['vidsliderID'].value)
+                    self.CV_on()
+                #since I catch all the events I must send it to the widget: # on_release: FCVAWidgetID.toggleCV()
+                if self.ids['StartScreenButtonID'].collide_point(*touch.pos):
                     self.toggleCV()
+
                 #check if slider has been touched:
                 # https://stackoverflow.com/questions/50590027/how-can-i-detect-when-touch-is-in-the-children-widget-in-kivy
                 
                 # return super().on_touch_move(touch)
+                # self.CV_on()
             
             def updateSliderData(self, *args):
                 '''
@@ -620,10 +668,12 @@ class FCVA:
                 self.ids['vidsliderID'].max = caplength
                 fprint("what is caplenthg?", caplength)
                 capfps = captest.get(cv2.CAP_PROP_FPS)
+                self.spf = (1/capfps)
                 captest.release()
                 maxseconds = int(caplength/capfps)
                 FCVAWidget_shared_metadata_dictVAR["caplength"] = caplength
                 FCVAWidget_shared_metadata_dictVAR["capfps"] = capfps
+                self.fps = FCVAWidget_shared_metadata_dictVAR["capfps"]
                 FCVAWidget_shared_metadata_dictVAR["maxseconds"] = maxseconds
                 print( maxseconds )
                 # https://stackoverflow.com/questions/775049/how-do-i-convert-seconds-to-hours-minutes-and-seconds
@@ -650,9 +700,44 @@ class FCVA:
                 self.FCVAWidget_shared_metadata_dict["source"] = str(file_path, encoding='utf-8')
                 self.updateSliderData(self.FCVAWidget_shared_metadata_dict)
 
-            def tester(*args):
-                fprint("am i accessible in the subprocess after FCVAWidgetInit is called?")
+            def seektime(self):
+                '''
+                what this does is calculate the new starttime based on the slidervalue caused by seeking (not not seeking, it will still work)
+                '''
+                current_sec = self.ids['vidsliderID'].value * (1/self.FCVAWidget_shared_metadata_dict["capfps"])
+                Ans = time.time() - current_sec
+                # fprint("what is the currframe with seek then?", current_sec, int((time.time() - Ans)/self.spf))
+                return Ans
             
+            def delay_blit(self, *args):
+                self.blit_imagebuf = Clock.schedule_interval(self.blit_from_shared_memory, (1/self.fps))
+            
+            def CV_on(self):
+                self.ids['StartScreenButtonID'].text = "Pause"
+                if "pausetime" in self.FCVAWidget_shared_metadata_dict.keys():
+                    # fprint("reset time with pausetime diff:", time.time()- self.FCVAWidget_shared_metadata_dict["pausetime"], "old starttime +3",self.FCVAWidget_shared_metadata_dict["starttime"])
+
+                    # self.FCVAWidget_shared_metadata_dict["starttime"] = time.time()- self.FCVAWidget_shared_metadata_dict["pausetime"] + self.FCVAWidget_shared_metadata_dict["starttime"]
+                    self.FCVAWidget_shared_metadata_dict["starttime"] = self.seektime() + 3
+                    self.FCVAWidget_shared_metadata_dict["seek_req_val"] = self.ids['vidsliderID'].value
+                    fprint("sliderval ok?")
+                    fprint("#need a 3 second delay somehow")
+                    self.blitschedule = Clock.schedule_once(self.delay_blit, 3)
+                    self.FCVAWidget_shared_metadata_dict.pop("pausetime")
+                else:
+                    self.FCVAWidget_shared_metadata_dict["starttime"] = time.time() + 3
+                    fprint("set basictime")
+                    self.blitschedule = Clock.schedule_once(self.delay_blit, 3)
+
+            def CV_off(self):
+                
+                self.ids['StartScreenButtonID'].text = "Play"
+                self.FCVAWidget_shared_metadata_dict["pausetime"] = time.time()
+                if hasattr(self, "blitschedule"):
+                    self.blit_imagebuf.cancel()
+                fprint("set pausetime, text is", self.ids['StartScreenButtonID'].text)
+
+
             def toggleCV(self, *args):
                 # fprint("what are args, do I have widget?, nope, do the search strat", args)
                 # fprint("id searching", App.get_running_app().root.get_screen('start_screen_name').ids['FCVAWidget_id'].ids)
@@ -664,18 +749,6 @@ class FCVA:
                 
                 #update this play/pause code later
                 if "Play" in widgettext:
-                    self.ids['StartScreenButtonID'].text = "Pause"
-                    if "pausetime" in self.FCVAWidget_shared_metadata_dict.keys():
-                        fprint("reset time with pausetime diff:", time.time()- self.FCVAWidget_shared_metadata_dict["pausetime"], "old starttime +3",self.FCVAWidget_shared_metadata_dict["starttime"])
-
-                        self.FCVAWidget_shared_metadata_dict["starttime"] = time.time()- self.FCVAWidget_shared_metadata_dict["pausetime"] + self.FCVAWidget_shared_metadata_dict["starttime"]
-                        self.FCVAWidget_shared_metadata_dict.pop("pausetime")
-                    else:
-                        self.FCVAWidget_shared_metadata_dict["starttime"] = time.time() + 3
-                        fprint("set basictime")
-                        
-                    self.blitschedule = Clock.schedule_interval(self.blit_from_shared_memory, (1/self.fps))
-                    
                     #check if you have been paused already:
                     # if "pausedtime" in self.shared_globalindex_dictVAR.keys() and isinstance(self.shared_globalindex_dictVAR["pausedtime"], float):
                     #     #start all subprocesses (hope it's fast enough):
@@ -685,13 +758,9 @@ class FCVA:
                     #     #clear pausedtime and adjust starttime by elapsed time from last pause:
                     #     self.shared_globalindex_dictVAR["starttime"] = self.shared_globalindex_dictVAR["starttime"] + (time.time() - self.shared_globalindex_dictVAR["pausedtime"])
                     #     self.shared_globalindex_dictVAR["pausedtime"] = False
+                    self.CV_on()
                 else:
-                    self.ids['StartScreenButtonID'].text = "Play"
-                    
-                    fprint("set pausetime")
-                    self.FCVAWidget_shared_metadata_dict["pausetime"] = time.time()
-                    if hasattr(self, "blitschedule"):
-                        self.blitschedule.cancel()
+                    self.CV_off()
                     
                     # self.shared_globalindex_dictVAR["pausedtime"] = time.time()
                     # fprint("#pause all subprocesses (hope it's fast enough):")
@@ -770,7 +839,7 @@ class FCVA:
                         # fprint("valtesting2", self.index, shared_analyzedKeycountIndex)
 
                         if self.index in self.shared_pool_meta_list[shared_analyzedKeycountIndex].values():
-                            fprint("valtesting3", self.index, list(self.shared_pool_meta_list[shared_analyzedKeycountIndex].values()))
+                            # fprint("valtesting3", self.index, list(self.shared_pool_meta_list[shared_analyzedKeycountIndex].values()))
                             correctkey = list(self.shared_pool_meta_list[shared_analyzedKeycountIndex].keys())[list(self.shared_pool_meta_list[shared_analyzedKeycountIndex].values()).index(self.index)]
                             frameref = "frame" + correctkey.replace("key",'')
                             frame = self.shared_pool_meta_list[shared_analyzedIndex][frameref]
@@ -862,7 +931,9 @@ class FCVA:
                         else:
                             if self.index != 0:
                                 # fprint("missed frame#", self.index, self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values())
-                                fprint("missed frame#", self.index)
+                                # fprint("missed frame#", self.index)
+                                pass
+                        # fprint("frame/ is this func run multiply no way?????", self.index)
                     self.newt = time.time()
                     if hasattr(self, 'newt'):
                         if self.newt - timeog > 0 and (1/(self.newt- timeog)) < 200:
@@ -902,7 +973,6 @@ class FCVA:
         Button:
             id: StartScreenButtonID
             text: "Play"
-            on_release: FCVAWidgetID.toggleCV()
         Label:
             # text: str(vidsliderID.value) #convert slider label to a time
             text: root.updateSliderMax(vidsliderID.value)
