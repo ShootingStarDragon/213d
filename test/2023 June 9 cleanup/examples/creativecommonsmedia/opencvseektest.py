@@ -1,3 +1,4 @@
+# as per https://stackoverflow.com/questions/33650974/opencv-python-read-specific-frame-using-videocapture
 #test if opencv/ffmpeg can seek forwards/backwards:
 import cv2
 import time
@@ -16,17 +17,17 @@ time to go 10000 frames 0.00501251220703125
 '''
 
 futuretime = time.time()
-cap.set(cv2.CAP_PROP_FRAME_COUNT, 1000)
+cap.set(cv2.CAP_PROP_POS_FRAMES, 1000)
 ret, imageforward = cap.read()
 print("time to go future 1000 frames", time.time() - futuretime)
 
 pasttime = time.time()
-cap.set(cv2.CAP_PROP_FRAME_COUNT, 500)
+cap.set(cv2.CAP_PROP_POS_FRAMES, 500)
 ret, forwardbackward = cap.read()
 print("time to go back 500 frames", time.time() - pasttime)
 
 tenthousand = time.time()
-cap.set(cv2.CAP_PROP_FRAME_COUNT, 1000)
+cap.set(cv2.CAP_PROP_POS_FRAMES, 1000)
 ret, holdr = cap.read()
 print("time to go 10000 frames", time.time() - tenthousand)
 
