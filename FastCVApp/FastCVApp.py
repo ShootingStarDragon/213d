@@ -207,8 +207,8 @@ def open_cvpipeline(*args):
                 newwriteend = time.time()
                 
                 afteranalyzetimestart = time.time()
-                # fprint("why is analyze not running", len(raw_queue) > 0, len(analyzed_queue) == 0)
-                if len(raw_queue) > 0 and len(analyzed_queue) == 0:
+                # fprint("why is analyze not running", len(raw_queue), len(raw_queue) > 0, len(analyzed_queue) == 0)
+                if len(raw_queue) >= bufferlen and len(analyzed_queue) == 0:
                     #give the queue to the cv func
                     #cv func returns a queue of frames
                     rtime = time.time()
@@ -228,6 +228,7 @@ def open_cvpipeline(*args):
                             result_compressed = blosc2.compress(result_compressed,filter=blosc2.Filter.SHUFFLE, codec=blosc2.Codec.LZ4)
                             analyzed_queue.append(result_compressed)
                             analyzed_queueKEYS.append(raw_queueKEYS.popleft())
+                    fprint("analyzed keys???", [analyzed_queueKEYS[x] for x in range(len(analyzed_queueKEYS))])
                 afteranalyzetime = time.time()
 
                 afterqueuetimestart = time.time()
@@ -245,15 +246,16 @@ def open_cvpipeline(*args):
                     raw_queueKEYS.clear()
                     analyzed_queue.clear()
                     analyzed_queueKEYS.clear()
-                    # fprint("deque len?", len(analyzed_queue))
+                    fprint("CLEARED KEYS", len(analyzed_queue))
                     #reset instance count to be at the right spot where internal_framecount is:
                     instance_count = int_to_instance(internal_framecount, maxpartitions, bufferlen) 
-                    fprint("internal framecount to instance", internal_framecount, maxpartitions, bufferlen,  instance_count)
+                    # fprint("internal framecount to instance", internal_framecount, maxpartitions, bufferlen,  instance_count)
 
 
                 if len(raw_queue) <= int(bufferlen/2):
                     #get the right framecount:
                     framelist = frameblock(partitionnumber,instance_count,bufferlen,maxpartitions)
+                    # fprint("setting internal framecount after seek might mess up framelist", framelist)
                     # fprint("says true for some reason?", shared_globalindex_dictVAR["subprocess" + str(pid)])
                     instance_count += 1
                     timeoog = time.time()
@@ -724,10 +726,12 @@ class FCVA:
                     fprint("#need a 3 second delay somehow")
                     self.blitschedule = Clock.schedule_once(self.delay_blit, 3)
                     self.FCVAWidget_shared_metadata_dict.pop("pausetime")
+                    fprint("BLIT IN 3 SEC SEEK")
                 else:
                     self.FCVAWidget_shared_metadata_dict["starttime"] = time.time() + 3
                     fprint("set basictime")
                     self.blitschedule = Clock.schedule_once(self.delay_blit, 3)
+                    fprint("BLIT IN 3 SEC REGULAR")
 
             def CV_off(self):
                 
@@ -735,6 +739,7 @@ class FCVA:
                 self.FCVAWidget_shared_metadata_dict["pausetime"] = time.time()
                 if hasattr(self, "blitschedule"):
                     self.blit_imagebuf.cancel()
+                    fprint("CANCELED BLITTING???")
                 fprint("set pausetime, text is", self.ids['StartScreenButtonID'].text)
 
 
@@ -835,7 +840,7 @@ class FCVA:
                         shared_analyzedKeycountIndex = frameblock(1,shareddict_instance,1,self.dicts_per_subprocess)[0] #reminder that frameblock is a continuous BLOCK and shared_pool_meta_listVAR is alternating: 0 1 2 3, 0 1 2 3, etc... which is why bufferlen is 1
                         shared_analyzedIndex = frameblock(0,shareddict_instance,1,self.dicts_per_subprocess)[0]
                         # fprint("valtesting1", self.index, shareddict_instance,shared_analyzedKeycountIndex, len(self.shared_pool_meta_list), shared_analyzedIndex)
-                        # fprint("valtesting2", self.index, self.shared_pool_meta_listVAR[shared_analyzedKeycountIndex].values())
+                        # fprint("valtesting2", self.index, self.shared_pool_meta_list[shared_analyzedKeycountIndex].values())
                         # fprint("valtesting2", self.index, shared_analyzedKeycountIndex)
 
                         if self.index in self.shared_pool_meta_list[shared_analyzedKeycountIndex].values():
