@@ -121,11 +121,11 @@ def open_cvpipeline(*args):
         print("cwd???", os.getcwd())
         if "examples" in os.getcwd().split(os.path.sep):
             # https://stackoverflow.com/a/51276165
-            tasklocation = os.path.join(os.sep, os.getcwd().split(os.path.sep)[0] + os.sep, *os.getcwd().split(os.path.sep), "creativecommonsmedia", "pose_landmarker_full.task")
-            # tasklocation = os.path.join(os.sep, os.getcwd().split(os.path.sep)[0] + os.sep, *os.getcwd().split(os.path.sep), "creativecommonsmedia", "pose_landmarker_lite.task")
+            # tasklocation = os.path.join(os.sep, os.getcwd().split(os.path.sep)[0] + os.sep, *os.getcwd().split(os.path.sep), "creativecommonsmedia", "pose_landmarker_full.task")
+            tasklocation = os.path.join(os.sep, os.getcwd().split(os.path.sep)[0] + os.sep, *os.getcwd().split(os.path.sep), "creativecommonsmedia", "pose_landmarker_lite.task")
         else:
-            tasklocation = 'examples\creativecommonsmedia\pose_landmarker_full.task'
-            # tasklocation = 'examples\creativecommonsmedia\pose_landmarker_lite.task'
+            # tasklocation = 'examples\creativecommonsmedia\pose_landmarker_full.task'
+            tasklocation = 'examples\creativecommonsmedia\pose_landmarker_lite.task'
         fprint("tasklocation?", tasklocation)
 
         with open(tasklocation, 'rb') as f:
@@ -260,7 +260,7 @@ def open_cvpipeline(*args):
                     for x in range(bufferlen*maxpartitions):
                         timegg = time.time()
                         (ret, framedata) = sourcecap.read()  #like .005 speed
-                        # fprint("how fast is readin really?", time.time() - timegg) #0.010001897811889648
+                        # fprint("how fast is readin AFTER SEEK?", time.time() - timegg) #0.010001897811889648
 
                         #compare internal framecount to see if it's a frame that this subprocess is supposed to analyze
                         # fprint("ret and internal_framecount in framelist", ret, internal_framecount, framelist, ret and (internal_framecount in framelist))
