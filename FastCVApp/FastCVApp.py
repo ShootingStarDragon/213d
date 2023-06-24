@@ -33,6 +33,19 @@ def frameblock(*args):
     Ans = [int(x + bufferlen*maxpartitions*instance + partitionnumber*bufferlen) for x in range(bufferlen)]
     return Ans
 
+def int_to_beginning_instance(*args):
+    '''
+    int to instance is correct but turns off some subprocesses: (it works when i randomly choose smth at the beginning of a frameblock)
+
+    what maxpartition needs:
+    [BLOCK*MAXPARITIONS]>[BLOCK*MAXPARITIONS]>[BLOCK*MAXPARITIONS]
+    but what I give to the subprocess:
+                v---start here BREAKS IT
+    [BLOCK*MAXPARITIONS]
+    ^--- I NEED TO START HERE
+
+    '''
+    pass
 def int_to_instance(*args):
     '''
     args:
@@ -43,6 +56,9 @@ def int_to_instance(*args):
     returns: the correct instance_count according to frameblock
 
     what this does: remove the offset then get the instance number required to produce testint as per frameblock
+
+    PROBLEM: this does get the correct instance but for some reason  
+    7472 1687537763.7368572 instance_count didnt read 10 frames 0 [] 289.0 8664.0 [8650, 8651, 8652, 8653, 8654, 8655, 8656, 8657, 8658, 8659]
     '''
     testintVAR = args[0]
     maxpartitionsVAR = args[1]
@@ -239,7 +255,7 @@ def open_cvpipeline(*args):
                 if "seek_req_val" in FCVAWidget_shared_metadata_dictVAR2 and FCVAWidget_shared_metadata_dictVAR2["seek_req_val"] != FCVAWidget_shared_metadata_dictVAR2["seek_req_val" + str(os.getpid())]:
                     internal_framecount = FCVAWidget_shared_metadata_dictVAR2["seek_req_val"]
                     # fprint("lol wut why is it wrong frame??", internal_framecount)
-                    sourcecap.set(cv2.CAP_PROP_POS_FRAMES, internal_framecount) # as per https://stackoverflow.com/questions/33650974/opencv-python-read-specific-frame-using-videocapture
+                    sourcecap.set(cv2.CAP_PROP_POS_FRAMES, internal_framecount+int(FCVAWidget_shared_metadata_dictVAR2["capfps"]*3)) # as per https://stackoverflow.com/questions/33650974/opencv-python-read-specific-frame-using-videocapture
                     FCVAWidget_shared_metadata_dictVAR2["seek_req_val" + str(os.getpid())] = internal_framecount
                     #clear out old deques so it resets after a seek
                     raw_queue.clear()
@@ -248,7 +264,7 @@ def open_cvpipeline(*args):
                     analyzed_queueKEYS.clear()
                     fprint("CLEARED KEYS", len(analyzed_queue))
                     #reset instance count to be at the right spot where internal_framecount is:
-                    instance_count = int_to_instance(internal_framecount, maxpartitions, bufferlen) 
+                    instance_count = int_to_instance(internal_framecount, maxpartitions, bufferlen)
                     # fprint("internal framecount to instance", internal_framecount, maxpartitions, bufferlen,  instance_count)
 
 
@@ -275,6 +291,8 @@ def open_cvpipeline(*args):
                             raw_queue.append(framedata) #im not giving bytes, yikes? # 0 time
                             raw_queueKEYS.append(framelist[x % bufferlen]) # 0 time
                         internal_framecount += 1
+                    if len(raw_queue) != 10:
+                        fprint("reading is wrekt", len(raw_queue), [raw_queueKEYS[x] for x in range(len(raw_queueKEYS))], "partition number", partitionnumber, instance_count, bufferlen, maxpartitions, internal_framecount, framelist, current_framenumber)
                     # fprint("the for loop structure is slow...", time.time()-timeoog)
     except Exception as e: 
         print("open_appliedcv died!", e)
