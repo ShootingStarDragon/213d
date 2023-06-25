@@ -33,19 +33,6 @@ def frameblock(*args):
     Ans = [int(x + bufferlen*maxpartitions*instance + partitionnumber*bufferlen) for x in range(bufferlen)]
     return Ans
 
-def int_to_beginning_instance(*args):
-    '''
-    int to instance is correct but turns off some subprocesses: (it works when i randomly choose smth at the beginning of a frameblock)
-
-    what maxpartition needs:
-    [BLOCK*MAXPARITIONS]>[BLOCK*MAXPARITIONS]>[BLOCK*MAXPARITIONS]
-    but what I give to the subprocess:
-                v---start here BREAKS IT
-    [BLOCK*MAXPARITIONS]
-    ^--- I NEED TO START HERE
-
-    '''
-    pass
 def int_to_instance(*args):
     '''
     args:
@@ -61,8 +48,8 @@ def int_to_instance(*args):
     7472 1687537763.7368572 instance_count didnt read 10 frames 0 [] 289.0 8664.0 [8650, 8651, 8652, 8653, 8654, 8655, 8656, 8657, 8658, 8659]
     '''
     testintVAR = args[0]
-    maxpartitionsVAR = args[1]
-    bufferlenVAR = args[2]
+    bufferlenVAR = args[1]
+    maxpartitionsVAR = args[2]
     offset = testintVAR % (bufferlenVAR*maxpartitionsVAR) 
     Ans = (testintVAR - offset) / (bufferlenVAR*maxpartitionsVAR) 
     return Ans
@@ -244,7 +231,7 @@ def open_cvpipeline(*args):
                             result_compressed = blosc2.compress(result_compressed,filter=blosc2.Filter.SHUFFLE, codec=blosc2.Codec.LZ4)
                             analyzed_queue.append(result_compressed)
                             analyzed_queueKEYS.append(raw_queueKEYS.popleft())
-                    fprint("analyzed keys???", [analyzed_queueKEYS[x] for x in range(len(analyzed_queueKEYS))])
+                    fprint("analyzed keys???", [analyzed_queueKEYS[x] for x in range(len(analyzed_queueKEYS))], current_framenumber)
                 afteranalyzetime = time.time()
 
                 afterqueuetimestart = time.time()
@@ -253,10 +240,14 @@ def open_cvpipeline(*args):
 
                 #update info for seeking
                 if "seek_req_val" in FCVAWidget_shared_metadata_dictVAR2 and FCVAWidget_shared_metadata_dictVAR2["seek_req_val"] != FCVAWidget_shared_metadata_dictVAR2["seek_req_val" + str(os.getpid())]:
-                    internal_framecount = FCVAWidget_shared_metadata_dictVAR2["seek_req_val"]
+                    instance_count = int_to_instance(FCVAWidget_shared_metadata_dictVAR2["seek_req_val"], bufferlen, maxpartitions)
+                    #this needs to set the internal_framecount to the BEGINNING of the instance block that way read works
+                    internal_framecount = frameblock(0,instance_count,bufferlen,maxpartitions)[0]
+                    # internal_framecount = FCVAWidget_shared_metadata_dictVAR2["seek_req_val"]
                     # fprint("lol wut why is it wrong frame??", internal_framecount)
                     sourcecap.set(cv2.CAP_PROP_POS_FRAMES, internal_framecount+int(FCVAWidget_shared_metadata_dictVAR2["capfps"]*3)) # as per https://stackoverflow.com/questions/33650974/opencv-python-read-specific-frame-using-videocapture
-                    FCVAWidget_shared_metadata_dictVAR2["seek_req_val" + str(os.getpid())] = internal_framecount
+                    #make os req vals match so check works even though it's not the right adjustment anymore
+                    FCVAWidget_shared_metadata_dictVAR2["seek_req_val" + str(os.getpid())] = FCVAWidget_shared_metadata_dictVAR2["seek_req_val"]
                     #clear out old deques so it resets after a seek
                     raw_queue.clear()
                     raw_queueKEYS.clear()
@@ -264,8 +255,7 @@ def open_cvpipeline(*args):
                     analyzed_queueKEYS.clear()
                     fprint("CLEARED KEYS", len(analyzed_queue))
                     #reset instance count to be at the right spot where internal_framecount is:
-                    instance_count = int_to_instance(internal_framecount, maxpartitions, bufferlen)
-                    # fprint("internal framecount to instance", internal_framecount, maxpartitions, bufferlen,  instance_count)
+                    fprint("internal framecount to instance", FCVAWidget_shared_metadata_dictVAR2["seek_req_val"],internal_framecount, maxpartitions, bufferlen,  instance_count)
 
 
                 if len(raw_queue) <= int(bufferlen/2):
