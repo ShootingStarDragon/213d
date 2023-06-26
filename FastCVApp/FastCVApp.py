@@ -253,6 +253,9 @@ def open_cvpipeline(*args):
                     raw_queueKEYS.clear()
                     analyzed_queue.clear()
                     analyzed_queueKEYS.clear()
+                    #hoping this resets the keycounts so that frames get updated to shared_analyzed queue:
+                    for keyvar in shared_analyzedKeycountVAR.keys():
+                        shared_analyzedKeycountVAR[keyvar] = -1
                     fprint("CLEARED deques", len(raw_queue), len(raw_queueKEYS), len(analyzed_queue), len(analyzed_queueKEYS))
                     #reset instance count to be at the right spot where internal_framecount is:
                     fprint("internal framecount to instance", FCVAWidget_shared_metadata_dictVAR2["seek_req_val"],internal_framecount, maxpartitions, bufferlen,  instance_count)
@@ -851,7 +854,7 @@ class FCVA:
                         shared_analyzedKeycountIndex = frameblock(1,shareddict_instance,1,self.dicts_per_subprocess)[0] #reminder that frameblock is a continuous BLOCK and shared_pool_meta_listVAR is alternating: 0 1 2 3, 0 1 2 3, etc... which is why bufferlen is 1
                         shared_analyzedIndex = frameblock(0,shareddict_instance,1,self.dicts_per_subprocess)[0]
                         # fprint("valtesting1", self.index, shareddict_instance,shared_analyzedKeycountIndex, len(self.shared_pool_meta_list), shared_analyzedIndex)
-                        fprint("valtesting2", self.index, self.shared_pool_meta_list[shared_analyzedKeycountIndex].values(), [z.values() for z in self.shared_pool_meta_list if not isinstance(z.values()[0], bytes)])
+                        # fprint("valtesting2", self.index, self.shared_pool_meta_list[shared_analyzedKeycountIndex].values(), [z.values() for z in self.shared_pool_meta_list if not isinstance(z.values()[0], bytes)])
                         # fprint("valtesting2", self.index, shared_analyzedKeycountIndex)
 
                         if self.index in self.shared_pool_meta_list[shared_analyzedKeycountIndex].values():
