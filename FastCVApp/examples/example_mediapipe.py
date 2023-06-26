@@ -66,7 +66,7 @@ def apply_mediapipe_func(*args): #basicmp
         landmarkerVAR = args[3]
         raw_queueKEYSVAR = args[4]
         force_monotonic_increasingVAR = args[5]
-        print("inputqueuelenOG", len(inputqueue),flush = True)
+        # print("inputqueuelenOG", len(inputqueue),flush = True)
         #reference: https://stackoverflow.com/questions/48640251/how-to-peek-front-of-deque-without-popping#:~:text=You%20can%20peek%20front%20element,right%20and%20seems%20efficient%20too.
         peek_to_force_monotonically_increasing = 0
         while len(inputqueue) > 0:
@@ -103,7 +103,7 @@ def apply_mediapipe_func(*args): #basicmp
             #now draw on original image: 
             fixed_image = draw_landmarks_on_image(ogimage, results)
             answerqueue.append(fixed_image)
-        print("aqlenEND", len(answerqueue),flush = True)
+        # print("aqlenEND", len(answerqueue),flush = True)
         return answerqueue
 
     except Exception as e:

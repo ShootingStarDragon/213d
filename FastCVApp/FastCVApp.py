@@ -253,7 +253,7 @@ def open_cvpipeline(*args):
                     raw_queueKEYS.clear()
                     analyzed_queue.clear()
                     analyzed_queueKEYS.clear()
-                    fprint("CLEARED KEYS", len(analyzed_queue))
+                    fprint("CLEARED deques", len(raw_queue), len(raw_queueKEYS), len(analyzed_queue), len(analyzed_queueKEYS))
                     #reset instance count to be at the right spot where internal_framecount is:
                     fprint("internal framecount to instance", FCVAWidget_shared_metadata_dictVAR2["seek_req_val"],internal_framecount, maxpartitions, bufferlen,  instance_count)
 
@@ -716,14 +716,16 @@ class FCVA:
                 '''
                 current_sec = self.ids['vidsliderID'].value * (1/self.FCVAWidget_shared_metadata_dict["capfps"])
                 Ans = time.time() - current_sec
-                # fprint("what is the currframe with seek then?", current_sec, int((time.time() - Ans)/self.spf))
+                fprint("what is the currframe with seek then?", current_sec, int((time.time() - Ans)/self.spf))
                 return Ans
             
             def delay_blit(self, *args):
                 self.blit_imagebuf = Clock.schedule_interval(self.blit_from_shared_memory, (1/self.fps))
+                fprint("START BLITTING")
             
             def CV_on(self):
                 self.ids['StartScreenButtonID'].text = "Pause"
+                fprint("cv on triggerd check if statement","pausetime" in self.FCVAWidget_shared_metadata_dict.keys(), self.FCVAWidget_shared_metadata_dict.keys())
                 if "pausetime" in self.FCVAWidget_shared_metadata_dict.keys():
                     # fprint("reset time with pausetime diff:", time.time()- self.FCVAWidget_shared_metadata_dict["pausetime"], "old starttime +3",self.FCVAWidget_shared_metadata_dict["starttime"])
 
@@ -808,6 +810,7 @@ class FCVA:
                 try:
                     timeog = time.time()
                     # if "toggleCV" in self.FCVAWidget_shared_metadata_dict and self.FCVAWidget_shared_metadata_dict["starttime"] != None:
+                    # fprint("BLITTING AT ALL?", self.FCVAWidget_shared_metadata_dict["starttime"] != None, self.FCVAWidget_shared_metadata_dict["starttime"])
                     if self.FCVAWidget_shared_metadata_dict["starttime"] != None:
                         self.index = int((time.time() - self.FCVAWidget_shared_metadata_dict["starttime"])/self.spf)
                         # if self.index < 0:
@@ -848,11 +851,11 @@ class FCVA:
                         shared_analyzedKeycountIndex = frameblock(1,shareddict_instance,1,self.dicts_per_subprocess)[0] #reminder that frameblock is a continuous BLOCK and shared_pool_meta_listVAR is alternating: 0 1 2 3, 0 1 2 3, etc... which is why bufferlen is 1
                         shared_analyzedIndex = frameblock(0,shareddict_instance,1,self.dicts_per_subprocess)[0]
                         # fprint("valtesting1", self.index, shareddict_instance,shared_analyzedKeycountIndex, len(self.shared_pool_meta_list), shared_analyzedIndex)
-                        # fprint("valtesting2", self.index, self.shared_pool_meta_list[shared_analyzedKeycountIndex].values())
+                        fprint("valtesting2", self.index, self.shared_pool_meta_list[shared_analyzedKeycountIndex].values(), [z.values() for z in self.shared_pool_meta_list if not isinstance(z.values()[0], bytes)])
                         # fprint("valtesting2", self.index, shared_analyzedKeycountIndex)
 
                         if self.index in self.shared_pool_meta_list[shared_analyzedKeycountIndex].values():
-                            # fprint("valtesting3", self.index, list(self.shared_pool_meta_list[shared_analyzedKeycountIndex].values()))
+                            fprint("valtesting3", self.index, list(self.shared_pool_meta_list[shared_analyzedKeycountIndex].values()))
                             correctkey = list(self.shared_pool_meta_list[shared_analyzedKeycountIndex].keys())[list(self.shared_pool_meta_list[shared_analyzedKeycountIndex].values()).index(self.index)]
                             frameref = "frame" + correctkey.replace("key",'')
                             frame = self.shared_pool_meta_list[shared_analyzedIndex][frameref]
