@@ -245,7 +245,8 @@ def open_cvpipeline(*args):
                     internal_framecount = frameblock(0,instance_count,bufferlen,maxpartitions)[0]
                     # internal_framecount = FCVAWidget_shared_metadata_dictVAR2["seek_req_val"]
                     # fprint("lol wut why is it wrong frame??", internal_framecount)
-                    sourcecap.set(cv2.CAP_PROP_POS_FRAMES, internal_framecount+int(FCVAWidget_shared_metadata_dictVAR2["capfps"]*3)) # as per https://stackoverflow.com/questions/33650974/opencv-python-read-specific-frame-using-videocapture
+                    #set the frames to either frame-3sec OR internal_framecount (if you're at time < 3 sec)
+                    sourcecap.set(cv2.CAP_PROP_POS_FRAMES, max(internal_framecount-int(FCVAWidget_shared_metadata_dictVAR2["capfps"]*3),internal_framecount)) # as per https://stackoverflow.com/questions/33650974/opencv-python-read-specific-frame-using-videocapture
                     #make os req vals match so check works even though it's not the right adjustment anymore
                     FCVAWidget_shared_metadata_dictVAR2["seek_req_val" + str(os.getpid())] = FCVAWidget_shared_metadata_dictVAR2["seek_req_val"]
                     #clear out old deques so it resets after a seek

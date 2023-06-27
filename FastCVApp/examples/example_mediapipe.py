@@ -8,7 +8,8 @@ import time
 from collections import deque
 
 # sourcelocation = "examples\creativecommonsmedia\Elephants Dream charstart2.webm"
-sourcelocation = "examples\creativecommonsmedia\Elephants Dream charstart2FULL.webm"
+# sourcelocation = "examples\creativecommonsmedia\Elephants Dream charstart2FULL.webm"
+sourcelocation = "examples\creativecommonsmedia\\30 fps counter.webm"
 
 if hasattr(sys, "_MEIPASS"):
     pass
