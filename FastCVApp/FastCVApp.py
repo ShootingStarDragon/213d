@@ -245,8 +245,8 @@ def open_cvpipeline(*args):
                     internal_framecount = frameblock(0,instance_count,bufferlen,maxpartitions)[0]
                     # internal_framecount = FCVAWidget_shared_metadata_dictVAR2["seek_req_val"]
                     # fprint("lol wut why is it wrong frame??", internal_framecount)
-                    #set the frames to either frame-3sec OR internal_framecount (if you're at time < 3 sec)
-                    sourcecap.set(cv2.CAP_PROP_POS_FRAMES, max(internal_framecount-int(FCVAWidget_shared_metadata_dictVAR2["capfps"]*3),internal_framecount)) # as per https://stackoverflow.com/questions/33650974/opencv-python-read-specific-frame-using-videocapture
+                    #set the frames to either frame-3sec OR internal_framecount (if you're at time < FCVAWidget_shared_metadata_dictVAR["bufferwaitVAR2"] sec)
+                    sourcecap.set(cv2.CAP_PROP_POS_FRAMES, max(internal_framecount-int(FCVAWidget_shared_metadata_dictVAR2["capfps"]*FCVAWidget_shared_metadata_dictVAR2["bufferwaitVAR2"]),internal_framecount)) # as per https://stackoverflow.com/questions/33650974/opencv-python-read-specific-frame-using-videocapture
                     #make os req vals match so check works even though it's not the right adjustment anymore
                     FCVAWidget_shared_metadata_dictVAR2["seek_req_val" + str(os.getpid())] = FCVAWidget_shared_metadata_dictVAR2["seek_req_val"]
                     #clear out old deques so it resets after a seek
@@ -403,14 +403,9 @@ class FCVA:
                 #opencv is accurately guessing, read through everything for accuracy:
                 # https://stackoverflow.com/questions/31472155/python-opencv-cv2-cv-cv-cap-prop-frame-count-get-wrong-numbers
                 # self.length = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
-                self.length = 0
-                # while True: 
-                #     ret, framevar = video.read()
-                #     if not ret:
-                #         break
-                #     self.length += 1
-                self.length += 11222333
                 video.release()
+                #number of seconds to wait for mediapipe/your cv function to buffer
+                self.bufferwait = 2
 
                 kvinit_dict = {}
                 #sanity checks
@@ -474,11 +469,11 @@ class FCVA:
                         self.fps,  
                         (1/self.fps), 
                         bufferlen,
-                        cvpartitions, 
-                        self.length, 
+                        cvpartitions,
                         kvinit_dict,
                         self.source,
                         self.appliedcv,
+                        self.bufferwait,
                         ))
                 kivy_subprocess.start()
 
@@ -525,7 +520,8 @@ class FCVA:
         shared_pool_meta_listVAR            = args[6]
         subprocess_listVAR                  = args[7]
         FCVAWidget_shared_metadata_dictVAR  = args[8]
-        fprint("check args for FCVAWidget_SubprocessInit", args)
+        # fprint("check args for FCVAWidget_SubprocessInit", args)
+        fprint("bufferwaitVAR2 in right dict??", FCVAWidget_shared_metadata_dictVAR["bufferwaitVAR2"])
 
         for x in range(cvpartitionsVAR):
             #init analyzed/keycount dicts
@@ -621,7 +617,12 @@ class FCVA:
                     # self.updateSliderData(self.FCVAWidget_shared_metadata_dict)
                     Clock.schedule_once(partial(self.updateSliderData,self.FCVAWidget_shared_metadata_dict), 0)
                     fprint("schedule once???")
-                
+                if hasattr(self, "bufferwaitVAR2"):
+                    self.FCVAWidget_shared_metadata_dict["bufferwaitVAR2"] = self.bufferwaitVAR2
+                else: #default to 3 and say so
+                    self.FCVAWidget_shared_metadata_dict["bufferwaitVAR2"] = 3
+                    fprint(f"bufferwaitVAR2 defaulted to self.FCVAWidget_shared_metadata_dict['bufferwaitVAR2']")
+
 
                 initdatalist = FCVA.FCVAWidget_SubprocessInit(
                     FCVA_mp,
@@ -734,18 +735,18 @@ class FCVA:
                     # fprint("reset time with pausetime diff:", time.time()- self.FCVAWidget_shared_metadata_dict["pausetime"], "old starttime +3",self.FCVAWidget_shared_metadata_dict["starttime"])
 
                     # self.FCVAWidget_shared_metadata_dict["starttime"] = time.time()- self.FCVAWidget_shared_metadata_dict["pausetime"] + self.FCVAWidget_shared_metadata_dict["starttime"]
-                    self.FCVAWidget_shared_metadata_dict["starttime"] = self.seektime() + 3
+                    self.FCVAWidget_shared_metadata_dict["starttime"] = self.seektime() + self.FCVAWidget_shared_metadata_dict["bufferwaitVAR2"]
                     self.FCVAWidget_shared_metadata_dict["seek_req_val"] = self.ids['vidsliderID'].value
                     fprint("sliderval ok?")
-                    fprint("#need a 3 second delay somehow")
-                    self.blitschedule = Clock.schedule_once(self.delay_blit, 3)
+                    fprint(f"#need a {self.FCVAWidget_shared_metadata_dict['bufferwaitVAR2']} second delay somehow")
+                    self.blitschedule = Clock.schedule_once(self.delay_blit, self.FCVAWidget_shared_metadata_dict['bufferwaitVAR2'])
                     self.FCVAWidget_shared_metadata_dict.pop("pausetime")
-                    fprint("BLIT IN 3 SEC SEEK")
+                    fprint(f"BLIT IN self.FCVAWidget_shared_metadata_dict['bufferwaitVAR2'] SEC SEEK")
                 else:
-                    self.FCVAWidget_shared_metadata_dict["starttime"] = time.time() + 3
+                    self.FCVAWidget_shared_metadata_dict["starttime"] = time.time() + self.FCVAWidget_shared_metadata_dict['bufferwaitVAR2']
                     fprint("set basictime")
-                    self.blitschedule = Clock.schedule_once(self.delay_blit, 3)
-                    fprint("BLIT IN 3 SEC REGULAR")
+                    self.blitschedule = Clock.schedule_once(self.delay_blit, self.FCVAWidget_shared_metadata_dict['bufferwaitVAR2'])
+                    fprint("BLIT IN self.FCVAWidget_shared_metadata_dict['bufferwaitVAR2'] SEC REGULAR")
 
             def CV_off(self):
                 
@@ -970,6 +971,7 @@ class FCVA:
         FCVAWidget.source = args[2]
         FCVAWidget.fps = args[3]
         FCVAWidget.appliedcv = args[4]
+        FCVAWidget.bufferwaitVAR2 = args[5]
 
         FCVAWidget_KV = f"""
 <FCVAWidget>:
@@ -1030,6 +1032,7 @@ class FCVA:
                             self.sourceVAR,
                             self.fps,
                             self.appliedcvVAR,
+                            self.bufferwaitVAR,
                             )
 
                     if len(kvstring_check) != 0:
@@ -1085,10 +1088,10 @@ FCVA_screen_manager: #remember to return a root widget
             MainApp.spf                         = args[2]
             MainApp.bufferlen                   = args[3]
             MainApp.cvpartitions                = args[4]
-            MainApp.framelength                 = args[5]
-            MainApp.kvinit_dictVAR              = args[6]
-            MainApp.sourceVAR                   = args[7]
-            MainApp.appliedcvVAR                = args[8]
+            MainApp.kvinit_dictVAR              = args[5]
+            MainApp.sourceVAR                   = args[6]
+            MainApp.appliedcvVAR                = args[7]
+            MainApp.bufferwaitVAR                = args[8]
             
             MainApp().run()
         except Exception as e: 
