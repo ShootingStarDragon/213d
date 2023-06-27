@@ -61,18 +61,18 @@ def draw_landmarks_on_image(annotated_image, detection_result):
 
 def apply_mediapipe_func(*args): #basicmp
     try:
-        inputqueue = args[0]
+        inputdeque = args[0]
         bufferlenVAR = args[2]
-        answerqueue = deque(maxlen=bufferlenVAR)
+        answerdeque = deque(maxlen=bufferlenVAR)
         landmarkerVAR = args[3]
-        raw_queueKEYSVAR = args[4]
+        raw_dequeKEYSVAR = args[4]
         force_monotonic_increasingVAR = args[5]
-        # print("inputqueuelenOG", len(inputqueue),flush = True)
+        # print("inputdequelenOG", len(inputdeque),flush = True)
         #reference: https://stackoverflow.com/questions/48640251/how-to-peek-front-of-deque-without-popping#:~:text=You%20can%20peek%20front%20element,right%20and%20seems%20efficient%20too.
         peek_to_force_monotonically_increasing = 0
-        while len(inputqueue) > 0:
+        while len(inputdeque) > 0:
             
-            image = inputqueue.popleft()
+            image = inputdeque.popleft()
             
             ogimage = image.copy()
             image = cv2.resize(image, (256, 144)) #interpolation = cv2.INTER_AREA makes mediapipe detect nothing...
@@ -93,8 +93,8 @@ def apply_mediapipe_func(*args): #basicmp
             #time.time should work, i'm feeding them in sequence anyways
             #just making sure they have only the first 3 digits from the decimal and it's an int
             # results = landmarkerVAR.detect_for_video(image, newint) 
-            #you need this because after SEEK the rawqueue is cleared
-            # results = landmarkerVAR.detect_for_video(image, raw_queueKEYSVAR[peek_to_force_monotonically_increasing]) 
+            #you need this because after SEEK the rawdeque is cleared
+            # results = landmarkerVAR.detect_for_video(image, raw_dequeKEYSVAR[peek_to_force_monotonically_increasing]) 
             # peek_to_force_monotonically_increasing += 1
             # print("increase wf??", os.getpid(), force_monotonic_increasingVAR, flush = True)
             results = landmarkerVAR.detect_for_video(image, force_monotonic_increasingVAR) 
@@ -103,9 +103,9 @@ def apply_mediapipe_func(*args): #basicmp
             
             #now draw on original image: 
             fixed_image = draw_landmarks_on_image(ogimage, results)
-            answerqueue.append(fixed_image)
-        # print("aqlenEND", len(answerqueue),flush = True)
-        return answerqueue
+            answerdeque.append(fixed_image)
+        # print("aqlenEND", len(answerdeque),flush = True)
+        return answerdeque
 
     except Exception as e:
         print("mediapipe mpvar died!", e, flush=True)

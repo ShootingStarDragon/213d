@@ -106,10 +106,10 @@ def open_cvpipeline(*args):
         FCVAWidget_shared_metadata_dictVAR2["subprocess" + str(pid)] = True
 
         from collections import deque
-        raw_queue = deque(maxlen=bufferlen)
-        raw_queueKEYS = deque(maxlen=bufferlen)
-        analyzed_queue = deque(maxlen=bufferlen)
-        analyzed_queueKEYS = deque(maxlen=bufferlen)
+        raw_deque = deque(maxlen=bufferlen)
+        raw_dequeKEYS = deque(maxlen=bufferlen)
+        analyzed_deque = deque(maxlen=bufferlen)
+        analyzed_dequeKEYS = deque(maxlen=bufferlen)
 
         #init mediapipe here so it spawns the right amt of processes
         import mediapipe as mp
@@ -154,20 +154,20 @@ def open_cvpipeline(*args):
             
             use 3 subprocesses(A,B,C) to use opencv to get frames from 1 file simultaneously (pray it works and there's no file hold...)
             then for each subprocesses, request 10 frames (0-9 > A, 10-19> B, 20-39>C, etc)
-            2 queues, 1 naked frame, 1 analyzed frame that is written to sharedmem for kivy to see
+            2 deques, 1 naked frame, 1 analyzed frame that is written to sharedmem for kivy to see
             2 dicts:
-            rawqueue
-            analyzedqueue
+            rawdeque
+            analyzeddeque
 
             LOOP:
                 3 actions: 
                 Write
                     Write to shared dict if init OR frames are old                    
                 Analyze
-                    Analyze all the time (if analyze queue is empty and there is a framequeue)
+                    Analyze all the time (if analyze deque is empty and there is a framedeque)
                 Read
                     request the RIGHT 10 frames (0-10 or 11-20 or 21-30)
-                    Load raw frames only if analyze queue is empty (this implicitly checks for time, keeps frames loaded, and stops u from loading too much)
+                    Load raw frames only if analyze deque is empty (this implicitly checks for time, keeps frames loaded, and stops u from loading too much)
             Why write>analyze>read?
                 you want to write out the analyzed frames first
                 there is some downtime where kivy reads from a shareddict, in that time I would ideally read/analyze frames (something that doesn't lock the shared dict)
@@ -201,42 +201,42 @@ def open_cvpipeline(*args):
                 # fprint("frame advantage START????", os.getpid(), internal_framecount, current_framenumber, future_time-time.time(), time.time())
                 
                 newwritestart = time.time()
-                if len(analyzed_queue) == bufferlen and (max(shared_analyzedKeycountVAR.values()) <= current_framenumber or max(shared_analyzedKeycountVAR.values()) == -1):
+                if len(analyzed_deque) == bufferlen and (max(shared_analyzedKeycountVAR.values()) <= current_framenumber or max(shared_analyzedKeycountVAR.values()) == -1):
                     dictwritetime = time.time()
                     for x in range(bufferlen):
-                        shared_analyzedVAR['frame'+str(x)] = analyzed_queue.popleft()
-                        shared_analyzedKeycountVAR['key'+str(x)] = analyzed_queueKEYS.popleft()
+                        shared_analyzedVAR['frame'+str(x)] = analyzed_deque.popleft()
+                        shared_analyzedKeycountVAR['key'+str(x)] = analyzed_dequeKEYS.popleft()
                     fprint("updated shareddict", shared_analyzedKeycountVAR.values())
                 newwriteend = time.time()
                 
                 afteranalyzetimestart = time.time()
-                # fprint("why is analyze not running", len(raw_queue), len(raw_queue) > 0, len(analyzed_queue) == 0)
-                if len(raw_queue) >= bufferlen and len(analyzed_queue) == 0:
-                    #give the queue to the cv func
-                    #cv func returns a queue of frames
+                # fprint("why is analyze not running", len(raw_deque), len(raw_deque) > 0, len(analyzed_deque) == 0)
+                if len(raw_deque) >= bufferlen and len(analyzed_deque) == 0:
+                    #give the deque to the cv func
+                    #cv func returns a deque of frames
                     rtime = time.time()
                     # u can peek at deques: https://stackoverflow.com/questions/48640251/how-to-peek-front-of-deque-without-popping#:~:text=You%20can%20peek%20front%20element,right%20and%20seems%20efficient%20too. , can do it but I thought of a simpler way in the example py file
-                    resultqueue = appliedcv(raw_queue, FCVAWidget_shared_metadata_dictVAR2, bufferlen, landmarker, raw_queueKEYS, force_monotonic_increasing)
+                    resultdeque = appliedcv(raw_deque, FCVAWidget_shared_metadata_dictVAR2, bufferlen, landmarker, raw_dequeKEYS, force_monotonic_increasing)
                     force_monotonic_increasing += bufferlen  
-                    fprint("resultqueue timing (appliedcv)", time.time() - rtime,current_framenumber)
+                    fprint("resultdeque timing (appliedcv)", time.time() - rtime,current_framenumber)
                     current_framenumber = int((time.time() - FCVAWidget_shared_metadata_dictVAR2["starttime"])/(1/fps))
                     otherhalf = time.time()
 
                     #figure out future time
                     future_time = FCVAWidget_shared_metadata_dictVAR2["starttime"] + ((1/fps)*internal_framecount)
 
-                    if len(resultqueue)> 0: #resultqueue can be none if seek occurs
-                        for x in range(len(resultqueue)):
-                            result_compressed = resultqueue.popleft().tobytes()
+                    if len(resultdeque)> 0: #resultdeque can be none if seek occurs
+                        for x in range(len(resultdeque)):
+                            result_compressed = resultdeque.popleft().tobytes()
                             result_compressed = blosc2.compress(result_compressed,filter=blosc2.Filter.SHUFFLE, codec=blosc2.Codec.LZ4)
-                            analyzed_queue.append(result_compressed)
-                            analyzed_queueKEYS.append(raw_queueKEYS.popleft())
-                    fprint("analyzed keys???", [analyzed_queueKEYS[x] for x in range(len(analyzed_queueKEYS))], current_framenumber)
+                            analyzed_deque.append(result_compressed)
+                            analyzed_dequeKEYS.append(raw_dequeKEYS.popleft())
+                    fprint("analyzed keys???", [analyzed_dequeKEYS[x] for x in range(len(analyzed_dequeKEYS))], current_framenumber)
                 afteranalyzetime = time.time()
 
-                afterqueuetimestart = time.time()
-                # if raw_queue.qsize() == 0:
-                # if len(raw_queue) == 0:
+                afterdequetimestart = time.time()
+                # if raw_deque.qsize() == 0:
+                # if len(raw_deque) == 0:
 
                 #update info for seeking
                 if "seek_req_val" in FCVAWidget_shared_metadata_dictVAR2 and FCVAWidget_shared_metadata_dictVAR2["seek_req_val"] != FCVAWidget_shared_metadata_dictVAR2["seek_req_val" + str(os.getpid())]:
@@ -250,19 +250,19 @@ def open_cvpipeline(*args):
                     #make os req vals match so check works even though it's not the right adjustment anymore
                     FCVAWidget_shared_metadata_dictVAR2["seek_req_val" + str(os.getpid())] = FCVAWidget_shared_metadata_dictVAR2["seek_req_val"]
                     #clear out old deques so it resets after a seek
-                    raw_queue.clear()
-                    raw_queueKEYS.clear()
-                    analyzed_queue.clear()
-                    analyzed_queueKEYS.clear()
-                    #hoping this resets the keycounts so that frames get updated to shared_analyzed queue:
+                    raw_deque.clear()
+                    raw_dequeKEYS.clear()
+                    analyzed_deque.clear()
+                    analyzed_dequeKEYS.clear()
+                    #hoping this resets the keycounts so that frames get updated to shared_analyzed deque:
                     for keyvar in shared_analyzedKeycountVAR.keys():
                         shared_analyzedKeycountVAR[keyvar] = -1
-                    fprint("CLEARED deques", len(raw_queue), len(raw_queueKEYS), len(analyzed_queue), len(analyzed_queueKEYS))
+                    fprint("CLEARED deques", len(raw_deque), len(raw_dequeKEYS), len(analyzed_deque), len(analyzed_dequeKEYS))
                     #reset instance count to be at the right spot where internal_framecount is:
                     fprint("internal framecount to instance", FCVAWidget_shared_metadata_dictVAR2["seek_req_val"],internal_framecount, maxpartitions, bufferlen,  instance_count)
 
 
-                if len(raw_queue) <= int(bufferlen/2):
+                if len(raw_deque) <= int(bufferlen/2):
                     #get the right framecount:
                     framelist = frameblock(partitionnumber,instance_count,bufferlen,maxpartitions)
                     # fprint("setting internal framecount after seek might mess up framelist", framelist)
@@ -282,11 +282,11 @@ def open_cvpipeline(*args):
                             # framedata = cv2.resize(framedata, (640, 480))
                             # framedata = cv2.flip(framedata, 0) 
                             # framedata = cv2.cvtColor(framedata, cv2.COLOR_RGB2BGR)
-                            raw_queue.append(framedata) #im not giving bytes, yikes? # 0 time
-                            raw_queueKEYS.append(framelist[x % bufferlen]) # 0 time
+                            raw_deque.append(framedata) #im not giving bytes, yikes? # 0 time
+                            raw_dequeKEYS.append(framelist[x % bufferlen]) # 0 time
                         internal_framecount += 1
-                    if len(raw_queue) != 10:
-                        fprint("reading is wrekt", len(raw_queue), [raw_queueKEYS[x] for x in range(len(raw_queueKEYS))], "partition number", partitionnumber, instance_count, bufferlen, maxpartitions, internal_framecount, framelist, current_framenumber)
+                    if len(raw_deque) != 10:
+                        fprint("reading is wrekt", len(raw_deque), [raw_dequeKEYS[x] for x in range(len(raw_dequeKEYS))], "partition number", partitionnumber, instance_count, bufferlen, maxpartitions, internal_framecount, framelist, current_framenumber)
                     # fprint("the for loop structure is slow...", time.time()-timeoog)
     except Exception as e: 
         print("open_appliedcv died!", e)
@@ -551,7 +551,7 @@ class FCVA:
                     # sourceVAR,
                     x, #partition #, starts at 0 (now is x in this loop)
                     0, #instance of the block of relevant frames
-                    bufferlenVAR, #bufferlen AKA how long the internal queues should be
+                    bufferlenVAR, #bufferlen AKA how long the internal deques should be
                     cvpartitionsVAR, #max # of partitions/subprocesses that divide up the video sequence
                     fpsVAR,
                     shared_rawA,
