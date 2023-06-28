@@ -456,6 +456,7 @@ class FCVA:
                     # cv_subprocessC.join()
                     # cv_subprocessD.join()
                     kivy_subprocess.join()
+                    pass
                     fprint("g")
         except Exception as e: 
             print("FCVA run died!", e, flush=True)
@@ -909,7 +910,7 @@ class FCVA:
             from kivy.core.window import Window
             from kivy.uix.button import Button
 
-            class MainApp(App):
+            class FCVAKivyBase(App):
                 def __init__(self, *args, **kwargs):
                     super().__init__(*args, **kwargs)
                     kvinit_dict = self.kvinit_dictVAR
@@ -950,7 +951,11 @@ class FCVA:
 
 FCVA_screen_manager: #remember to return a root widget
 """
-                        self.KV_string += self.FCVAWidget_KV     
+                        self.KV_string += self.FCVAWidget_KV 
+#                         self.KV_string = f"""
+# Button:
+#     text :"to undo, remove last self.KV_string and redo FCVAWidgetInit"
+# """
 
                 def build(self):
                     self.title = self.kvinit_dictVAR["title"]
@@ -960,7 +965,7 @@ FCVA_screen_manager: #remember to return a root widget
                     return build_app_from_kv
 
                 def on_request_close(self, *args):
-                    print("#kivy subprocess closed END!", flush=True)
+                    fprint("#kivy subprocess closed END!")
 
                 def run(self):
                     """Launches the app in standalone mode.
@@ -979,16 +984,18 @@ FCVA_screen_manager: #remember to return a root widget
                 pass
 
             #since I moved this to a class def all the args got moved by 1 since self is here too
-            MainApp.fps                         = args[1]
-            MainApp.spf                         = args[2]
-            MainApp.bufferlen                   = args[3]
-            MainApp.cvpartitions                = args[4]
-            MainApp.kvinit_dictVAR              = args[5]
-            MainApp.sourceVAR                   = args[6]
-            MainApp.appliedcvVAR                = args[7]
-            MainApp.bufferwaitVAR                = args[8]
+            FCVAKivyBase.fps                         = args[1]
+            FCVAKivyBase.spf                         = args[2]
+            FCVAKivyBase.bufferlen                   = args[3]
+            FCVAKivyBase.cvpartitions                = args[4]
+            FCVAKivyBase.kvinit_dictVAR              = args[5]
+            FCVAKivyBase.sourceVAR                   = args[6]
+            FCVAKivyBase.appliedcvVAR                = args[7]
+            FCVAKivyBase.bufferwaitVAR                = args[8]
             
-            MainApp().run()
+            main_instance = FCVAKivyBase()
+            main_instance.run()
+            main_instance.on_request_close()
         except Exception as e: 
             print("kivy subprocess died!", e, flush=True)
             import traceback
