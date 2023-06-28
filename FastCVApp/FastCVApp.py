@@ -583,6 +583,7 @@ class FCVA:
         import cv2 #nice, it's ok to load things multiple times python is amazing
         import datetime
         from functools import partial
+        import inspect, os
 
         class FCVAWidget(BoxLayout):
 
@@ -623,6 +624,7 @@ class FCVA:
                     self.FCVAWidget_shared_metadata_dict["bufferwaitVAR2"] = 3
                     fprint(f"bufferwaitVAR2 defaulted to self.FCVAWidget_shared_metadata_dict['bufferwaitVAR2']")
 
+                Clock.schedule_once(self.updatefont, 0)
 
                 initdatalist = FCVA.FCVAWidget_SubprocessInit(
                     FCVA_mp,
@@ -645,6 +647,22 @@ class FCVA:
                 #not sure init has window available so just bind after everything is done using clock schedule once 0
                 
                 Window.bind(on_drop_file=self._on_file_drop)
+            
+            def updatefont(self, *args):
+                #assume font is in this directory/fonts
+                # https://stackoverflow.com/questions/247770/how-to-retrieve-a-modules-path
+                # https://stackoverflow.com/questions/50499/how-do-i-get-the-path-and-name-of-the-file-that-is-currently-executing/50905#50905
+
+                # import inspect, os
+                # fprint (inspect.getfile(inspect.currentframe())) # script filename (usually with path)
+                # fprint (os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))) # script directory
+                this_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+                font_path = os.path.join(this_dir, "fonts", "materialdesignicons-webfont.ttf")
+                fprint("what is fontpath??", font_path)
+                # BACKSLASHES NOT COMPATIBLE WITH FSTRINGS: https://stackoverflow.com/questions/66173070/how-to-put-backslash-escape-sequence-into-f-string
+                # self.ids['StartScreenButtonID'].font_name = font_path
+                self.ids['StartScreenButtonID'].text = 'play'
+
 
             def on_touch_down(self, touch): #overrides touchdown for entire widget
                 self.ids['vidsliderID'].on_touch_down(touch) #self is automatically passed i think
@@ -729,7 +747,7 @@ class FCVA:
                 fprint("START BLITTING")
             
             def CV_on(self):
-                self.ids['StartScreenButtonID'].text = "Pause"
+                self.ids['StartScreenButtonID'].text = "pause"
                 fprint("cv on triggerd check if statement","pausetime" in self.FCVAWidget_shared_metadata_dict.keys(), self.FCVAWidget_shared_metadata_dict.keys())
                 if "pausetime" in self.FCVAWidget_shared_metadata_dict.keys():
                     # fprint("reset time with pausetime diff:", time.time()- self.FCVAWidget_shared_metadata_dict["pausetime"], "old starttime +3",self.FCVAWidget_shared_metadata_dict["starttime"])
@@ -750,7 +768,7 @@ class FCVA:
 
             def CV_off(self):
                 
-                self.ids['StartScreenButtonID'].text = "Play"
+                self.ids['StartScreenButtonID'].text = "play"
                 self.FCVAWidget_shared_metadata_dict["pausetime"] = time.time()
                 if hasattr(self, "blitschedule"):
                     self.blit_imagebuf.cancel()
@@ -768,7 +786,7 @@ class FCVA:
                 fprint("widgettext is?", widgettext)
                 
                 #update this play/pause code later
-                if "Play" in widgettext:
+                if "play" in widgettext:
                     #check if you have been paused already:
                     # if "pausedtime" in self.shared_globalindex_dictVAR.keys() and isinstance(self.shared_globalindex_dictVAR["pausedtime"], float):
                     #     #start all subprocesses (hope it's fast enough):
@@ -974,6 +992,8 @@ class FCVA:
         FCVAWidget.bufferwaitVAR2 = args[5]
 
         FCVAWidget_KV = f"""
+<Lutton@Button+Label>:
+
 <FCVAWidget>:
     orientation: 'vertical'
     id: FCVAWidgetID
@@ -992,9 +1012,9 @@ class FCVA:
         id: subBoxLayoutID1
         orientation: 'horizontal'
         size_hint: (1, 0.1)
-        Button:
+        Lutton:
             id: StartScreenButtonID
-            text: "Play"
+            text: 'play'
         Label:
             # text: str(vidsliderID.value) #convert slider label to a time
             text: root.updateSliderMax(vidsliderID.value)
