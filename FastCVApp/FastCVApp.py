@@ -781,6 +781,7 @@ class FCVA:
                                 # blit to texture
                                 # blit buffer example: https://stackoverflow.com/questions/61122285/kivy-camera-application-with-opencv-in-android-shows-black-screen
 
+                                #new verdict: reload observer is 
                                 # I think creating a new texture is lagging the app, opencv reads the file faster than the video ends
                                 # reference this, u need a reload observer: https://stackoverflow.com/questions/51546327/in-kivy-is-there-a-way-to-dynamically-change-the-shape-of-a-texture
                                 # for later, if I need to clear a texture this is the reference: https://stackoverflow.com/questions/55099463/how-to-update-a-texture-from-array-in-kivy
