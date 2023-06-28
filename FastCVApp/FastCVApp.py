@@ -721,8 +721,8 @@ class FCVA:
                 else:
                     self.CV_off()
 
-            def populate_texture(self, texture, buffervar):
-                texture.blit_buffer(buffervar)
+            def populate_texture(self, texture, bufferVAR, colorformatVAR, bufferfmtVAR):
+                texture.blit_buffer(bufferVAR, colorfmt=colorformatVAR, bufferfmt=bufferfmtVAR)
             
             def blit_from_shared_memory(self, *args):
                 try:
@@ -825,12 +825,16 @@ class FCVA:
                                 # print("blitting to texture index:", self.index)
 
                                 ggtime = time.time()
-                                self.texture1 = Texture.create(
-                                    size=(frame.shape[1], frame.shape[0]), colorfmt=self.colorfmtval
-                                )
-                                self.texture1.blit_buffer(
-                                    buf, colorfmt=self.colorfmtval, bufferfmt="ubyte"
-                                )
+                                if not hasattr(self, "texture1"):
+                                    self.texture1 = Texture.create(
+                                        size=(frame.shape[1], frame.shape[0]), colorfmt=self.colorfmtval)
+                                    fprint("created texture!!!!")
+                                # https://stackoverflow.com/questions/51546327/in-kivy-is-there-a-way-to-dynamically-change-the-shape-of-a-texture
+                                self.texture1.add_reload_observer(self.populate_texture)
+                                self.populate_texture(self.texture1, buf, self.colorfmtval, "ubyte")
+                                # self.texture1.blit_buffer(
+                                #     buf, colorfmt=self.colorfmtval, bufferfmt="ubyte"
+                                # )
                                 self.ids[
                                     "image_textureID"
                                 ].texture = self.texture1
