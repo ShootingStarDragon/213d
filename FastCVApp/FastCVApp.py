@@ -662,7 +662,7 @@ class FCVA:
                 # BACKSLASHES NOT COMPATIBLE WITH FSTRINGS: https://stackoverflow.com/questions/66173070/how-to-put-backslash-escape-sequence-into-f-string
                 self.ids['StartScreenButtonID'].font_name = font_path
                 # self.ids['StartScreenButtonID'].text = 'play'
-                self.ids['StartScreenButtonID'].text = "\U000F040A"
+                self.ids['StartScreenButtonID'].text = "\U000F040A" #this is play
                 # self.ids['StartScreenButtonID'].text = 'SUPOERTER'
 
 
@@ -749,7 +749,8 @@ class FCVA:
                 fprint("START BLITTING")
             
             def CV_on(self):
-                self.ids['StartScreenButtonID'].text = "pause"
+                # self.ids['StartScreenButtonID'].text = "pause"
+                self.ids['StartScreenButtonID'].text = "\U000F03E4" #this is pause
                 fprint("cv on triggerd check if statement","pausetime" in self.FCVAWidget_shared_metadata_dict.keys(), self.FCVAWidget_shared_metadata_dict.keys())
                 if "pausetime" in self.FCVAWidget_shared_metadata_dict.keys():
                     # fprint("reset time with pausetime diff:", time.time()- self.FCVAWidget_shared_metadata_dict["pausetime"], "old starttime +3",self.FCVAWidget_shared_metadata_dict["starttime"])
@@ -770,7 +771,7 @@ class FCVA:
 
             def CV_off(self):
                 
-                self.ids['StartScreenButtonID'].text = "play"
+                self.ids['StartScreenButtonID'].text = "\U000F040A" #this is play
                 self.FCVAWidget_shared_metadata_dict["pausetime"] = time.time()
                 if hasattr(self, "blitschedule"):
                     self.blit_imagebuf.cancel()
@@ -788,7 +789,8 @@ class FCVA:
                 fprint("widgettext is?", widgettext)
                 
                 #update this play/pause code later
-                if "play" in widgettext:
+                # if "play" in widgettext:
+                if "\U000F040A" in widgettext: #this is play
                     #check if you have been paused already:
                     # if "pausedtime" in self.shared_globalindex_dictVAR.keys() and isinstance(self.shared_globalindex_dictVAR["pausedtime"], float):
                     #     #start all subprocesses (hope it's fast enough):
@@ -1016,7 +1018,7 @@ class FCVA:
         size_hint: (1, 0.1)
         Lutton:
             id: StartScreenButtonID
-            text: 'play'
+            text: 'this is a bug'
         Label:
             # text: str(vidsliderID.value) #convert slider label to a time
             text: root.updateSliderMax(vidsliderID.value)
