@@ -146,6 +146,7 @@ def open_cvpipeline(*args):
 
         #set this for seeking ONCE per subprocess since I can't pop which would interfere with the other subprocesses
         FCVAWidget_shared_metadata_dictVAR2["seek_req_val" + str(os.getpid())] = 0
+        FCVAWidget_shared_metadata_dictVAR2["subprocessREAD" + str(pid)] = True
         while True:
             '''
             PLAN:
@@ -254,7 +255,7 @@ def open_cvpipeline(*args):
                     #reset instance count to be at the right spot where internal_framecount is:
                     fprint("internal framecount to instance", FCVAWidget_shared_metadata_dictVAR2["seek_req_val"],internal_framecount, maxpartitions, bufferlen,  instance_count)
 
-                if len(raw_deque) <= int(bufferlen/2):
+                if len(raw_deque) <= int(bufferlen/2) and FCVAWidget_shared_metadata_dictVAR2["subprocessREAD" + str(pid)]:
                     #get the right framecount:
                     framelist = frameblock(partitionnumber,instance_count,bufferlen,maxpartitions)
                     # fprint("setting internal framecount after seek might mess up framelist", framelist)
@@ -276,6 +277,11 @@ def open_cvpipeline(*args):
                             # framedata = cv2.cvtColor(framedata, cv2.COLOR_RGB2BGR)
                             raw_deque.append(framedata) #im not giving bytes, yikes? # 0 time
                             raw_dequeKEYS.append(framelist[x % bufferlen]) # 0 time
+                        #if ret is FALSE, assume EOS. We can set pausetime. Still need to figure out how to flush everything tho
+                        if not ret:
+                            FCVAWidget_shared_metadata_dictVAR2["subprocessREAD" + str(pid)] = False
+                        #need to delay setting ret...
+                        #     FCVAWidget_shared_metadata_dictVAR2["pausetime"] = time.time()
                         internal_framecount += 1
                     if len(raw_deque) != 10:
                         fprint("reading is wrekt", len(raw_deque), [raw_dequeKEYS[x] for x in range(len(raw_dequeKEYS))], "partition number", partitionnumber, instance_count, bufferlen, maxpartitions, internal_framecount, framelist, current_framenumber)
@@ -679,6 +685,11 @@ class FCVA:
             def CV_on(self):
                 self.ids['StartScreenButtonID'].text = "\U000F03E4" #this is pause
                 fprint("cv on triggerd check if statement","pausetime" in self.FCVAWidget_shared_metadata_dict.keys(), self.FCVAWidget_shared_metadata_dict.keys())
+                #make sure to turn on all subprocesses (like in the case of EOS where subprocess turns itself off)
+                for keyVAR in self.FCVAWidget_shared_metadata_dict.keys():
+                    if "subprocessREAD" in keyVAR: #better not name other things subprocess:
+                        fprint("NAMES???", keyVAR)
+                        self.FCVAWidget_shared_metadata_dict[keyVAR] = True
                 if "pausetime" in self.FCVAWidget_shared_metadata_dict.keys():
                     self.FCVAWidget_shared_metadata_dict["starttime"] = self.seektime() + self.FCVAWidget_shared_metadata_dict["bufferwaitVAR2"]
                     self.FCVAWidget_shared_metadata_dict["seek_req_val"] = self.ids['vidsliderID'].value
