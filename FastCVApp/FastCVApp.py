@@ -660,8 +660,10 @@ class FCVA:
                 font_path = os.path.join(this_dir, "fonts", "materialdesignicons-webfont.ttf")
                 fprint("what is fontpath??", font_path)
                 # BACKSLASHES NOT COMPATIBLE WITH FSTRINGS: https://stackoverflow.com/questions/66173070/how-to-put-backslash-escape-sequence-into-f-string
-                # self.ids['StartScreenButtonID'].font_name = font_path
-                self.ids['StartScreenButtonID'].text = 'play'
+                self.ids['StartScreenButtonID'].font_name = font_path
+                # self.ids['StartScreenButtonID'].text = 'play'
+                self.ids['StartScreenButtonID'].text = "\U000F040A"
+                # self.ids['StartScreenButtonID'].text = 'SUPOERTER'
 
 
             def on_touch_down(self, touch): #overrides touchdown for entire widget
