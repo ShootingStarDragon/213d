@@ -540,6 +540,9 @@ class FCVA:
         from kivy.graphics.texture import Texture
         #for drop in (Mac and Windows) #example as per: https://stackoverflow.com/questions/71957402/the-on-drop-file-function-in-kivy-for-python-passes-5-arguments-but-only-3-argu
         from kivy.core.window import Window
+        from kivy.uix.popup import Popup
+        from kivy.uix.label import Label
+        from kivy.uix.button import Button
         import cv2 #nice, it's ok to load things multiple times python is amazing
         import datetime
         from functools import partial
@@ -683,6 +686,30 @@ class FCVA:
                 print(file_path, str(file_path, encoding='utf-8'))
                 self.FCVAWidget_shared_metadata_dict["source"] = str(file_path, encoding='utf-8')
                 self.updateSliderData(self.FCVAWidget_shared_metadata_dict)
+                #have a popup saying it's loaded or not:
+                self.textpopup(title= "Loading file...", text= "Attempting to load: " + self.FCVAWidget_shared_metadata_dict["source"])
+            
+            # https://stackoverflow.com/questions/54501099/how-to-run-a-method-on-the-exit-of-a-kivy-app
+            def textpopup(self, title='', text=''):
+                """Open the pop-up with the name.
+
+                :param title: title of the pop-up to open
+                :type title: str
+                :param text: main text of the pop-up to open
+                :type text: str
+                :rtype: None
+                """
+                box = BoxLayout(orientation='vertical')
+                box.add_widget(Label(text=text, text_size= (400, None)))
+                # mybutton = Button(text="Are you sure you want to exit?", size_hint=(.5, 0.25))
+                mybuttonregret = Button(text="Ok", size_hint=(.5, 0.25))
+                # box.add_widget(mybutton)
+                box.add_widget(mybuttonregret)
+                popup = Popup(title=title, content=box, size_hint=(None, None), size=(600, 300))
+                # mybutton.bind(on_release=self.stop)
+                # mybutton.bind(on_release=popup.stop)
+                mybuttonregret.bind(on_release=popup.dismiss)
+                popup.open()
 
             def seektime(self):
                 '''
