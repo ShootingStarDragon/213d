@@ -626,20 +626,21 @@ class FCVA:
                 self.ids['StartScreenButtonID'].text = "\U000F040A" #this is play
 
             def on_touch_down(self, touch): #overrides touchdown for entire widget
-                self.ids['vidsliderID'].on_touch_down(touch) #self is automatically passed i think
+                self.ids['vidsliderID'].on_touch_down(touch) #self is automatically passed i think, this is to make sure the slider keeps recieving commands
                 #check if slider is touched as per: https://stackoverflow.com/questions/50590027/how-can-i-detect-when-touch-is-in-the-children-widget-in-kivy and per https://kivy.org/doc/stable/guide/events.html#dispatching-a-property-event
                 if self.ids['vidsliderID'].collide_point(*touch.pos):
                     # fprint("touched????", touch)
                     self.CV_off()
+                self.FCVAWidget_shared_metadata_dict["oldsliderpos"] = self.ids['vidsliderID'].value
 
             def on_touch_up(self, touch):
-                #check if slider has been touched:
-                # https://stackoverflow.com/questions/50590027/how-can-i-detect-when-touch-is-in-the-children-widget-in-kivy
-                if self.ids['vidsliderID'].collide_point(*touch.pos):
-                    fprint("args dont matter, check sliderpos:",self.ids['vidsliderID'].value)
-                    self.CV_on()
                 #since I catch all the events I must send it to the widgets with touchup events:
                 self.ids['vidsliderID'].on_touch_up(touch)
+                # https://stackoverflow.com/questions/50590027/how-can-i-detect-when-touch-is-in-the-children-widget-in-kivy
+                #if you release on the slider OR the slider value was moved:
+                if self.ids['vidsliderID'].collide_point(*touch.pos) or (self.FCVAWidget_shared_metadata_dict["oldsliderpos"] != self.ids['vidsliderID'].value):
+                    fprint("args dont matter, check sliderpos:",self.ids['vidsliderID'].value)
+                    self.CV_on()
                 if self.ids['StartScreenButtonID'].collide_point(*touch.pos):
                     self.toggleCV()
 
@@ -701,13 +702,9 @@ class FCVA:
                 """
                 box = BoxLayout(orientation='vertical')
                 box.add_widget(Label(text=text, text_size= (400, None)))
-                # mybutton = Button(text="Are you sure you want to exit?", size_hint=(.5, 0.25))
                 mybuttonregret = Button(text="Ok", size_hint=(.5, 0.25))
-                # box.add_widget(mybutton)
                 box.add_widget(mybuttonregret)
                 popup = Popup(title=title, content=box, size_hint=(None, None), size=(600, 300))
-                # mybutton.bind(on_release=self.stop)
-                # mybutton.bind(on_release=popup.stop)
                 mybuttonregret.bind(on_release=popup.dismiss)
                 popup.open()
 
