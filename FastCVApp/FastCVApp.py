@@ -637,7 +637,8 @@ class FCVA:
                 #since I catch all the events I must send it to the widgets with touchup events:
                 self.ids['vidsliderID'].on_touch_up(touch)
                 # https://stackoverflow.com/questions/50590027/how-can-i-detect-when-touch-is-in-the-children-widget-in-kivy
-                #if you release on the slider OR the slider value was moved:
+                #if you release on the slider OR the slider value was moved (just checking values doesnt account for leaving it on the same frame):
+                fprint("what are values?", self.FCVAWidget_shared_metadata_dict["oldsliderpos"], self.ids['vidsliderID'].value)
                 if self.ids['vidsliderID'].collide_point(*touch.pos) or (self.FCVAWidget_shared_metadata_dict["oldsliderpos"] != self.ids['vidsliderID'].value):
                     fprint("args dont matter, check sliderpos:",self.ids['vidsliderID'].value)
                     self.CV_on()
@@ -746,7 +747,7 @@ class FCVA:
             def CV_off(self):
                 self.ids['StartScreenButtonID'].text = "\U000F040A" #this is play
                 self.FCVAWidget_shared_metadata_dict["pausetime"] = time.time()
-                if hasattr(self, "blitschedule"):
+                if hasattr(self, "blitschedule") and hasattr(self, "blit_imagebuf"):
                     self.blit_imagebuf.cancel()
                     fprint("CANCELED BLITTING???")
                 fprint("set pausetime, text is", self.ids['StartScreenButtonID'].text)
@@ -787,7 +788,7 @@ class FCVA:
                         # fprint("valtesting2", self.index, shared_analyzedKeycountIndex)
 
                         if self.index in self.shared_pool_meta_list[shared_analyzedKeycountIndex].values():
-                            fprint("valtesting3", self.index, list(self.shared_pool_meta_list[shared_analyzedKeycountIndex].values()))
+                            # fprint("valtesting3", self.index, list(self.shared_pool_meta_list[shared_analyzedKeycountIndex].values()))
                             correctkey = list(self.shared_pool_meta_list[shared_analyzedKeycountIndex].keys())[list(self.shared_pool_meta_list[shared_analyzedKeycountIndex].values()).index(self.index)]
                             frameref = "frame" + correctkey.replace("key",'')
                             frame = self.shared_pool_meta_list[shared_analyzedIndex][frameref]
