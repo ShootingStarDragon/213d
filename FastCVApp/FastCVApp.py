@@ -103,6 +103,7 @@ def open_cvpipeline(*args):
         
         pid = os.getpid()
         FCVAWidget_shared_metadata_dictVAR2["subprocess" + str(pid)] = True
+        FCVAWidget_shared_metadata_dictVAR2["subprocess_cv_load" + str(pid)] = False
 
         from collections import deque
         raw_deque = deque(maxlen=bufferlen)
@@ -147,6 +148,7 @@ def open_cvpipeline(*args):
         #set this for seeking ONCE per subprocess since I can't pop which would interfere with the other subprocesses
         FCVAWidget_shared_metadata_dictVAR2["seek_req_val" + str(os.getpid())] = 0
         FCVAWidget_shared_metadata_dictVAR2["subprocessREAD" + str(pid)] = True
+        FCVAWidget_shared_metadata_dictVAR2["subprocess_cv_load" + str(pid)] = True
         while True:
             '''
             PLAN:
@@ -445,19 +447,23 @@ class FCVA:
                 # REMINDER: there is no self because I never instantiate a class with multiprocessing.process
                 
                 # this try except block holds the main process open so the subprocesses aren't cleared when the main process exits early.
-                while True:
-                    time.sleep(200)
-                    # when the while block is done, close all the subprocesses using .join to gracefully exit. also make sure opencv releases the video.
-                    # mediaread_subprocess.join()
-                    # for subprocessVAR in subprocess_list:
-                    #     subprocessVAR.join()
-                    # cv_subprocessA.join()
-                    # cv_subprocessB.join()
-                    # cv_subprocessC.join()
-                    # cv_subprocessD.join()
-                    kivy_subprocess.join()
-                    pass
-                    fprint("g")
+                
+                #don't need this block anymore, kivy holds the main process open
+                # while True:
+                #     # time.sleep(200)
+                #     time.sleep(10)
+                #     fprint("who is this", __file__, os.getpid())
+                #     # when the while block is done, close all the subprocesses using .join to gracefully exit. also make sure opencv releases the video.
+                #     # mediaread_subprocess.join()
+                #     # for subprocessVAR in subprocess_list:
+                #     #     subprocessVAR.join()
+                #     # cv_subprocessA.join()
+                #     # cv_subprocessB.join()
+                #     # cv_subprocessC.join()
+                #     # cv_subprocessD.join()
+                #     kivy_subprocess.join()
+                #     pass
+                #     fprint("g")
         except Exception as e: 
             print("FCVA run died!", e, flush=True)
             import traceback
@@ -577,7 +583,8 @@ class FCVA:
                     self.FCVAWidget_shared_metadata_dict["bufferwaitVAR2"] = 3
                     fprint(f"bufferwaitVAR2 defaulted to self.FCVAWidget_shared_metadata_dict['bufferwaitVAR2']")
 
-                Clock.schedule_once(self.updatefont, 0)
+                # Clock.schedule_once(self.updatefont, 0)
+                self.is_cv_loaded = Clock.schedule_interval(self.updatefont_subprocesscheck, 1)
 
                 initdatalist = FCVA.FCVAWidget_SubprocessInit(
                     FCVA_mp,
@@ -598,6 +605,13 @@ class FCVA:
                 # https://kivy.org/doc/stable/api-kivy.event.html#kivy.event.EventDispatcher.bind
                 Window.bind(on_drop_file=self._on_file_drop)
             
+            def updatefont_subprocesscheck(self, *args):
+                #only update the text and font when we know for every subprocess, self.FCVAWidget_shared_metadata_dict["subprocess_cv_load" + str(pid)] is true, so check every second and then when it's true undo this event
+                #make sure all cv subprocesses are started > then check if their ["subprocess_cv_load" + str(pid)] is true
+                if len(self.subprocess_list) == self.cvpartitions and len([keyVAR for keyVAR in self.FCVAWidget_shared_metadata_dict.keys() if "subprocess_cv_load" in keyVAR and self.FCVAWidget_shared_metadata_dict[keyVAR]]) == self.cvpartitions:
+                    self.updatefont()
+                    self.is_cv_loaded.cancel()
+
             def updatefont(self, *args):
                 #assume font is in this directory/fonts
                 # https://stackoverflow.com/questions/247770/how-to-retrieve-a-modules-path
@@ -716,10 +730,10 @@ class FCVA:
 
             def toggleCV(self, *args):
                 widgettext = self.ids['StartScreenButtonID'].text
-                fprint("widgettext is?", widgettext)
+                # fprint("widgettext is?", widgettext)
                 if "\U000F040A" in widgettext: #this is play
                     self.CV_on()
-                else:
+                elif "\U000F03E4" in widgettext: # #this is pause
                     self.CV_off()
 
             def populate_texture(self, texture, bufferVAR, colorformatVAR, bufferfmtVAR):
@@ -890,7 +904,7 @@ class FCVA:
         size_hint: (1, 0.1)
         Lutton:
             id: StartScreenButtonID
-            text: 'this is a bug'
+            text: 'waiting for cv function to load'
         Label:
             # text: str(vidsliderID.value) #convert slider label to a time
             text: root.updateSliderElapsedTime(vidsliderID.value)
@@ -964,8 +978,32 @@ FCVA_screen_manager: #remember to return a root widget
                     inspector.create_inspector(Window, button)
                     return build_app_from_kv
 
-                def on_request_close(self, *args):
+                def on_request_close(self, *args, **kwargs):
+                    #dont need to super apparently, no request close in superclass
+                    # AttributeError: 'super' object has no attribute 'on_request_close'
+                    # super().on_request_close(*args, **kwargs)
                     fprint("#kivy subprocess closed END!")
+                    #https://kivy.org/doc/stable/api-kivy.uix.widget.html#kivy.uix.widget.Widget.walk
+                    # https://stackoverflow.com/questions/32162180/how-can-i-refer-to-kivys-root-widget-from-python/43576254#43576254
+                    # fprint("main_instance.get_running_app()", main_instance.get_running_app(), main_instance.get_running_app().root, main_instance.get_running_app().root.ids)
+                    # fprint("walking as per widget.walk", "self>self.walk, went from self to appinstance.get_running_app().root", self, [widgetVAR.ids for widgetVAR in main_instance.get_running_app().root.walk(loopback=True) if hasattr(widgetVAR, "ids")]) #try self/self.walk next
+                    
+                    # fprint("totality", [widgetVAR.ids for widgetVAR in main_instance.get_running_app().root.walk(loopback=True) if hasattr(widgetVAR, "ids") and "FCVAWidget_id" in  widgetVAR.ids])
+                    # fprint("did I get it???", [widgetVAR.ids["FCVAWidget_id"] for widgetVAR in main_instance.get_running_app().root.walk(loopback=True) if hasattr(widgetVAR, "ids")])
+
+                    #now that I found the FCVAWidget_id using root.walk, fire the even to turn off all subprocesses
+                    FCVAWidget_searchlist = [widgetVAR for widgetVAR in main_instance.get_running_app().root.walk(loopback=True) if hasattr(widgetVAR, "ids") and "FCVAWidget_id" in  widgetVAR.ids]
+                    # now I have the widget by ID, but NOT THE WIDGET: https://stackoverflow.com/a/35795211
+                    #fire all the clear events:
+                    for FCVAWidget_instance in FCVAWidget_searchlist:
+                        # fprint("dict", FCVAWidget_instance.__dict__)
+                        # fprint("dir", dir(FCVAWidget_instance))
+                        fprint("?<>", FCVAWidget_instance, FCVAWidget_instance.ids)
+
+                        for subprocessVAR in FCVAWidget_instance.ids["FCVAWidget_id"].subprocess_list:
+                            pass
+                            fprint("got to subprocess list", subprocessVAR)
+                            subprocessVAR.kill()
 
                 def run(self):
                     """Launches the app in standalone mode.
