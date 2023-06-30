@@ -7,7 +7,22 @@ dates = [datetime.fromtimestamp(float(VAR)).strftime("%I:%M:%S") for VAR in date
 names = ['v2.2.4', 'v3.0.3', 'v3.0.2', 'v3.0.1',]
 
 fig, ax = plt.subplots(figsize=(10, 5), constrained_layout=True)
-ax.plot(dates, np.zeros_like(dates), "-o",
-        color="k", markerfacecolor="w")  # Baseline and markers on it.
+#plot on x axis
+ax.plot(dates, np.zeros_like(dates), "-o", color="k", markerfacecolor="w")  # Baseline and markers on it.
+levels = np.tile([-5, 5, -3, 3, -1, 1],
+                 int(np.ceil(len(dates)/6)))[:len(dates)]
+#plot offset so that matplotlib will resize right
+ax.plot(dates, levels, 's',"-o", color="k", markerfacecolor="w")  # Baseline and markers on it.
+#vertical lines
+ax.vlines(dates, 0, levels, color="tab:red")
 
+
+# for nameVAR in names:
+#     ax.annotate(nameVAR, (1, -1), textcoords="offset points", horizontalalignment="right",) 
+#         #verticalalignment="bottom" if l > 0 else "top"
+for nameVAR, dateVAR, levelsVAR in zip(names, dates, levels):
+    ax.annotate(nameVAR, (dateVAR, levelsVAR), textcoords="offset points", horizontalalignment="right",) 
+        #verticalalignment="bottom" if l > 0 else "top"
+
+ax.annotate("wtf",(-1, 1), textcoords="offset points", horizontalalignment="right",) 
 plt.show()
