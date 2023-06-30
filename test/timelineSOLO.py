@@ -17,12 +17,14 @@ ax.plot(dates, levels, 's',"-o", color="k", markerfacecolor="w")  # Baseline and
 ax.vlines(dates, 0, levels, color="tab:red")
 
 
-# for nameVAR in names:
-#     ax.annotate(nameVAR, (1, -1), textcoords="offset points", horizontalalignment="right",) 
-#         #verticalalignment="bottom" if l > 0 else "top"
+#annotate writes text and takes (x,y) coords which is why u gotta zip
 for nameVAR, dateVAR, levelsVAR in zip(names, dates, levels):
     ax.annotate(nameVAR, (dateVAR, levelsVAR), textcoords="offset points", horizontalalignment="right",) 
         #verticalalignment="bottom" if l > 0 else "top"
+
+# remove y-axis and spines
+# ax.yaxis.set_visible(False)
+# ax.spines[["left", "top", "right"]].set_visible(False)
 
 ax.annotate("wtf",(-1, 1), textcoords="offset points", horizontalalignment="right",) 
 plt.show()
