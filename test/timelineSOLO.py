@@ -2,6 +2,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 # import matplotlib.dates as mdates
 from datetime import datetime
+
+#plan read in text file or smth then split > display on matplotlib
+
 dates = ['1688087730.719562', '1688087230.719562', '1688087770.719562', '1688087930.719562',]
 dates = [datetime.fromtimestamp(float(VAR)).strftime("%I:%M:%S") for VAR in dates]
 names = ['v2.2.4', 'v3.0.3', 'v3.0.2', 'v3.0.1',]
