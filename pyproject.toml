@@ -32,6 +32,9 @@ tqdm = "^4.65.0"
 ffmpeg-python = "^0.2.0"
 matplotlib = "^3.7.1"
 python-vlc = "^3.0.18122"
+adjusttext = "^0.8"
+squarify = "^0.4.3"
+mplcursors = "^0.5.2"
 
 [build-system]
 requires = ["poetry-core"]
