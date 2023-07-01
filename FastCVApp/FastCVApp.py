@@ -436,7 +436,10 @@ class FCVA:
                     )
 
                 bufferlen = 10
-                cvpartitions = 3
+                if hasattr(self, "cvpartitions"):
+                    cvpartitions = self.cvpartitions
+                else:
+                    cvpartitions = 3
                 #init shared dicts:
 
                 #nested shared obj works:

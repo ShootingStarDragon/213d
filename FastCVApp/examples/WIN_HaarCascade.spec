@@ -6,11 +6,12 @@ block_cipher = None
 basedir = os.path.join(os.sep, os.getcwd().split(os.path.sep)[0] + os.sep, *os.getcwd().split(os.path.sep)[:-1]) + os.path.sep
 print("file location?", basedir)
 
+import cv2 #this is for haarcascade xml so pyinstaller can package it
 a = Analysis(
     ['example_haarcascade.py'],
     pathex=[],
     binaries=[],
-    datas=[(basedir + "FastCVApp.py", "."), (basedir + "FCVAutils.py", "."), (basedir + "examples\\creativecommonsmedia\\", "examples\\creativecommonsmedia"), (basedir + "fonts", "fonts"), (basedir + "logviewer", "logviewer")],
+    datas=[(basedir + "FastCVApp.py", "."), (cv2.data.haarcascades+'haarcascade_frontalface_default.xml', "."),  (basedir + "FCVAutils.py", "."), (basedir + "examples\\creativecommonsmedia\\", "examples\\creativecommonsmedia"), (basedir + "fonts", "fonts"), (basedir + "logviewer", "logviewer")],
     hiddenimports=['kivy', 'blosc2', 'kivy.modules.inspector'], 
     hookspath=[],
     hooksconfig={},
@@ -37,7 +38,7 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,
+    console=True,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
