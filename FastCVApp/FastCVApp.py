@@ -111,39 +111,50 @@ def open_cvpipeline(*args):
         analyzed_deque = deque(maxlen=bufferlen)
         analyzed_dequeKEYS = deque(maxlen=bufferlen)
 
-        #init mediapipe here so it spawns the right amt of processes
-        import mediapipe as mp
-        from mediapipe.tasks import python
-        from mediapipe.tasks.python import vision
-        #assume this file structure:
-        # this file\examples\creativecommonsmedia\pose_landmarker_full.task is the location
-        # https://stackoverflow.com/a/50098973
-        from pathlib import Path
+        #some examples do not require mediapipe, only load them when mediapipe has already been loaded
+        import sys
 
-        print("file location?", Path(__file__).absolute())
-        print("cwd???", os.getcwd())
-        if "examples" in os.getcwd().split(os.path.sep):
-            # https://stackoverflow.com/a/51276165
-            # tasklocation = os.path.join(os.sep, os.getcwd().split(os.path.sep)[0] + os.sep, *os.getcwd().split(os.path.sep), "creativecommonsmedia", "pose_landmarker_full.task")
-            tasklocation = os.path.join(os.sep, os.getcwd().split(os.path.sep)[0] + os.sep, *os.getcwd().split(os.path.sep), "creativecommonsmedia", "pose_landmarker_lite.task")
+        # https://stackoverflow.com/questions/30483246/how-can-i-check-if-a-module-has-been-imported
+        # fprint("is it mediapipe or mp? (it's the actual modulename, nice)", "mediapipe" in sys.modules, "mp" in sys.modules)
+        modulename = 'mediapipe' #this implies mediapipe was already imported in the actual sourcecode tho
+        if modulename in sys.modules:
+            print('You have imported {} module, setting up landmarker'.format(modulename))
+
+            #init mediapipe here so it spawns the right amt of processes
+            import mediapipe as mp
+            from mediapipe.tasks import python
+            from mediapipe.tasks.python import vision
+            #assume this file structure:
+            # this file\examples\creativecommonsmedia\pose_landmarker_full.task is the location
+            # https://stackoverflow.com/a/50098973
+            from pathlib import Path
+
+            print("file location?", Path(__file__).absolute())
+            print("cwd???", os.getcwd())
+            if "examples" in os.getcwd().split(os.path.sep):
+                # https://stackoverflow.com/a/51276165
+                # tasklocation = os.path.join(os.sep, os.getcwd().split(os.path.sep)[0] + os.sep, *os.getcwd().split(os.path.sep), "creativecommonsmedia", "pose_landmarker_full.task")
+                tasklocation = os.path.join(os.sep, os.getcwd().split(os.path.sep)[0] + os.sep, *os.getcwd().split(os.path.sep), "creativecommonsmedia", "pose_landmarker_lite.task")
+            else:
+                # tasklocation = 'examples\creativecommonsmedia\pose_landmarker_full.task'
+                tasklocation = 'examples\creativecommonsmedia\pose_landmarker_lite.task'
+            fprint("tasklocation?", tasklocation)
+
+            with open(tasklocation, 'rb') as f:
+                modelbytes = f.read()
+                base_options = python.BaseOptions(model_asset_buffer=modelbytes)
+                VisionRunningMode = mp.tasks.vision.RunningMode
+                options = vision.PoseLandmarkerOptions(
+                    base_options=base_options,
+                    running_mode=VisionRunningMode.VIDEO,
+                    # model_complexity = 0,
+                    #these were old settings, maybe it's too strict and not giving me poses
+                    # min_pose_detection_confidence=0.6, min_tracking_confidence=0.6,
+                    min_pose_detection_confidence=0.5, min_tracking_confidence=0.5,
+                    )
+            landmarker = mp.tasks.vision.PoseLandmarker.create_from_options(options)
         else:
-            # tasklocation = 'examples\creativecommonsmedia\pose_landmarker_full.task'
-            tasklocation = 'examples\creativecommonsmedia\pose_landmarker_lite.task'
-        fprint("tasklocation?", tasklocation)
-
-        with open(tasklocation, 'rb') as f:
-            modelbytes = f.read()
-            base_options = python.BaseOptions(model_asset_buffer=modelbytes)
-            VisionRunningMode = mp.tasks.vision.RunningMode
-            options = vision.PoseLandmarkerOptions(
-                base_options=base_options,
-                running_mode=VisionRunningMode.VIDEO,
-                # model_complexity = 0,
-                #these were old settings, maybe it's too strict and not giving me poses
-                # min_pose_detection_confidence=0.6, min_tracking_confidence=0.6,
-                min_pose_detection_confidence=0.5, min_tracking_confidence=0.5,
-                )
-        landmarker = mp.tasks.vision.PoseLandmarker.create_from_options(options)
+            landmarker = "mediapipe NOT loaded"
 
         #set this for seeking ONCE per subprocess since I can't pop which would interfere with the other subprocesses
         FCVAWidget_shared_metadata_dictVAR2["seek_req_val" + str(os.getpid())] = 0
