@@ -57,9 +57,9 @@ def sepia_filter(*args):
     except Exception as e:
         print("sepia_filter subprocess died! ", e, flush=True)
 
-
-
 if __name__ == "__main__":
+    import multiprocessing 
+    multiprocessing.freeze_support()
     import FastCVApp
     app = FastCVApp.FCVA()
     app.appliedcv = sepia_filter
