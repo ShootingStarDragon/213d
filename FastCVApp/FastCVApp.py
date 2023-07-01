@@ -218,7 +218,13 @@ def open_cvpipeline(*args):
                     #cv func returns a deque of frames
                     rtime = time.time()
                     # u can peek at deques: https://stackoverflow.com/questions/48640251/how-to-peek-front-of-deque-without-popping#:~:text=You%20can%20peek%20front%20element,right%20and%20seems%20efficient%20too. , can do it but I thought of a simpler way in the example py file
-                    resultdeque = appliedcv(raw_deque, FCVAWidget_shared_metadata_dictVAR2, bufferlen, landmarker, raw_dequeKEYS, force_monotonic_increasing)
+                    resultdeque = appliedcv(
+                        raw_deque, 
+                        FCVAWidget_shared_metadata_dictVAR2, 
+                        bufferlen, 
+                        landmarker, 
+                        raw_dequeKEYS, 
+                        force_monotonic_increasing)
                     force_monotonic_increasing += bufferlen  
                     fprint("resultdeque timing (appliedcv)", time.time() - rtime,current_framenumber)
                     current_framenumber = int((time.time() - FCVAWidget_shared_metadata_dictVAR2["starttime"])/(1/fps))
@@ -507,7 +513,7 @@ class FCVA:
             cv_subprocessA = FCVA_mpVAR.Process(
                 target=open_cvpipeline,
                 args=(
-                    appliedcvVAR.__func__, #this is a problem, it doesn't survive multiple dill/pickles...
+                    appliedcvVAR.__func__, #this is a problem IF you pass in just appliedcvVAR since it's a class method, if u get the func only it works, it doesn't survive multiple dill/pickles...
                     shared_analyzedA,
                     shared_analyzedAKeycount,
                     x, #partition #, starts at 0 (now is x in this loop)
