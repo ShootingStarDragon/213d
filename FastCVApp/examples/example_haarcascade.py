@@ -44,6 +44,7 @@ else:
         cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
     )
 
+# print("facecascade loaded?", face_cascade, flush = True)
 
 def cascade_this(*args):
     try:
@@ -56,16 +57,29 @@ def cascade_this(*args):
         raw_dequeKEYSVAR = args[4]
         force_monotonic_increasingVAR = args[5]
 
+        # w_size = (700,500) #still too large, facetimetime is 0.133 sec which is forever
+        w_size = (256,144)
+
+        import time
+        from FCVAutils import fprint
         while len(inputdeque) > 0:
             image = inputdeque.popleft()
             
+            #yikes haarcascades are slow..., notes here: https://github.com/ShootingStarDragon/FastCVApp/issues/302
+            #plan is to resize  do the mediapipestrat where you apply haarcascade on a smaller image then rescale to original
+            gray = cv2.resize(image,w_size)
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+            wtime = time.time()
             faces = face_cascade.detectMultiScale(
                 gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30)
             )
+            facetimetime = time.time()
+            fprint("haarcascade is 5 fps, too slow (need ~6 subprocesses, my test machine can't handle it at 3 since it already goes to 100 percent cpu at 3)", facetimetime - wtime)
 
             for (x, y, w, h) in faces:
                 cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            fprint("recttime", time.time() - facetimetime)
             
             answerdeque.append(image)
         return answerdeque
@@ -85,6 +99,7 @@ if __name__ == "__main__":
     app.appliedcv = cascade_this
     # / and \ works on windows, only / on mac tho
     app.source = sourcelocation
+    app.cvpartitions = 6
     app.fps = 1 / 30
     app.title = (
         'Haarcascade example by Pengindoramu ("works" but Mediapipe is a lot better)'
