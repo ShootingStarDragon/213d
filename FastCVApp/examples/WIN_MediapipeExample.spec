@@ -25,7 +25,7 @@ a = Analysis(
     ['example_mediapipe.py'],
     pathex=[],
     binaries=[],
-    datas=[(basedir + "FastCVApp.py", "."), (basedir + "FCVAutils.py", "."), (basedir + "examples\\creativecommonsmedia\\", "examples\\creativecommonsmedia")],
+    datas=[(basedir + "FastCVApp.py", "."), (basedir + "FCVAutils.py", "."), (basedir + "examples\\creativecommonsmedia\\", "examples\\creativecommonsmedia"), (basedir + "fonts", "fonts"), (basedir + "logviewer", "logviewer")],
     hiddenimports=['kivy', 'blosc2', 'kivy.modules.inspector'], 
     hookspath=[],
     hooksconfig={},
