@@ -18,6 +18,7 @@ def get_mediapipe_path():
 #import os
 #basedir = os.path.join(os.sep, os.getcwd().split(os.path.sep)[0] + os.sep, *Path(__file__).absolute().split(os.path.sep)[:-1])
 #cursed as __file__ doesn't work here, just do an os.getcwd() hack...
+
 basedir = os.path.join(os.sep, os.getcwd().split(os.path.sep)[0] + os.sep, *os.getcwd().split(os.path.sep)[:-1]) + os.path.sep
 print("file location?", basedir)
 

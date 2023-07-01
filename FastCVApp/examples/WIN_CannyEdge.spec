@@ -3,14 +3,15 @@ from kivy_deps import sdl2, glew
 
 block_cipher = None
 
-basedir = "F:\\CODING\\FastCVApp\\" # replace basedir with the location of "FastCVApp" folder
+basedir = os.path.join(os.sep, os.getcwd().split(os.path.sep)[0] + os.sep, *os.getcwd().split(os.path.sep)[:-1]) + os.path.sep
+print("file location?", basedir)
 
 a = Analysis(
     ['example_cannyedge.py'],
     pathex=[],
     binaries=[],
-    datas=[(basedir + "FastCVApp.py", "."), (basedir + "examples\\creativecommonsmedia\\", "examples\\creativecommonsmedia")],
-    hiddenimports=['kivy'],
+    datas=[(basedir + "FastCVApp.py", "."), (basedir + "FCVAutils.py", "."), (basedir + "examples\\creativecommonsmedia\\", "examples\\creativecommonsmedia"), (basedir + "fonts", "fonts"), (basedir + "logviewer", "logviewer")],
+    hiddenimports=['kivy', 'blosc2', 'kivy.modules.inspector'], 
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
