@@ -4,10 +4,10 @@ import time
 def fprint(*args):
 	print(os.getpid(), time.time(), *args, flush = True)
 
-def sysupdate(*args, sourcelocationVAR = False):
+def FCVA_update_resources(*args, sourcelocationVAR = False):
 	'''
-	#keyword argument notes: https://treyhunner.com/2018/04/keyword-arguments-in-python/#What_are_keyword_arguments? 
 	this is to update paths, for example when an app is packaged with pyinstaller
+	#keyword argument notes: https://treyhunner.com/2018/04/keyword-arguments-in-python/#What_are_keyword_arguments? 
 	'''
 	import sys
 	if hasattr(sys, "_MEIPASS"):
