@@ -935,7 +935,7 @@ class FCVA:
         size_hint: (1, 0.1)
         Lutton:
             id: StartScreenButtonID
-            text: 'waiting for cv function to load'
+            text: 'waiting for mediapipe to load'
         Label:
             # text: str(vidsliderID.value) #convert slider label to a time
             text: root.updateSliderElapsedTime(vidsliderID.value)

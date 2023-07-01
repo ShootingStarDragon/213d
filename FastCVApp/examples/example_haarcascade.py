@@ -2,7 +2,8 @@ import sys
 
 if hasattr(sys, "_MEIPASS"):
     # if file is frozen by pyinstaller add the MEIPASS folder to path:
-    sys.path.append(sys._MEIPASS)
+    #FCVA_update_resources has the sys.path.append(sys._MEIPASS)
+    pass
 else:
     # if you're making your own app, you don't need this else block. This is just vanity code so I can run this from main FastCVApp folder or from the examples subfolder.
     # this example is importing from a higher level package if running from cmd: https://stackoverflow.com/a/41575089
@@ -17,10 +18,13 @@ else:
         # assume they're in main folder trying `python examples/example_backgroundsubtraction.py`
         sys.path.append("../FastCVApp")  # when running from main folder
 
-import FastCVApp
-
-app = FastCVApp.FCVA()
+from FCVAutils import FCVA_update_resources
+sourcelocation = "examples\creativecommonsmedia\Elephants Dream charstart2FULL.webm"
+FCVA_update_resources(sourcelocationVAR=sourcelocation)
 import cv2
+from collections import deque
+
+
 
 if hasattr(sys, "_MEIPASS"):
     # if file is frozen by pyinstaller add the MEIPASS folder to path:
@@ -44,26 +48,43 @@ else:
 def cascade_this(*args):
     try:
         # reference: https://stackoverflow.com/questions/70805922/why-does-the-haarcascades-does-not-work-on-opencv
-        image = args[0]
-        w_size = (700, 500)
-        image = cv2.resize(image, w_size)
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        faces = face_cascade.detectMultiScale(
-            gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30)
-        )
+        inputdeque = args[0]
+        # FCVAWidget_shared_metadata_dictVAR3 = args[1]
+        bufferlenVAR = args[2]
+        answerdeque = deque(maxlen=bufferlenVAR)
+        landmarkerVAR = args[3]
+        raw_dequeKEYSVAR = args[4]
+        force_monotonic_increasingVAR = args[5]
 
-        for (x, y, w, h) in faces:
-            cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
-        return cv2.flip(image, 0)
+        while len(inputdeque) > 0:
+            image = inputdeque.popleft()
+            
+            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            faces = face_cascade.detectMultiScale(
+                gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30)
+            )
+
+            for (x, y, w, h) in faces:
+                cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            
+            answerdeque.append(image)
+        return answerdeque
+        
+        
+        
     except Exception as e:
         print("cascade_this subprocess died! ", e, flush=True)
 
 
-app.appliedcv = cascade_this
 
 if __name__ == "__main__":
+    import multiprocessing 
+    multiprocessing.freeze_support()
+    import FastCVApp
+    app = FastCVApp.FCVA()
+    app.appliedcv = cascade_this
     # / and \ works on windows, only / on mac tho
-    app.source = "examples/creativecommonsmedia/Elephants Dream charstart2.webm"
+    app.source = sourcelocation
     app.fps = 1 / 30
     app.title = (
         'Haarcascade example by Pengindoramu ("works" but Mediapipe is a lot better)'
