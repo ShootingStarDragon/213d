@@ -12,6 +12,8 @@ sourcelocation = "examples\creativecommonsmedia\Elephants Dream charstart2FULL.w
 # sourcelocation = "examples\creativecommonsmedia\\30 fps counter.webm"
 # sourcelocation = "NDA"
 
+#u gotta run this from cmd, run python file/F5(debug) on vscode fails., u have to PRESS THE BUTTON 
+
 if hasattr(sys, "_MEIPASS"):
     pass
 else:
@@ -27,9 +29,9 @@ else:
         # assume they're in main folder trying `python examples/example_backgroundsubtraction.py`
         sys.path.append("../FastCVApp")  # when running from main folder
 
-from FCVAutils import sysupdate
+from FCVAutils import FCVA_update_resources
 #udpate paths here
-sysupdate(sourcelocationVAR=sourcelocation)
+FCVA_update_resources(sourcelocationVAR=sourcelocation) #this has the sys.path.append(sys._MEIPASS)
 
 # importing here means it's available to the subprocess as well. You can probably cut loading time by only loading mediapipe for the right subprocess.
 
@@ -63,6 +65,7 @@ def draw_landmarks_on_image(annotated_image, detection_result):
 def apply_mediapipe_func(*args): #basicmp
     try:
         inputdeque = args[0]
+        # FCVAWidget_shared_metadata_dictVAR3 = args[1]
         bufferlenVAR = args[2]
         answerdeque = deque(maxlen=bufferlenVAR)
         landmarkerVAR = args[3]
