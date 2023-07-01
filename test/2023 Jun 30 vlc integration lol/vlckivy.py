@@ -1,5 +1,7 @@
 #to optimize more, use reload_observer as per: https://stackoverflow.com/questions/51546327/in-kivy-is-there-a-way-to-dynamically-change-the-shape-of-a-texture
 #since this is manual stuff (manually setting a buffer in c) ur gonna have to mess with VIDEOHEIGHT or alternative steal it from vlc when it loads a video
+#there is another optimization where U use pillow, u can skip pillow and directly go to a numpy array but idk what the bufferformat is from VLC, pillow does tho
+#remember to match the framerate
 
 # https://stackoverflow.com/questions/37749378/integrate-opencv-webcam-into-a-kivy-user-interface
 
@@ -18,7 +20,7 @@ import vlc
 import os
 import ctypes
 import sys
-from PIL import Image
+from PIL import Image as PILIMAGE
 
 VIDEOWIDTH = 1920
 VIDEOHEIGHT = 1080
@@ -31,12 +33,44 @@ buf = (ctypes.c_ubyte * size)()
 # get pointer to buffer
 buf_p = ctypes.cast(buf, ctypes.c_void_p)
 
+def redef_buffersize(widthVAR, heightVAR):
+    global VIDEOWIDTH
+    global VIDEOHEIGHT
+    global size
+    global buf
+    global buf_p
+    VIDEOWIDTH = widthVAR
+    VIDEOHEIGHT = heightVAR
+
+    # size in bytes when RV32
+    size = VIDEOWIDTH * VIDEOHEIGHT * 4
+
+    # allocate buffer
+    buf = (ctypes.c_ubyte * size)()
+    # get pointer to buffer
+    buf_p = ctypes.cast(buf, ctypes.c_void_p)
+
 # https://github.com/oaubert/python-vlc/issues/17#issuecomment-277476196
 CorrectVideoLockCb = ctypes.CFUNCTYPE(ctypes.c_void_p, ctypes.c_void_p, ctypes.POINTER(ctypes.c_void_p))
 @CorrectVideoLockCb
 def _lockcb(opaque, planes):
     print("lock", file=sys.stderr)
     planes[0] = buf_p
+
+@vlc.CallbackDecorators.VideoDisplayCb
+def recieveVLCframe(*args):
+    # kivywidgetobj = appInstance.get_running_app()#appInstance exists because I created it after running if name is main
+    # print("what is appinstance", appInstance)
+    appInstance.img = PILIMAGE.frombuffer("RGBA", (VIDEOWIDTH, VIDEOHEIGHT), buf, "raw", "BGRA", 0, 1)
+    appInstance.image_buf_formatted = np.array(appInstance.img).tobytes() #turn to numpy array then tobytes so kivy blits the right stuff
+    # print(appInstance.image_buf_formatted.shape)
+    
+    
+    # kivywidgetobj = appInstance.get_running_app()#appInstance exists because I created it after running if name is main
+    # kivywidgetobj.img = PILIMAGE.frombuffer("RGBA", (VIDEOWIDTH, VIDEOHEIGHT), buf, "raw", "BGRA", 0, 1)
+    # kivywidgetobj.image_buf_formatted = np.array(kivywidgetobj.img).tobytes() #turn to numpy array then tobytes so kivy blits the right stuff
+
+    # print(kivywidgetobj.thenparray.shape)
 
 class CamApp(App):
 
@@ -70,27 +104,40 @@ class CamApp(App):
         #example: https://github.com/oaubert/python-vlc/issues/17#issuecomment-277476196
         #smth to look at: https://stackoverflow.com/questions/73712284/how-do-i-record-video-on-libvlcpython-binding-python-vlc
         
-        
+        #need to redefine vars so image and buf are proper size
+        # redef_buffersize(self.media_player.video_get_width(), self.media_player.video_get_height())
+
         #get the frame from vlc using libvlc_video_set_callbacks, reference here https://github.com/oaubert/python-vlc/issues/17#issuecomment-277476196
-        vlc.libvlc_video_set_callbacks(self.media_player, _lockcb, None, self. update, None)
+        vlc.libvlc_video_set_callbacks(self.media_player, _lockcb, None, recieveVLCframe, None)
+        self.media_player.video_set_format("RV32", VIDEOWIDTH, VIDEOHEIGHT, VIDEOWIDTH * 4)
         #play with vlc
         self.media_player.play()
+        print("w h?", self.media_player.video_get_width(0), self.media_player.video_get_height(0))
         #start blitting:
-        # Clock.schedule_interval(self.update, 1.0/30.0)
-        Clock.schedule_once(self.update, 1.0)
-        import time
+        Clock.schedule_interval(self.update, 1.0/30.0)
+        # Clock.schedule_once(self.update, 1.0)
+        # import time
         # time.sleep(5)
 
 
-    @vlc.CallbackDecorators.VideoDisplayCb
+
+    
     def update(self, *args):
-        print("args??", args)
-        # buf #is the buffer, IS GLOBAL BTW
-        # frame = np.frombuffer(buf, np.uint8).copy().reshape(720, 1280, 3)
-        img = Image.frombuffer("RGBA", (VIDEOWIDTH, VIDEOHEIGHT), buf, "raw", "BGRA", 0, 1)
-        # texture1 = Texture.create(size=(VIDEOWIDTH, VIDEOHEIGHT), colorfmt='bgra') 
-        # texture1.blit_buffer(buf, colorfmt='bgr', bufferfmt='ubyte')
-        # self.img1.texture = texture1
+        try:
+            if hasattr(self, "image_buf_formatted"): #kivy starts before vlc so check if this attr is set
+                # print("args??", args)
+                # buf #is the buffer, IS GLOBAL BTW
+                # frame = np.frombuffer(buf, np.uint8).copy().reshape(VIDEOWIDTH, VIDEOHEIGHT, 4)
+                # img = PILIMAGE.frombuffer("RGBA", (VIDEOWIDTH, VIDEOHEIGHT), buf, "raw", "BGRA", 0, 1)
+                texture1 = Texture.create(size=(VIDEOWIDTH, VIDEOHEIGHT), colorfmt='bgra') 
+                # print("is this bytes?", self.image_buf_formatted)
+                # print("who is self", self)
+                texture1.blit_buffer(self.image_buf_formatted, colorfmt='bgra', bufferfmt='ubyte')
+                self.img1.texture = texture1
+        except Exception as e: 
+            print("blitting died!", e, flush=True)
+            import traceback
+            print("full exception", "".join(traceback.format_exception(*sys.exc_info())))
 
         #VERY LAZY, DONT MAKE NEW TEXTURES EVERY FRAME, instead use reload_obeserver as per this example:
         # https://stackoverflow.com/questions/51546327/in-kivy-is-there-a-way-to-dynamically-change-the-shape-of-a-texture
@@ -110,5 +157,6 @@ class CamApp(App):
         # self.img1.texture = texture1
 
 if __name__ == '__main__':
-    CamApp().run()
+    appInstance = CamApp()
+    appInstance.run()
     # cv2.destroyAllWindows()
